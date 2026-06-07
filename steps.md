@@ -93,11 +93,8 @@ predicty/
 - [x] **0.1 Move `frontend/*` to repo root** ✅
   - Done 2026-06-07. `predicty/` is now the Next.js app directly. `frontend/` and `backend/` removed. `.git` re-initialized. `CLAUDE.md` (=`@AGENTS.md` pointer) kept.
 
-- [ ] **0.2 Git branch isolation + .gitignore polish**
-  - Goal: leave `main` untouched, work on a feature branch.
-  - Remaining: (a) `git switch -c feat/init-foundation`; (b) append `supabase/.branches`, `playwright-report/`, `test-results/`, `prisma/migrations/dev.db*` to `.gitignore`; (c) commit the changes.
-  - Files touched: `.gitignore`.
-  - Acceptance: `git status` clean, current branch is `feat/init-foundation`.
+- [x] **0.2 Git branch isolation + .gitignore polish** ✅
+  - Done 2026-06-07. On `feat/init-foundation`. `.gitignore` extended for supabase/playwright/prisma local artifacts. Committed as `01309f8`.
 
 - [ ] **0.3 Audit Next.js 16 docs in `node_modules/next/dist/docs/`**
   - Goal: note breaking changes affecting: App Router conventions, Server Actions, Route Handlers, middleware, cookies/headers APIs, params/searchParams shapes, `revalidatePath`/`revalidateTag`.
