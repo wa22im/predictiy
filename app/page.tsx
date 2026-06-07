@@ -8,7 +8,7 @@ export default function Home() {
             Predict the game. Own the pool. Create private leagues, compete with friends, and prove you know the game.
           </p>
           <a
-            href="/login"
+            href="/signup"
             className="command-strip inline-flex items-center justify-center px-8 py-3 mt-8 text-base font-bold"
           >
             Get Started

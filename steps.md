@@ -198,11 +198,16 @@ predicty/
 - [x] **2.1 Marketing landing page** ✅
   - Done 2026-06-07. The existing `app/page.tsx` war-room landing already has the CTA → `/login`. (No separate `(marketing)` route group needed; route groups are for layout differences only.)
 
-- [x] **2.2 `/login` page — magic link** ✅
-  - Done 2026-06-07. `app/(app)/login/page.tsx` + `actions.ts` + `components/auth/LoginForm.tsx`. Server Action `loginAction` calls `signInWithOtp` with `emailRedirectTo: ${APP_URL}/auth/callback`. Zod-validated email. "Check your inbox" success state.
+- [x] **2.2 `/login` page — email + password** ✅
+  - Done 2026-06-07. `app/(app)/login/page.tsx` + `actions.ts` + `components/auth/LoginForm.tsx`. Server Action `loginAction` calls `signInWithPassword`. Zod-validated email + non-empty password. On success, redirects to `/dashboard` (or `/onboarding` if not yet onboarded).
+  - Note: original magic-link implementation replaced with email+password on user request. `signInWithOtp` no longer called.
+
+- [x] **2.2.1 `/signup` page — email + password with confirmation** ✅
+  - Done 2026-06-07. `app/(app)/signup/page.tsx` + `actions.ts` + `components/auth/SignupForm.tsx`. Form: email, password, confirm-password. Server Action `signupAction` validates match + calls `signUp`. On success, redirect to `/onboarding`. On session=null (email confirmation still enabled), surfaces a clear error pointing at the Supabase dashboard setting.
+  - **Prerequisite:** "Confirm email" must be turned off in Supabase → Authentication → Providers → Email.
 
 - [x] **2.3 Auth callback handler** ✅
-  - Done 2026-06-07. `app/(app)/auth/callback/route.ts` — exchanges the code for a session, checks `User.nickname` to decide between `/onboarding` (first time) and the requested `next` URL (default `/dashboard`).
+  - Done 2026-06-07. `app/(app)/auth/callback/route.ts` — exchanges the code for a session, checks `User.nickname` to decide between `/onboarding` (first time) and the requested `next` URL (default `/dashboard`). Kept for future OAuth/email-link use cases.
 
 - [x] **2.4 Onboarding wizard** ✅
   - Done 2026-06-07. `app/(app)/onboarding/page.tsx` + `actions.ts` + `components/auth/OnboardingForm.tsx`. Nickname (2-24 chars, alphanumeric+underscore, unique check) + 10-emoji grid. Writes to DB + sync auth metadata. Redirects to `/dashboard` on success.

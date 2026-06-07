@@ -4,6 +4,7 @@ import { z } from "zod";
 
 const LoginInput = z.object({
   email: z.email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
 });
 
 export type LoginResult = {
@@ -18,20 +19,20 @@ export async function loginAction(
 
   const parsed = LoginInput.safeParse({
     email: formData.get("email"),
+    password: formData.get("password"),
   });
 
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
   }
 
   const supabase = await createClient();
-  const appUrl = process.env.APP_URL ?? "http://localhost:3000";
-
-  const { error } = await supabase.auth.signInWithOtp({
+  const { error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
-    options: {
-      emailRedirectTo: `${appUrl}/auth/callback`,
-    },
+    password: parsed.data.password,
   });
 
   if (error) {

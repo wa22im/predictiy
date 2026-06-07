@@ -45,7 +45,10 @@ export async function middleware(request: NextRequest) {
     (route) => pathname === route || pathname.startsWith(route + "/"),
   );
   const isAdminRoute = pathname === adminPrefix || pathname.startsWith(adminPrefix + "/");
-  const isAuthRoute = pathname === loginRoute || pathname.startsWith("/auth/");
+  const isAuthRoute =
+    pathname === loginRoute ||
+    pathname === "/signup" ||
+    pathname.startsWith("/auth/");
   const isLanding = pathname === landingRoute;
   const isOnboardingPage = pathname === onboardingRoute;
 

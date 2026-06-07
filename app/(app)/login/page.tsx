@@ -1,9 +1,10 @@
+import Link from "next/link";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ invited?: string; redirect?: string; error?: string }>;
+  searchParams: Promise<{ invited?: string; error?: string }>;
 }) {
   const params = await searchParams;
   return (
@@ -18,11 +19,11 @@ export default async function LoginPage({
         )}
         {!params.invited && (
           <p className="text-muted-foreground text-sm leading-6 mb-6">
-            Enter your email and we&apos;ll send you a magic link to sign in.
+            Welcome back. Sign in to your account.
           </p>
         )}
 
-        <LoginForm redirect={params.redirect} initialError={params.error} />
+        <LoginForm invited={!!params.invited} initialError={params.error} />
       </div>
     </main>
   );
