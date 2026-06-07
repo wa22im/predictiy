@@ -44,14 +44,12 @@ export function MatchCard({
             <span className="micro-label text-muted-foreground">Settled</span>
           ) : match.isLocked ? (
             <span className="micro-label text-destructive">Locked</span>
-          ) : match.timeUntilLockMs <= 2 * 60 * 60 * 1000 ? (
+          ) : (
             <Countdown
               kickoffTime={match.kickoffTime}
               lockdownMs={lockdownMs}
               serverNow={serverNow}
             />
-          ) : (
-            <span className="micro-label text-muted-foreground">Open</span>
           )}
         </div>
       </header>
