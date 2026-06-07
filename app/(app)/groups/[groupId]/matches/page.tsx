@@ -4,6 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 import { getGroupFeed } from "@/lib/services/group-feed";
 import { MatchList } from "@/components/matches/MatchList";
 
+// Force dynamic rendering — the page reads cookies() via Supabase AND
+// computes per-request time-dependent state (isLocked, timeUntilLockMs).
+// Without this, Next.js can serve a cached version where a match that
+// has since entered its 5-min lockdown window still shows as editable.
+export const dynamic = "force-dynamic";
+
 type Params = Promise<{ groupId: string }>;
 
 export default async function MatchesPage({ params }: { params: Params }) {

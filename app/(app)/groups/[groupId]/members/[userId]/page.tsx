@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getMemberHistory } from "@/lib/services/member-history";
 import { cn } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 type Params = Promise<{ groupId: string; userId: string }>;
 
 export default async function MemberHistoryPage({ params }: { params: Params }) {

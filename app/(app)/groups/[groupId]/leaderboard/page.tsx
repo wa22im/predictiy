@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getGroupLeaderboard } from "@/lib/services/leaderboard";
 import { LeaderboardList } from "@/components/leaderboard/LeaderboardList";
 
+export const dynamic = "force-dynamic";
+
 type Params = Promise<{ groupId: string }>;
 
 export default async function LeaderboardPage({ params }: { params: Params }) {

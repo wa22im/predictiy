@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { InviteBanner } from "@/components/groups/InviteBanner";
 
+export const dynamic = "force-dynamic";
+
 type Params = Promise<{ groupId: string }>;
 
 export default async function GroupPage({ params }: { params: Params }) {
