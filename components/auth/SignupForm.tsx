@@ -31,10 +31,10 @@ export function SignupForm() {
     startTransition(async () => {
       const result: SignupResult = await signupAction(fd);
       if (result.ok) {
-        // User is signed in. The auth.users trigger has created the public.User
-        // row. Send them to onboarding — the middleware will accept /onboarding
-        // for authenticated-but-no-nickname users.
-        router.push("/onboarding");
+        // For now always send to onboarding — the invite cookie (if any)
+        // is consumed there. If no invite, the onboarding action redirects
+        // to /dashboard on completion.
+        router.push(result.redirectTo ?? "/onboarding");
         router.refresh();
       } else {
         setState({ kind: "error", message: result.error ?? "Sign up failed" });

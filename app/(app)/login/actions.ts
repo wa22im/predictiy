@@ -10,12 +10,19 @@ const LoginInput = z.object({
 export type LoginResult = {
   ok: boolean;
   error?: string;
+  redirectTo?: string;
 };
 
 export async function loginAction(
   formData: FormData,
 ): Promise<LoginResult> {
   const { createClient } = await import("@/lib/supabase/server");
+  const { getInviteCookie, clearInviteCookie } = await import(
+    "@/lib/invite-cookie"
+  );
+  const { joinGroupByInviteCode } = await import(
+    "@/lib/services/join-group"
+  );
 
   const parsed = LoginInput.safeParse({
     email: formData.get("email"),
@@ -39,5 +46,22 @@ export async function loginAction(
     return { ok: false, error: error.message };
   }
 
-  return { ok: true };
+  // Consume any pending invite — for onboarded users, this routes them
+  // straight to the joined group. For new users, the invite stays in the
+  // cookie and is consumed by the onboarding action.
+  const inviteCode = await getInviteCookie();
+  if (inviteCode) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const group = await joinGroupByInviteCode(user.id, inviteCode);
+      if (group) {
+        await clearInviteCookie();
+        return { ok: true, redirectTo: `/groups/${group.id}` };
+      }
+    }
+  }
+
+  return { ok: true, redirectTo: "/dashboard" };
 }

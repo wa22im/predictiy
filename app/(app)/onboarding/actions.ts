@@ -23,6 +23,12 @@ export async function completeOnboardingAction(
   const { createClient } = await import("@/lib/supabase/server");
   const { prisma } = await import("@/lib/prisma");
   const { redirect } = await import("next/navigation");
+  const { getInviteCookie, clearInviteCookie } = await import(
+    "@/lib/invite-cookie"
+  );
+  const { joinGroupByInviteCode } = await import(
+    "@/lib/services/join-group"
+  );
 
   const parsed = OnboardingInput.safeParse({
     nickname: formData.get("nickname"),
@@ -77,6 +83,16 @@ export async function completeOnboardingAction(
       emoji: parsed.data.emoji,
     },
   });
+
+  // Consume any pending invite and route the user straight to the group.
+  const inviteCode = await getInviteCookie();
+  if (inviteCode) {
+    const group = await joinGroupByInviteCode(user.id, inviteCode);
+    await clearInviteCookie();
+    if (group) {
+      redirect(`/groups/${group.id}`);
+    }
+  }
 
   redirect("/dashboard");
 }

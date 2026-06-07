@@ -234,33 +234,30 @@ predicty/
 
 ## Phase 3 — Deep-Link Invite Interceptor (spec §1.3 invite lifecycle, §4.2, §5 Phase 3)
 
-- [ ] **3.1 `/join/[inviteCode]` route — server-side bootstrap**
-  - Files: `app/(app)/join/[inviteCode]/page.tsx`. Server component: look up group by `inviteCode`; pass `groupName` to client component; if not found, show 404.
-  - Acceptance: visiting `/join/wc-abc123` with a real code shows the "You've been invited to join X" screen.
+- [x] **3.1 `/join/[inviteCode]` route — server-side bootstrap** ✅
+  - Done 2026-06-07. `app/(app)/join/[inviteCode]/page.tsx` — server-side: looks up group by `inviteCode`, 404s if missing, joins immediately if authenticated, else sets cookie + redirects to `/login?invited=1`.
 
-- [ ] **3.2 Invite cache (httpOnly cookie)**
-  - Files: `lib/invite-cookie.ts` with `setInviteCookie(code)`, `getInviteCookie()`, `clearInviteCookie()`. Cookie name from `INVITE_COOKIE_NAME`; `httpOnly`, `sameSite=lax`, `secure` in prod, 24h expiry.
-  - Acceptance: setting the cookie survives reloads; cleared on consume.
+- [x] **3.2 Invite cache (httpOnly cookie)** ✅
+  - Done 2026-06-07. `lib/invite-cookie.ts` — `getInviteCookie`, `setInviteCookie(code)`, `clearInviteCookie()`. Cookie name from `INVITE_COOKIE_NAME` (default `predicty_invite`); `httpOnly`, `sameSite=lax`, `secure` in prod, 24h expiry.
 
-- [ ] **3.3 Auth intercept decision**
-  - In `app/(app)/join/[inviteCode]/page.tsx`: if session present → call `joinGroup` Server Action immediately → clear cookie → redirect to `/groups/<id>`. If not → set cookie → redirect to `/login?invited=1`.
-  - Acceptance: matches Journey 2.
+- [x] **3.3 Auth intercept decision** ✅
+  - Done 2026-06-07. `/join/[inviteCode]` does the auth check: signed in → `joinGroupByInviteCode` + clear cookie + redirect to `/groups/<id>`. Not signed in → set cookie + redirect to `/login?invited=1`.
 
-- [ ] **3.4 `/login` honours `?invited=1`**
-  - Files: `app/(auth)/login/page.tsx`. Renders the "You've been invited to join X" prompt using `groupName` looked up from the cookie. After callback, post-onboarding resumes the invite.
-  - Acceptance: journey 2 flow works end-to-end with cookie as the carrier.
+- [x] **3.4 `/login` and `/signup` honour the invite** ✅
+  - Done 2026-06-07. Both pages read the cookie and look up the group name to display the "You've been invited to join X" prompt. The form action consumes the cookie (steps 3.5+3.6) to auto-join after sign-in or sign-up.
 
-- [ ] **3.5 `joinGroup` Server Action / API**
-  - Files: `app/api/v1/groups/join/route.ts` and `lib/services/join-group.ts`. Looks up group, checks duplicate via `GroupMember @@unique([userId, groupId])`, creates `GroupMember` row.
-  - Acceptance: rejoining the same group is a no-op (returns existing group), not an error.
+- [x] **3.5 `joinGroup` Server Action / API** ✅
+  - Done 2026-06-07. `lib/services/join-group.ts` — `joinGroupByInviteCode(userId, code)` uses `prisma.groupMember.upsert` on `@@unique([userId, groupId])` for idempotency. Returns `{ id, name }` or `null`. Both `app/api/v1/groups/join/route.ts` (POST) and the action paths call it.
 
-- [ ] **3.6 Post-onboarding invite resolution**
-  - In the onboarding Server Action: after `completeOnboarding` writes the user, if `inviteCode` cookie exists, call `joinGroup` and clear the cookie before redirecting.
-  - Acceptance: new user invited from WhatsApp completes onboarding and lands in the group dashboard in one flow.
+- [x] **3.6 Post-auth invite resolution** ✅
+  - Done 2026-06-07. The cookie is consumed at three points:
+    - `loginAction` — after `signInWithPassword` for onboarded existing users
+    - `signupAction` — sets `redirectTo: /onboarding` (cookie stays for the onboarding step)
+    - `completeOnboardingAction` — after `prisma.user.update` + `supabase.auth.updateUser`, joins the group and clears the cookie
+  - All three paths handle the cookie via the same `getInviteCookie` / `clearInviteCookie` helpers.
 
-- [ ] **3.7 Integration test: invite lifecycle**
-  - Files: `tests/integration/invite-flow.test.ts`. Simulates: anonymous visit → cookie set → "login" → onboarding → join → cookie cleared.
-  - Acceptance: passes against a real Supabase test instance.
+- [ ] **3.7 Integration test: invite lifecycle** ⏭ deferred
+  - File: `tests/integration/invite-flow.test.ts`. Needs Vitest setup (0.13) first.
 
 ---
 

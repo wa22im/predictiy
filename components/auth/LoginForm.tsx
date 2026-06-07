@@ -11,10 +11,8 @@ type State =
   | { kind: "error"; message: string };
 
 export function LoginForm({
-  invited,
   initialError,
 }: {
-  invited?: boolean;
   initialError?: string;
 }) {
   const [email, setEmail] = useState("");
@@ -38,9 +36,9 @@ export function LoginForm({
     startTransition(async () => {
       const result = await loginAction(fd);
       if (result.ok) {
-        // The middleware will redirect authenticated users with no nickname
-        // to /onboarding, and onboarded users to /dashboard.
-        router.push(invited ? "/onboarding" : "/dashboard");
+        // The action returns the correct destination: a joined group if
+        // there was a pending invite, else /dashboard.
+        router.push(result.redirectTo ?? "/dashboard");
         router.refresh();
       } else {
         setState({ kind: "error", message: result.error ?? "Sign in failed" });
@@ -97,16 +95,6 @@ export function LoginForm({
           {state.kind === "submitting" ? "Signing in…" : "Sign In"}
         </button>
       </form>
-
-      <p className="text-sm text-muted-foreground text-center mt-6">
-        Don&apos;t have an account?{" "}
-        <Link
-          href="/signup"
-          className="text-foreground underline underline-offset-2 hover:text-primary"
-        >
-          Sign up
-        </Link>
-      </p>
     </>
   );
 }

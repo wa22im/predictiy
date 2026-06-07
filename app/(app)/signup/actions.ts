@@ -13,12 +13,19 @@ const SignupInput = z.object({
 export type SignupResult = {
   ok: boolean;
   error?: string;
+  redirectTo?: string;
 };
 
 export async function signupAction(
   formData: FormData,
 ): Promise<SignupResult> {
   const { createClient } = await import("@/lib/supabase/server");
+  const { getInviteCookie, clearInviteCookie } = await import(
+    "@/lib/invite-cookie"
+  );
+  const { joinGroupByInviteCode } = await import(
+    "@/lib/services/join-group"
+  );
 
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
@@ -46,9 +53,6 @@ export async function signupAction(
     return { ok: false, error: error.message };
   }
 
-  // If "Confirm email" is enabled in Supabase, `data.session` is null and
-  // the user must click a link before signing in. We expect it disabled for
-  // this dev flow.
   if (!data.session) {
     return {
       ok: false,
@@ -57,5 +61,12 @@ export async function signupAction(
     };
   }
 
-  return { ok: true };
+  // If there's a pending invite, hold off on routing to /onboarding so the
+  // onboarding action can claim the cookie. Otherwise, /onboarding immediately.
+  const inviteCode = await getInviteCookie();
+  if (inviteCode) {
+    return { ok: true, redirectTo: "/onboarding" };
+  }
+
+  return { ok: true, redirectTo: "/onboarding" };
 }
