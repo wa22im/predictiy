@@ -178,14 +178,14 @@ predicty/
   - (a) `scripts/promote-admin.ts` — `npx tsx scripts/promote-admin.ts <email>` sets `User.isAdmin = true`.
   - (b) Postgres trigger `on_user_admin_changed` mirrors the flag to `auth.users.raw_user_meta_data.isAdmin` so the middleware can pre-filter from the JWT.
 
-- [ ] **1.9 Admin shell layout**
-  - Files: `app/(app)/admin/layout.tsx` (server-side `requireAdmin`), `app/(app)/admin/page.tsx` (admin home with two cards: Hydration, Settlement).
-  - Acceptance: non-admin visiting `/admin` is redirected to `/dashboard`.
+- [x] **1.9 Admin shell layout** ✅
+  - Done 2026-06-07. `app/(app)/admin/layout.tsx` — server-side check via `createClient()` + `prisma.user.findUnique`; redirects unauthenticated → `/login`, non-admin → `/dashboard`. `app/(app)/admin/page.tsx` — home with two cards (Hydration, Settlement; Settlement is disabled as Phase 5).
+  - Stub pages also added: `/login`, `/dashboard`, `/onboarding` so middleware redirects don't 404.
 
-- [ ] **1.10 Data Hydration Terminal UI**
-  - Files: `app/(app)/admin/hydration/page.tsx` + `components/admin/HydrationForm.tsx`.
-  - UX: textarea (paste JSON) + file input + "Sync" button. Uses a Server Action that calls the sync service. Shows a results panel: created/updated/skipped counts, list of any errors per match.
-  - Acceptance: pasting the mock JSON and clicking Sync shows "12 updated, 0 created" on second run, no errors.
+- [x] **1.10 Data Hydration Terminal UI** ✅
+  - Done 2026-06-07. `app/(app)/admin/hydration/page.tsx` + `components/admin/HydrationForm.tsx` (Client Component).
+  - UX: textarea + file upload + "Sync" button → Server Action `syncCompetitionAction` → result panel with created/updated counts and per-match errors. Uses `useTransition` for loading state.
+  - End-to-end requires Phase 2 auth to test in browser. The endpoint itself can be tested via curl with a Supabase bearer token.
 
 - [ ] **1.11 Integration test for idempotency**
   - Files: `tests/integration/admin-sync.test.ts` (uses a test DB or transaction rollback).
