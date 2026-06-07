@@ -23,7 +23,7 @@ export default async function MemberHistoryPage({ params }: { params: Params }) 
 
   let history;
   try {
-    history = await getMemberHistory(groupId, userId);
+    history = await getMemberHistory(groupId, userId, user.id);
   } catch {
     notFound();
   }
@@ -57,7 +57,10 @@ export default async function MemberHistoryPage({ params }: { params: Params }) 
             {history.items.map((it) => (
               <li
                 key={it.marketId}
-                className="paper-card p-4 space-y-1"
+                className={cn(
+                  "paper-card p-4 space-y-1",
+                  it.isMasked && "opacity-70",
+                )}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -78,7 +81,10 @@ export default async function MemberHistoryPage({ params }: { params: Params }) 
                   </span>
                 </div>
                 <p className="font-mono text-xs text-muted-foreground">
-                  Pick: {it.predictedValue}
+                  Pick:{" "}
+                  <span className={cn(it.isMasked && "tracking-widest")}>
+                    {it.predictedValue}
+                  </span>
                   {it.correctAnswer && (
                     <>
                       {" · "}Answer:{" "}
