@@ -14,7 +14,9 @@
     "db:generate": "prisma generate",
     "admin:promote": "tsx scripts/promote-admin.ts",
     "setadmin": "tsx scripts/promote-admin.ts",
-    "admin:demote": "tsx scripts/demote-admin.ts"
+    "admin:demote": "tsx scripts/demote-admin.ts",
+    "dev:shift": "tsx scripts/dev-shift-times.ts",
+    "dev:reset-times": "tsx scripts/dev-shift-times.ts reset"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

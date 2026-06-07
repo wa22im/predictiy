@@ -1,7 +1,7 @@
 "use client";
 
 import type { FeedMatch } from "@/lib/services/group-feed";
-import { formatUtc } from "@/lib/time";
+import { formatUtc, formatCountdown } from "@/lib/time";
 import { Countdown } from "./Countdown";
 import { MemberPredictions } from "./MemberPredictions";
 import { PredictionForm } from "./PredictionForm";
@@ -22,6 +22,12 @@ export function MatchCard({
     ? match.homeTeam
     : `${match.homeTeam} vs ${match.awayTeam}`;
 
+  // Display the time-from-now relative to the server clock so the user
+  // can sanity-check the absolute timestamp. Always positive; locked
+  // matches show "Started".
+  const msToKickoff = new Date(match.kickoffTime).getTime() - new Date(serverNow).getTime();
+  const relative = msToKickoff > 0 ? `in ${formatCountdown(msToKickoff)}` : "Started";
+
   return (
     <article className="paper-card p-4 md:p-5 space-y-4">
       <header className="flex items-start justify-between gap-3">
@@ -30,7 +36,7 @@ export function MatchCard({
             {teams}
           </p>
           <p className="text-xs text-muted-foreground font-mono">
-            {formatUtc(match.kickoffTime)}
+            {formatUtc(match.kickoffTime)} · {relative}
           </p>
         </div>
         <div className="text-right shrink-0">
