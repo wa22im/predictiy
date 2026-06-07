@@ -1,26 +1,209 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: oklch(0.94 0.032 86);
+  --foreground: oklch(0.19 0.029 252);
+  --card: oklch(0.985 0.026 92 / 84%);
+  --card-foreground: oklch(0.19 0.029 252);
+  --popover: oklch(0.985 0.026 92 / 90%);
+  --popover-foreground: oklch(0.19 0.029 252);
+  --primary: oklch(0.68 0.165 55);
+  --primary-foreground: oklch(0.19 0.029 252);
+  --accent: oklch(0.78 0.122 174);
+  --accent-foreground: oklch(0.19 0.029 252);
+  --secondary: oklch(0.86 0.055 184 / 80%);
+  --secondary-foreground: oklch(0.19 0.029 252);
+  --muted: oklch(0.88 0.03 84 / 68%);
+  --muted-foreground: oklch(0.42 0.036 252);
+  --border: oklch(0.24 0.035 252 / 18%);
+  --input: oklch(0.24 0.035 252 / 18%);
+  --ring: oklch(0.76 0.14 174);
+  --destructive: oklch(0.58 0.21 31);
+  --destructive-foreground: oklch(0.94 0.034 88);
+  --chart-1: oklch(0.78 0.16 61);
+  --chart-2: oklch(0.77 0.134 178);
+  --chart-3: oklch(0.55 0.2 290);
+  --chart-4: oklch(0.7 0.18 30);
+  --chart-5: oklch(0.72 0.18 145);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.15 0.038 252);
+    --foreground: oklch(0.94 0.034 88);
+    --card: oklch(0.205 0.044 252 / 78%);
+    --card-foreground: oklch(0.94 0.034 88);
+    --popover: oklch(0.205 0.044 252 / 84%);
+    --popover-foreground: oklch(0.94 0.034 88);
+    --primary: oklch(0.78 0.16 61);
+    --primary-foreground: oklch(0.15 0.038 252);
+    --accent: oklch(0.77 0.134 178);
+    --accent-foreground: oklch(0.15 0.038 252);
+    --secondary: oklch(0.25 0.06 244 / 74%);
+    --secondary-foreground: oklch(0.94 0.034 88);
+    --muted: oklch(0.26 0.052 252 / 64%);
+    --muted-foreground: oklch(0.73 0.042 88);
+    --border: oklch(0.98 0.02 88 / 14%);
+    --input: oklch(0.98 0.02 88 / 14%);
+    --ring: oklch(0.8 0.15 178);
+    --destructive: oklch(0.68 0.21 31);
+    --destructive-foreground: oklch(0.15 0.038 252);
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --font-body: var(--font-ibm-plex-sans);
+  --font-display: var(--font-fraunces);
+  --font-mono: var(--font-ibm-plex-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .planner-bg {
+    background-color: var(--background);
+    background-image:
+      radial-gradient(ellipse 60rem 40rem at 12% 18%, oklch(0.78 0.16 61 / 0.20), transparent 60%),
+      radial-gradient(ellipse 55rem 38rem at 88% 12%, oklch(0.77 0.134 178 / 0.18), transparent 60%),
+      radial-gradient(ellipse 70rem 50rem at 50% 100%, oklch(0.55 0.2 290 / 0.18), transparent 65%),
+      linear-gradient(to right, oklch(0.5 0.04 252 / 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(0.5 0.04 252 / 0.07) 1px, transparent 1px);
+    background-size:
+      auto,
+      auto,
+      auto,
+      40px 40px,
+      40px 40px;
+  }
+
+  .glass-panel {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 1.25rem;
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    box-shadow:
+      inset 0 1px 0 oklch(0.98 0.02 88 / 0.08),
+      0 18px 50px -20px oklch(0 0 0 / 0.55);
+  }
+
+  .paper-card {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 0.875rem;
+    box-shadow:
+      inset 0 1px 0 oklch(0.98 0.02 88 / 0.06),
+      0 10px 30px -18px oklch(0 0 0 / 0.55);
+  }
+
+  .blueprint-surface {
+    background-color: var(--secondary);
+    background-image:
+      linear-gradient(to right, oklch(0.5 0.04 252 / 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(0.5 0.04 252 / 0.08) 1px, transparent 1px);
+    background-size:
+      24px 24px,
+      24px 24px;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+  }
+
+  .command-strip {
+    background-image: linear-gradient(
+      90deg,
+      oklch(0.78 0.16 61) 0%,
+      oklch(0.77 0.134 178) 55%,
+      oklch(0.55 0.2 290) 100%
+    );
+    color: oklch(0.15 0.038 252);
+    border-radius: 9999px;
+    box-shadow:
+      inset 0 1px 0 oklch(0.98 0.02 88 / 0.25),
+      0 10px 24px -10px oklch(0.78 0.16 61 / 0.55);
+    transition: transform 200ms ease, box-shadow 200ms ease, filter 200ms ease;
+  }
+
+  .command-strip:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
+    box-shadow:
+      inset 0 1px 0 oklch(0.98 0.02 88 / 0.3),
+      0 16px 32px -12px oklch(0.78 0.16 61 / 0.65);
+  }
+
+  .command-strip:focus-visible {
+    outline: none;
+    box-shadow:
+      inset 0 1px 0 oklch(0.98 0.02 88 / 0.3),
+      0 0 0 3px var(--ring);
+  }
+
+  .micro-label {
+    font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--muted-foreground);
+  }
+
+  .animate-fade-up {
+    animation: fade-up 500ms ease-out both;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 500ms ease-out both;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

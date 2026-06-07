@@ -103,10 +103,10 @@ predicty/
 - [x] **0.4 Add core dependencies** ✅
   - Done 2026-06-07. `@supabase/supabase-js ^2.107.0`, `@supabase/ssr ^0.10.3`, `@prisma/client ^7.8.0`, `zod ^4.4.3`, `nanoid ^5.1.11` in deps. `prisma ^7.8.0`, `vitest ^4.1.8`, `@vitest/coverage-v8 ^4.1.8`, `tsx ^4.22.4` in devDeps. Next.js pinned to 15.5.19, React pinned to 19.2.7 (reverted from 16/19.2.4 in 0.3).
 
-- [ ] **0.5 Apply the design system in `globals.css` and `layout.tsx`**
-  - Goal: replace boilerplate `globals.css` with the war-room tokens from `DESIGN.md`. Wire Fraunces (display) + IBM Plex Sans (body) + IBM Plex Mono (code).
-  - Files: `app/globals.css`, `app/layout.tsx`, `app/page.tsx` (replace with marketing landing using the design system).
-  - Acceptance: landing page renders dark, with amber command button and glass panel, no Geist font, no `next.svg`/`vercel.svg` boilerplate.
+- [x] **0.5 Apply the design system in `globals.css` and `layout.tsx`** ✅
+  - Done 2026-06-07. `app/globals.css` (209 lines): full oklch token set for light+dark, @theme inline bridge, 6 utility classes, keyframes. `app/layout.tsx`: Fraunces/IBM Plex Sans/IBM Plex Mono instead of Geist. `app/page.tsx`: war-room marketing landing with planner-bg, glass-panel, command-strip CTA.
+  - **Note:** DESIGN.md was lost during the folder move and had to be recovered. Double-check file presence after folder operations.
+  - Mrsreview: **PASS** — all 9 ISC criteria verified.
 
 - [ ] **0.6 Provision Supabase locally**
   - `npx supabase init` → `npx supabase start` (Docker required).
