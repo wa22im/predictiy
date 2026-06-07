@@ -96,13 +96,12 @@ predicty/
 - [x] **0.2 Git branch isolation + .gitignore polish** ✅
   - Done 2026-06-07. On `feat/init-foundation`. `.gitignore` extended for supabase/playwright/prisma local artifacts. Committed as `01309f8`.
 
-- [ ] **0.3 Audit Next.js 16 docs in `node_modules/next/dist/docs/`**
-  - Goal: note breaking changes affecting: App Router conventions, Server Actions, Route Handlers, middleware, cookies/headers APIs, params/searchParams shapes, `revalidatePath`/`revalidateTag`.
-  - Output: a short note appended to `DESIGN.md` or a new `NEXTJS16_NOTES.md`.
-  - Acceptance: file exists, lists the 5–10 most relevant gotchas for our use.
+- [x] **0.3 Audit + revert to Next.js 15 stable backport** ✅
+  - Done 2026-06-07. Next.js reverted from 16.2.7 → **15.5.19** (`backport` tag). React bumped 19.2.4 → **19.2.7** (latest stable). `AGENTS.md` warning replaced. `NEXTJS16_NOTES.md` written documenting the audit and the reversion decision.
+  - Outcome: Next.js 15.5.19 is the version my training knows — no breaking changes expected.
 
 - [x] **0.4 Add core dependencies** ✅
-  - Done 2026-06-07. `@supabase/supabase-js ^2.107.0`, `@supabase/ssr ^0.10.3`, `@prisma/client ^7.8.0`, `zod ^4.4.3`, `nanoid ^5.1.11` in deps. `prisma ^7.8.0`, `vitest ^4.1.8`, `@vitest/coverage-v8 ^4.1.8`, `tsx ^4.22.4` in devDeps.
+  - Done 2026-06-07. `@supabase/supabase-js ^2.107.0`, `@supabase/ssr ^0.10.3`, `@prisma/client ^7.8.0`, `zod ^4.4.3`, `nanoid ^5.1.11` in deps. `prisma ^7.8.0`, `vitest ^4.1.8`, `@vitest/coverage-v8 ^4.1.8`, `tsx ^4.22.4` in devDeps. Next.js pinned to 15.5.19, React pinned to 19.2.7 (reverted from 16/19.2.4 in 0.3).
 
 - [ ] **0.5 Apply the design system in `globals.css` and `layout.tsx`**
   - Goal: replace boilerplate `globals.css` with the war-room tokens from `DESIGN.md`. Wire Fraunces (display) + IBM Plex Sans (body) + IBM Plex Mono (code).

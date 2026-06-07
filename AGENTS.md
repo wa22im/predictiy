@@ -1,5 +1,7 @@
 <!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+# Next.js version
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+This project uses **Next.js 15.5.19** (stable backport) and **React 19.2.7** (latest stable). These are the versions your training data knows — no breaking changes expected.
+
+If upgrading Next.js in the future, check `NEXTJS16_NOTES.md` first for known gotchas.
 <!-- END:nextjs-agent-rules -->
