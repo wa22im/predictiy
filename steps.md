@@ -143,9 +143,16 @@ predicty/
   - Files: `vitest.config.ts`, `tests/unit/setup.ts`, sample `tests/unit/smoke.test.ts`.
   - Acceptance: `npm test` runs and passes.
 
-- [ ] **0.14 Lockstep script for `supabase + prisma`**
-  - `package.json` script: `db:reset = supabase db reset && prisma migrate deploy && prisma db seed`.
-  - Acceptance: from a clean clone, one command takes you to a seeded DB.
+- [x] **0.14 Lockstep script for db setup** ✅
+  - Done 2026-06-07. Seed file at `prisma/seed.ts` (idempotent — uses upserts, reads from the JSON fixture). Seed command configured in `prisma.config.ts → migrations.seed` (Prisma 7 doesn't read it from `package.json`).
+  - Scripts added to `package.json`:
+    - `db:migrate` — `prisma migrate deploy` (apply pending)
+    - `db:reset` — `prisma migrate reset --force` (destructive, dev only)
+    - `db:seed` — `prisma db seed`
+    - `db:studio` — `prisma studio` (browse data)
+    - `db:generate` — `prisma generate` (regenerate client)
+    - `admin:promote` — `tsx scripts/promote-admin.ts`
+  - Cloud-Supabase note: spec's `supabase db reset` becomes `prisma migrate reset --force`. For non-destructive reapply, use `db:migrate`.
 
 ---
 
