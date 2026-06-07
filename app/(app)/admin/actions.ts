@@ -1,9 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { requireAdmin, GuardError } from "@/lib/auth/guards";
-import { syncCompetition } from "@/lib/services/competition-sync";
-import { CompetitionSyncInput } from "@/lib/validation/admin";
 import type { SyncResult } from "@/lib/services/competition-sync";
 
 export type SyncActionResult = {
@@ -16,6 +12,10 @@ export type SyncActionResult = {
 export async function syncCompetitionAction(
   json: string,
 ): Promise<SyncActionResult> {
+  const { requireAdmin, GuardError } = await import("@/lib/auth/guards");
+  const { syncCompetition } = await import("@/lib/services/competition-sync");
+  const { CompetitionSyncInput } = await import("@/lib/validation/admin");
+
   try {
     await requireAdmin();
   } catch (e) {
@@ -39,7 +39,6 @@ export async function syncCompetitionAction(
 
   try {
     const result = await syncCompetition(parsed.data);
-    revalidatePath("/admin/hydration");
     return { ok: true, result };
   } catch (e) {
     return { ok: false, error: "SYNC_FAILED", issues: (e as Error).message };

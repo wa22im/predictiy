@@ -195,48 +195,35 @@ predicty/
 
 ## Phase 2 — Auth, Profiles & Group Creation (spec §1.3, §4.1, §5 Phase 2)
 
-- [ ] **2.1 Marketing landing page**
-  - Files: `app/(marketing)/page.tsx`. Hero with brand, "Sign Up / Log In" button → `/login`.
-  - Acceptance: unauthenticated visit renders the landing.
+- [x] **2.1 Marketing landing page** ✅
+  - Done 2026-06-07. The existing `app/page.tsx` war-room landing already has the CTA → `/login`. (No separate `(marketing)` route group needed; route groups are for layout differences only.)
 
-- [ ] **2.2 `/login` page — magic link**
-  - Files: `app/(auth)/login/page.tsx`. Form posts to a Server Action that calls `supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: APP_URL + '/auth/callback' } })`.
-  - Acceptance: submitting a valid email shows "Check your inbox"; invalid email shows validation error.
+- [x] **2.2 `/login` page — magic link** ✅
+  - Done 2026-06-07. `app/(app)/login/page.tsx` + `actions.ts` + `components/auth/LoginForm.tsx`. Server Action `loginAction` calls `signInWithOtp` with `emailRedirectTo: ${APP_URL}/auth/callback`. Zod-validated email. "Check your inbox" success state.
 
-- [ ] **2.3 Auth callback handler**
-  - Files: `app/(auth)/auth/callback/route.ts` (or Server Component page). Exchanges the auth code for a session, then redirects to `/onboarding` (first time) or `/dashboard` (returning).
-  - Acceptance: clicking the magic link lands the user on the right screen.
+- [x] **2.3 Auth callback handler** ✅
+  - Done 2026-06-07. `app/(app)/auth/callback/route.ts` — exchanges the code for a session, checks `User.nickname` to decide between `/onboarding` (first time) and the requested `next` URL (default `/dashboard`).
 
-- [ ] **2.4 Onboarding wizard**
-  - Files: `app/(app)/onboarding/page.tsx`, `components/auth/OnboardingForm.tsx`.
-  - UX: nickname (unique check via API) + emoji grid (preset set: ⚽🍕⚡🐉🎯🦄🔥💎🌊🍿).
-  - Server Action: `completeOnboarding({ nickname, emoji })` writes to `User` (which is auto-created in a DB trigger on first auth — see 2.5).
-  - Acceptance: a fresh auth user cannot reach `/dashboard` until onboarding is done; refreshing `/onboarding` after submit goes to `/dashboard`.
+- [x] **2.4 Onboarding wizard** ✅
+  - Done 2026-06-07. `app/(app)/onboarding/page.tsx` + `actions.ts` + `components/auth/OnboardingForm.tsx`. Nickname (2-24 chars, alphanumeric+underscore, unique check) + 10-emoji grid. Writes to DB + sync auth metadata. Redirects to `/dashboard` on success.
 
-- [ ] **2.5 Auto-provision `User` row on first auth**
-  - Files: `supabase/migrations/<ts>_handle_new_user.sql` — Postgres function + trigger on `auth.users` insert that inserts a corresponding `public.User` row.
-  - Acceptance: first login creates exactly one `User`; second login does not duplicate.
+- [x] **2.5 Auto-provision `User` row on first auth** ✅
+  - Done 2026-06-07. Postgres trigger `on_auth_user_created` on `auth.users` inserts a `public.User` row with the same UUID, empty nickname, default ⚽ emoji, `isAdmin=false`. ON CONFLICT (id) DO NOTHING for idempotency.
 
-- [ ] **2.6 Dashboard empty state**
-  - Files: `app/(app)/dashboard/page.tsx`. Server component fetches the user's `GroupMember` rows. If empty → "You aren't in any pools yet!" + "Create a Tournament Pool" button. If non-empty → list of group cards.
-  - Acceptance: matches Journey 1 step 4.
+- [x] **2.6 Dashboard empty state** ✅
+  - Done 2026-06-07. `app/(app)/dashboard/page.tsx` — server-side fetches user's GroupMembers + all Competitions. Empty state: glass panel with "You aren't in any pools yet!" + Create button. Populated state: card grid of group tiles.
 
-- [ ] **2.7 Group creation form**
-  - Files: `components/groups/CreateGroupDialog.tsx` (modal), `app/(app)/dashboard/actions.ts` (Server Action `createGroup`).
-  - Fields: `name`, `competitionId` (dropdown of existing competitions). Server Action validates, generates `inviteCode`, writes `Group` with `scoringConfig` from default factory.
-  - Acceptance: refreshing dashboard shows the new group card.
+- [x] **2.7 Group creation form** ✅
+  - Done 2026-06-07. `app/(app)/dashboard/actions.ts` + `components/groups/CreatePoolButton.tsx`. Modal with name + competition dropdown. Server Action generates 10-char invite code, creates Group with `DEFAULT_SCORING_CONFIG`, and auto-adds creator as member. Redirects to `/groups/[id]`.
 
-- [ ] **2.8 Group dashboard shell**
-  - Files: `app/(app)/groups/[groupId]/page.tsx`, `app/(app)/groups/[groupId]/layout.tsx`. Tabs: Matches · Leaderboard · Members. Top banner: invite link copy button.
-  - Acceptance: navigating to `/groups/<id>` renders the shell; non-members are denied (see 2.9).
+- [x] **2.8 Group dashboard shell** ✅
+  - Done 2026-06-07. `app/(app)/groups/[groupId]/page.tsx` — group title, competition, member count, invite banner, three cards (Matches / Leaderboard / Members roster). Inline membership check redirects non-members to `/dashboard`.
 
-- [ ] **2.9 Group membership guard**
-  - Files: `lib/auth/guards.ts` adds `requireGroupMember(groupId)`. Used in the group layout and in the feed/markets/save APIs.
-  - Acceptance: a logged-in user who is not a member of `groupId` is redirected to `/dashboard` (or gets `403` from API).
+- [x] **2.9 Group membership guard** ✅
+  - Done 2026-06-07. `lib/auth/guards.ts` adds `requireGroupMember(groupId)`. Uses `prisma.groupMember.findUnique` with the `(userId, groupId)` unique key. Throws `GuardError(401|403)`. Used in group layout and feed/save APIs (Phase 4).
 
-- [ ] **2.10 Invite link copy UI**
-  - Files: `components/groups/InviteBanner.tsx`. Generates `${APP_URL}/join/${group.inviteCode}` and uses `navigator.clipboard.writeText`.
-  - Acceptance: clicking "Copy" puts the exact URL in the clipboard; toast confirms.
+- [x] **2.10 Invite link copy UI** ✅
+  - Done 2026-06-07. `components/groups/InviteBanner.tsx` — generates `${NEXT_PUBLIC_APP_URL}/join/${inviteCode}`, uses `navigator.clipboard.writeText`, shows "✓ Copied" for 2s.
 
 ---
 
