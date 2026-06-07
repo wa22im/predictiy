@@ -90,27 +90,22 @@ predicty/
 
 ## Phase 0 — Project Foundation
 
-- [ ] **0.1 Move `frontend/*` to repo root**
-  - Goal: `predicty/` becomes the Next.js app directly. `frontend/` is gone.
-  - Steps: `mv frontend/* frontend/.[!.]* .` → `rm -rf frontend ./.git` (re-init git at root) → `rm frontend/steps.ms` (typo, empty).
-  - Acceptance: `npm run dev` from repo root works; no `frontend/` dir; `AGENTS.md` and `DESIGN.md` exist at root.
-  - Note: `frontend/CLAUDE.md` (11 bytes) is likely a placeholder; bring it to root or drop it — your call.
+- [x] **0.1 Move `frontend/*` to repo root** ✅
+  - Done 2026-06-07. `predicty/` is now the Next.js app directly. `frontend/` and `backend/` removed. `.git` re-initialized. `CLAUDE.md` (=`@AGENTS.md` pointer) kept.
 
-- [ ] **0.2 Initialize git at repo root, commit clean state**
-  - Goal: single repo at `predicty/`. (The existing `frontend/.git` was discarded in 0.1.)
-  - Files: `.gitignore` (cover `node_modules`, `.next`, `.env*`, `supabase/.branches`, `coverage/`).
-  - Acceptance: `git status` shows a clean tree, single initial commit.
+- [ ] **0.2 Git branch isolation + .gitignore polish**
+  - Goal: leave `main` untouched, work on a feature branch.
+  - Remaining: (a) `git switch -c feat/init-foundation`; (b) append `supabase/.branches`, `playwright-report/`, `test-results/`, `prisma/migrations/dev.db*` to `.gitignore`; (c) commit the changes.
+  - Files touched: `.gitignore`.
+  - Acceptance: `git status` clean, current branch is `feat/init-foundation`.
 
 - [ ] **0.3 Audit Next.js 16 docs in `node_modules/next/dist/docs/`**
   - Goal: note breaking changes affecting: App Router conventions, Server Actions, Route Handlers, middleware, cookies/headers APIs, params/searchParams shapes, `revalidatePath`/`revalidateTag`.
   - Output: a short note appended to `DESIGN.md` or a new `NEXTJS16_NOTES.md`.
   - Acceptance: file exists, lists the 5–10 most relevant gotchas for our use.
 
-- [ ] **0.4 Add core dependencies**
-  - `npm i @supabase/supabase-js @supabase/ssr @prisma/client zod nanoid`
-  - `npm i -D prisma vitest @vitest/coverage-v8 @types/node tsx`
-  - Files: `package.json`, `package-lock.json`.
-  - Acceptance: `npm run build` still passes.
+- [x] **0.4 Add core dependencies** ✅
+  - Done 2026-06-07. `@supabase/supabase-js ^2.107.0`, `@supabase/ssr ^0.10.3`, `@prisma/client ^7.8.0`, `zod ^4.4.3`, `nanoid ^5.1.11` in deps. `prisma ^7.8.0`, `vitest ^4.1.8`, `@vitest/coverage-v8 ^4.1.8`, `tsx ^4.22.4` in devDeps.
 
 - [ ] **0.5 Apply the design system in `globals.css` and `layout.tsx`**
   - Goal: replace boilerplate `globals.css` with the war-room tokens from `DESIGN.md`. Wire Fraunces (display) + IBM Plex Sans (body) + IBM Plex Mono (code).

@@ -39,3 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# supabase
+supabase/.branches
+supabase/.temp
+supabase/.env
+
+# playwright
+/playwright-report/
+/test-results/
+/playwright/.cache/
+
+# prisma local dev artifacts
+/prisma/dev.db*
+/prisma/migrations/dev.db*
