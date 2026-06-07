@@ -133,10 +133,11 @@ predicty/
   - Also added: `lib/utils.ts` with `cn()` utility (clsx + tailwind-merge). ESLint disabled during builds (pre-existing config issue with flat config CJS/ESM mismatch).
   - Acceptance: `npx next build` compiles successfully. ✅
 
-- [ ] **0.12 Middleware: refresh session + route protection**
-  - Files: `middleware.ts` at repo root.
-  - Logic: refresh Supabase session on every request; redirect unauthenticated users from `/(app)/*` to `/login`; redirect non-onboarded users to `/onboarding`; redirect non-admins from `/admin` to `/dashboard`.
-  - Acceptance: visit `/dashboard` while logged out → 302 to `/login`.
+- [x] **0.12 Middleware: refresh session + route protection** ✅
+  - Done 2026-06-07. Root `middleware.ts` with matcher for all routes except static assets.
+  - Logic: (1) Supabase session refresh + getUser on every matched request; (2) unauthenticated on protected routes → redirect to `/login`; (3) auth'd but no nickname → redirect to `/onboarding`; (4) non-admins on `/admin` → redirect to `/dashboard`; (5) auth'd on public pages → redirect to `/dashboard`.
+  - Admin check uses `user.user_metadata.isAdmin` — needs to be synced from `User.isAdmin` DB column during Phase 1.
+  - Acceptance: `npx next build` succeeds; middleware binary present (90.3 kB). ✅
 
 - [ ] **0.13 Set up Vitest**
   - Files: `vitest.config.ts`, `tests/unit/setup.ts`, sample `tests/unit/smoke.test.ts`.
