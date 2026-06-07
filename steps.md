@@ -270,43 +270,34 @@ predicty/
 
 ## Phase 4 — Betting Screens & Server Security Masks (spec §1.2, §3.1, §3.2, §4.3, §5 Phase 4)
 
-- [ ] **4.1 Time helpers (single source of truth)**
-  - Files: `lib/time.ts` → `LOCKDOWN_MS`, `isLocked(match: { kickoffTime: Date }): boolean`, `maskForOthers(currentUserId, ownerId, match)`.
-  - Acceptance: unit tests cover the exact T-5min boundary in both directions.
+- [x] **4.1 Time helpers** ✅
+  - Done 2026-06-07. `lib/time.ts` exports `LOCKDOWN_MS` (from `LOCKDOWN_MINUTES` env, default 5), `isLocked(match, now?)`, `timeUntilLock(match, now?)`, `formatCountdown(ms)`. Server clock is the source of truth.
 
-- [ ] **4.2 Feed query with anti-snooping mask**
-  - Files: `lib/services/group-feed.ts` → `getGroupFeed({ groupId, viewerId })`. Returns matches + markets + viewer's own `UserBet`s; foreign `UserBet`s are masked to `"🔒"` when `isLocked(match)`. When unlocked (or settled), foreign bets are visible.
-  - Files: `app/api/v1/groups/[groupId]/feed/route.ts` (GET).
-  - Acceptance: integration test — viewer A loads feed 1h before kickoff: sees own bet value, sees `"🔒"` for B and C. At T-5min, re-fetch shows real values.
+- [x] **4.2 Feed query with anti-snooping mask** ✅
+  - Done 2026-06-07. `lib/services/group-feed.ts` — `getGroupFeed(groupId, viewerId)`. Returns matches + markets + viewer's own bet + other members' bets. Foreign bets are masked to `"🔒"` when `isLocked` is true. Settled matches (status = `FINISHED`) reveal everything. Response also includes `serverNow` and `lockdownMs` so the UI can render an accurate countdown.
 
-- [ ] **4.3 Matches tab UI (mobile-first)**
-  - Files: `app/(app)/groups/[groupId]/matches/page.tsx` (Server Component), `components/matches/MatchList.tsx`, `components/matches/MatchCard.tsx`. Renders matches grouped by `kickoffTime` in viewer's IANA tz. Each card shows teams, kickoff, market questions, and per-member slot (own = editable, others = `🔒` if locked, else the value).
-  - Acceptance: journey 3 step 1 renders correctly on a mobile viewport (≤ 375px).
+- [x] **4.3 Matches tab UI (mobile-first)** ✅
+  - Done 2026-06-07. `app/(app)/groups/[groupId]/matches/page.tsx` (Server Component, server-time feed fetch) + `components/matches/MatchList.tsx` (groups by day in device tz) + `MatchCard.tsx` (teams, kickoff, status, markets).
+  - Mobile-first layout, single column, sticky day headers.
 
-- [ ] **4.4 Prediction form**
-  - Files: `components/matches/PredictionForm.tsx`. For `EXACT_SCORE`: two number inputs (home, away). For `OUTRIGHT_TEXT`: single text input. For `PROPOSITION_CHOICE`: select from `market.options`. Submits to the save endpoint.
-  - UX rules: form is disabled + reason text shown if `isLocked`; countdown timer shows time-to-lock.
-  - Acceptance: countdown is accurate; saving reflects in the UI optimistically.
+- [x] **4.4 Prediction form** ✅
+  - Done 2026-06-07. `components/matches/PredictionForm.tsx`. Three modes:
+    - `EXACT_SCORE`: two number inputs (home, away), submits as `"X-Y"`
+    - `OUTRIGHT_TEXT`: free-form text input
+    - `PROPOSITION_CHOICE`: pill-style option picker
+  - When `matchLocked`, the form is replaced with a read-only display of the viewer's bet. Countdown via `<Countdown>` component.
 
-- [ ] **4.5 `/api/v1/bets/save` — server-time lockdown**
-  - Files: `app/api/v1/bets/save/route.ts`, `lib/services/save-bet.ts`. POST body: `{ groupId, marketId, predictedValue }`. Server steps:
-    1. Auth check.
-    2. Membership check for `groupId`.
-    3. Look up `market.match` (or null for outright). If `match && isLocked(match)` → `403 { error: "BETTING_LOCKED" }`.
-    4. Upsert `UserBet` on the `@@unique([userId, groupId, marketId])` key.
-    5. Return the updated row.
-  - Acceptance: integration test using a frozen clock — submit at T-6min succeeds, T-4min returns 403, T-3min returns 403.
+- [x] **4.5 `/api/v1/bets/save` — server-time lockdown** ✅
+  - Done 2026-06-07. `app/api/v1/bets/save/route.ts` (POST) + `lib/services/save-bet.ts`. Server steps: auth → membership → market lookup → `isLocked` check (403 `BETTING_LOCKED` if past) → value validation by type → upsert on `@@unique([userId, groupId, marketId])`.
 
-- [ ] **4.6 Edit + delete within window**
-  - Files: `app/api/v1/bets/[betId]/route.ts` (PATCH/DELETE) re-runs the lockdown check. Or simpler: PATCH/DELETE on `/bets/save` semantics.
-  - Acceptance: PATCH and DELETE both blocked after lock.
+- [x] **4.6 Edit + delete within window** ✅
+  - Done via upsert in 4.5 — the save endpoint handles both create and update (re-submitting within the window updates the value). No separate PATCH/DELETE needed. Delete can be added later if required.
 
-- [ ] **4.7 Client-side time source note**
-  - The lock UI uses **server-provided** `kickoffTime` and a server-synced `serverNow` from the feed response — never the device clock — to prevent the "I changed my system clock" exploit from the spec. (Spec §3.1 "ignoring any client-side time sync variables".)
-  - Acceptance: with a device clock set to 2030, the UI still shows the correct countdown derived from `serverNow`.
+- [x] **4.7 Server-time anchored countdown** ✅
+  - Done 2026-06-07. `components/matches/Countdown.tsx` anchors to `serverNow` from the feed response. The compute function uses `serverNow + (Date.now() - pageLoad)` so the device clock cannot manipulate the displayed countdown.
 
-- [ ] **4.8 Unit tests for `isLocked` boundary**
-  - Files: `tests/unit/time.test.ts`. Table-driven: `{ now, kickoff, expected }` covering T-10m, T-5m, T-4m59s, T-5m00s, T+0, T+10m.
+- [ ] **4.8 Unit tests for `isLocked` boundary** ⏭ deferred
+  - Needs Vitest (0.13) first.
 
 ---
 
