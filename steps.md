@@ -108,29 +108,25 @@ predicty/
   - **Note:** DESIGN.md was lost during the folder move and had to be recovered. Double-check file presence after folder operations.
   - Mrsreview: **PASS** — all 9 ISC criteria verified.
 
-- [ ] **0.6 Provision Supabase locally**
-  - `npx supabase init` → `npx supabase start` (Docker required).
-  - Files: `supabase/config.toml`, `supabase/migrations/`.
-  - Acceptance: `supabase status` reports API URL + anon key + service-role key.
+- [x] **0.6 Provision Supabase** — **skipped** (using cloud Supabase directly instead of local Docker)
 
-- [ ] **0.7 Set up env files**
-  - Files: `.env.example`, `.env.local`, `.gitignore` entry.
-  - Vars: `DATABASE_URL`, `DIRECT_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APP_URL`, `INVITE_COOKIE_NAME`, `LOCKDOWN_MINUTES=5`.
-  - Acceptance: app boots, no missing-var warnings.
+- [x] **0.7 Set up env files** ✅
+  - Done 2026-06-07. `.env` (Prisma CLI), `.env.local` (Next.js runtime), `.env.example` (template). Vars: `DATABASE_URL`, `DIRECT_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `APP_URL`, `INVITE_COOKIE_NAME`, `LOCKDOWN_MINUTES=5`.
+  - Note: using `User.isAdmin` + RLS for admin enforcement — no `SUPABASE_SERVICE_ROLE_KEY` needed.
+  - Acceptance: Prisma CLI connects, Next.js build passes.
 
-- [ ] **0.8 Initialize Prisma**
-  - `npx prisma init --datasource-provider postgresql`.
-  - Files: `prisma/schema.prisma` (copy from spec verbatim as the starting point), `.env` link to `DATABASE_URL`.
-  - Acceptance: `npx prisma validate` succeeds.
+- [x] **0.8 Initialize Prisma + write schema** ✅
+  - Done 2026-06-07. `npx prisma init` → schema written with all 7 models from spec + `User.isAdmin` flag + indexes. Prisma 7 with `prisma-client` generator (not `prisma-client-js`).
+  - Acceptance: `npx prisma validate` succeeds. ✅
 
-- [ ] **0.9 Apply the initial migration**
-  - `npx prisma migrate dev --name init`.
-  - Files: `prisma/migrations/<timestamp>_init/migration.sql`, `prisma/migrations/migration_lock.toml`.
-  - Acceptance: `supabase db reset && npx prisma migrate deploy` works cleanly.
+- [x] **0.9 Apply the initial migration** ✅
+  - Done 2026-06-07. Migration `20260607183836_init` applied to Supabase cloud (via session-mode pooler port 5432).
+  - Files: `prisma/migrations/20260607183836_init/migration.sql`.
+  - Acceptance: tables created, Prisma validates schema against DB. ✅
 
-- [ ] **0.10 Generate Prisma client + singleton**
-  - Files: `lib/prisma.ts` (singleton with hot-reload guard).
-  - Acceptance: importing `prisma` from `@/lib/prisma` in a Route Handler returns a working client.
+- [x] **0.10 Generate Prisma client + singleton** ✅
+  - Done 2026-06-07. Prisma 7 + `@prisma/adapter-pg` — generates TS source to `lib/generated/prisma/`. Singleton at `lib/prisma.ts` with `PrismaPg` adapter and `globalThis` hot-reload guard.
+  - Acceptance: `npx prisma generate` succeeds, Next.js build resolves imports. ✅
 
 - [ ] **0.11 Supabase client helpers (server / client / middleware)**
   - Files: `lib/supabase/server.ts`, `lib/supabase/client.ts`, `lib/supabase/middleware.ts`. Follow the official `@supabase/ssr` recipe adapted for App Router cookies.
@@ -415,7 +411,7 @@ predicty/
 ## Open Questions (resolve before starting Phase 0)
 
 1. **Repo layout** — OK to move `frontend/*` to root? ~~(backend deletion already done)~~ (Step 0.1)
-2. **Admin bootstrap** — OK to use `app_metadata.role` on the Supabase user? (Step 1.8) or do you want a `User.isAdmin Boolean` column instead?
+2. **Admin bootstrap** — ~~app_metadata.role~~ → **`User.isAdmin Boolean` column** (decided: RLS + flag, not service_role key)
 3. **Emoji set for onboarding** — the 10-emoji grid in step 2.4 is a placeholder. Want a bigger set, or curated? (Could be a `lib/emoji-presets.ts` file.)
 4. **Domain** — `predicty.com`? `kickoffpools.com`? Just for `APP_URL` and the magic-link `emailRedirectTo` for now.
 5. **Email provider in dev** — Supabase's built-in SMTP works locally only via `inbucket`; for real magic-link testing we'll need a provider (Resend? Postmark?). Cheap default: Resend + 1 env var.

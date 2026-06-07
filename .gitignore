@@ -53,3 +53,5 @@ supabase/.env
 # prisma local dev artifacts
 /prisma/dev.db*
 /prisma/migrations/dev.db*
+
+/app/generated/prisma

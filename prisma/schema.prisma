@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String        @id @default(uuid())
+  email     String        @unique
+  nickname  String
+  emoji     String
+  isAdmin   Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  memberships GroupMember[]
+  bets        UserBet[]
+}
+
+model Competition {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  matches   Match[]
+  groups    Group[]
+}
+
+model Match {
+  id            String      @id @default(uuid())
+  competitionId String
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  apiMatchId    String      @unique
+  homeTeam      String
+  awayTeam      String
+  kickoffTime   DateTime
+  stage         String
+  status        String      @default("SCHEDULED")
+  markets       BetMarket[]
+
+  @@index([competitionId])
+  @@index([kickoffTime])
+}
+
+model Group {
+  id            String        @id @default(uuid())
+  competitionId String
+  competition   Competition   @relation(fields: [competitionId], references: [id])
+  name          String
+  inviteCode    String        @unique
+  scoringConfig Json
+  createdAt     DateTime      @default(now())
+  members       GroupMember[]
+  bets          UserBet[]
+}
+
+model GroupMember {
+  id        String   @id @default(uuid())
+  userId    String
+  groupId   String
+  joinedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+}
+
+model BetMarket {
+  id            String    @id @default(uuid())
+  matchId       String?
+  match         Match?    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  type          String
+  title         String
+  correctAnswer String?
+  isSettled     Boolean   @default(false)
+  userBets      UserBet[]
+}
+
+model UserBet {
+  id             String    @id @default(uuid())
+  userId         String
+  groupId        String
+  marketId       String
+  predictedValue String
+  pointsAwarded  Int?
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group          Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  market         BetMarket @relation(fields: [marketId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId, marketId])
+  @@index([groupId])
+  @@index([marketId])
+}
