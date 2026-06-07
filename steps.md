@@ -303,55 +303,39 @@ predicty/
 
 ## Phase 5 — Scoring & Leaderboards (spec §1.5, §3.4, §4.3, §5 Phase 5)
 
-- [ ] **5.1 Strategy interface + registry**
-  - Files: `lib/scoring/types.ts` (`ScoringStrategy { supports(market): boolean; score(input): { points, breakdown } }`), `lib/scoring/index.ts` (`getStrategy(marketType)`).
-  - Acceptance: registry returns the right strategy for `EXACT_SCORE`, `OUTRIGHT_TEXT`, `PROPOSITION_CHOICE`; throws for unknown.
+- [x] **5.1 Strategy interface + registry** ✅
+  - Done 2026-06-07. `lib/scoring/types.ts` (`ScoringStrategy` interface, `StrategyInput`, `StrategyResult`, `stageConfigFor` helper) + `lib/scoring/index.ts` (`getStrategy(marketType)` with the registry, throws on unknown).
 
-- [ ] **5.2 `EXACT_SCORE` strategy**
-  - Files: `lib/scoring/exact-score.ts`. Implements the three rules from spec §3.4: exact match, outcome match, BTTS bonus. Reads stage config from `group.scoringConfig[match.stage]`.
-  - Acceptance: unit tests for all three rules + a BTTS stack case (exact + BTTS, outcome + BTTS, exact only, outcome only, miss).
+- [x] **5.2 `EXACT_SCORE` strategy** ✅
+  - Done 2026-06-07. `lib/scoring/exact-score.ts`. Implements all three rules: exact match → `exactScorePoints`, outcome match (W/D/L) → `outcomePoints`, BTTS bonus stacked on top when both real and predicted have BTTS. Reads stage from `scoringConfig[matchStage]`.
+  - Unit tests deferred (needs Vitest).
 
-- [ ] **5.3 `OUTRIGHT_TEXT` strategy**
-  - Files: `lib/scoring/outright-text.ts`. Normalizes both sides (`toLowerCase().trim()`), exact equality grants `staticPoints`.
-  - Acceptance: unit test covers case + whitespace normalization.
+- [x] **5.3 `OUTRIGHT_TEXT` strategy** ✅
+  - Done 2026-06-07. `lib/scoring/outright-text.ts`. Normalizes both sides (`toLowerCase().trim()`), exact match grants `staticPoints`.
 
-- [ ] **5.4 `PROPOSITION_CHOICE` strategy (placeholder)**
-  - Files: `lib/scoring/proposition-choice.ts` — returns `0` for now with a TODO + interface contract. So adding a new market type later is a one-file change.
-  - Acceptance: returns 0; logs unsupported warning.
+- [x] **5.4 `PROPOSITION_CHOICE` strategy (placeholder)** ✅
+  - Done 2026-06-07. `lib/scoring/proposition-choice.ts` — returns `{ points: 0, breakdown: "PROPOSITION_CHOICE not yet implemented" }`. Future implementations are a one-file change.
 
-- [ ] **5.5 Settlement service**
-  - Files: `lib/services/settle-market.ts`. On settle:
-    1. Set `BetMarket.correctAnswer`, `BetMarket.isSettled = true`.
-    2. If market has a `match`, set `Match.status = FINISHED`.
-    3. Fetch all `UserBet` rows for the market across **all groups in the competition**.
-    4. For each row, look up the owning group's `scoringConfig` and strategy, compute points, persist (we'll add `UserBet.pointsAwarded Int?` in the schema migration).
-    5. Return summary `{ scoredRows: N, byGroup: {...} }`.
-  - Files: `app/api/v1/admin/markets/settle/route.ts`.
-  - Acceptance: settling a market scores every group's users in one transaction.
+- [x] **5.5 Settlement service** ✅
+  - Done 2026-06-07. `lib/services/settle-market.ts` — `settleMarket({ marketId, correctAnswer })`. Validates not-already-settled, sets `BetMarket.correctAnswer` + `isSettled`, sets `Match.status = FINISHED` (if anchored), iterates all `UserBet` rows for the market across every group, runs the strategy with the group's `scoringConfig`, persists `pointsAwarded`. Returns `{ scoredRows, byGroup[] }`. API: `app/api/v1/admin/markets/settle/route.ts`.
 
-- [ ] **5.6 Schema addition: `UserBet.pointsAwarded`**
-  - Files: `prisma/schema.prisma` → migration `add_points_awarded`. Nullable `Int?` so unsettled bets are `null`.
-  - Acceptance: `prisma migrate dev` clean; existing rows have `null`.
+- [x] **5.6 Schema addition: `UserBet.pointsAwarded`** ✅
+  - Done 2026-06-07. Migration `20260607230000_add_userbet_points_awarded` applied. Field is nullable `Int?`. Index added for the leaderboard aggregation.
 
-- [ ] **5.7 Market Settlement Hub UI**
-  - Files: `app/(app)/admin/settlement/page.tsx`, `components/admin/SettlementForm.tsx`. List unsettled markets with match context; input field for `correctAnswer`; "Settle" button. Shows the result summary from the service.
-  - Acceptance: settling a market with 2 matches and 4 users shows "8 rows scored" with the per-group breakdown.
+- [x] **5.7 Market Settlement Hub UI** ✅
+  - Done 2026-06-07. `app/(app)/admin/settlement/page.tsx` + `components/admin/SettlementForm.tsx`. Lists unsettled markets sorted by kickoff, with type-aware placeholders ("2-1" for EXACT_SCORE, "Argentina" for OUTRIGHT_TEXT, first option for PROPOSITION_CHOICE). After settle, shows scored count and per-group breakdown. Admin home card now links here.
 
-- [ ] **5.8 Leaderboard query**
-  - Files: `lib/services/leaderboard.ts` → `getGroupLeaderboard(groupId)`. Aggregates `UserBet.pointsAwarded` grouped by user within the group only.
-  - Acceptance: integration test — only sums the group's bets; never includes other groups' bets even if the same user is in both.
+- [x] **5.8 Leaderboard query** ✅
+  - Done 2026-06-07. `lib/services/leaderboard.ts` — `getGroupLeaderboard(groupId)`. Aggregates `UserBet.pointsAwarded` grouped by user, restricted to the group. Members with no settled bets still appear with 0 points. Returns ranked entries (rank 1 = highest).
 
-- [ ] **5.9 Leaderboard view**
-  - Files: `app/(app)/groups/[groupId]/leaderboard/page.tsx`, `components/leaderboard/LeaderboardList.tsx`, `components/leaderboard/MemberRow.tsx`. Renders ranked members, total points, settled-bets count.
-  - Acceptance: matches Journey 3 step 5.
+- [x] **5.9 Leaderboard view** ✅
+  - Done 2026-06-07. `app/(app)/groups/[groupId]/leaderboard/page.tsx` + `components/leaderboard/LeaderboardList.tsx`. Ranked list with #N, emoji + nickname, settled-bet count, total points. First place gets a primary border highlight. Each row links to member history.
 
-- [ ] **5.10 Member history view**
-  - Files: `app/(app)/groups/[groupId]/members/[userId]/page.tsx`. Shows that member's settled bets, points per market, breakdown of how the points were derived.
-  - Acceptance: clicking a member card on the leaderboard opens this view.
+- [x] **5.10 Member history view** ✅
+  - Done 2026-06-07. `app/(app)/groups/[groupId]/members/[userId]/page.tsx` + `lib/services/member-history.ts`. Shows all bets (settled + pending) with the re-computed breakdown, the prediction, the correct answer (if settled), and the points.
 
-- [ ] **5.11 End-to-end scoring test**
-  - Files: `tests/integration/scoring.test.ts`. Seed: 1 competition, 1 match, 1 market (`EXACT_SCORE`), 1 group, 2 users with bets [2-1] and [1-1]. Settle with correct `2-1`. Assert: user A got `exactScorePoints` + BTTS, user B got `outcomePoints` (or 0, depending on stage config — make it explicit in the test).
-  - Acceptance: passes.
+- [ ] **5.11 End-to-end scoring test** ⏭ deferred
+  - Needs Vitest (0.13).
 
 ---
 

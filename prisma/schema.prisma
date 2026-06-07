@@ -106,5 +106,6 @@ model UserBet {
   @@unique([userId, groupId, marketId])
   @@index([groupId])
   @@index([marketId])
+  @@index([pointsAwarded])
 }
 

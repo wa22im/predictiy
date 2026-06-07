@@ -28,15 +28,14 @@ export default function AdminHome() {
 
           <Link
             href="/admin/settlement"
-            className="paper-card p-6 opacity-60 cursor-not-allowed"
-            aria-disabled
+            className="paper-card p-6 hover:-translate-y-0.5 transition-transform"
           >
             <p className="micro-label mb-2">Market Settlement</p>
             <h2 className="font-display text-2xl font-bold tracking-tight mb-2">
               Settlement Hub
             </h2>
             <p className="text-muted-foreground text-sm leading-6">
-              Log match scores and settle markets. (Coming in Phase 5)
+              Log match scores and settle markets.
             </p>
           </Link>
         </div>
