@@ -1,7 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import { isLocked, LOCKDOWN_MS } from "@/lib/time";
-import { revealBetsForGroup } from "@/lib/services/reveal-bets";
 
 export type FeedOtherBet = {
   userId: string;
@@ -58,10 +57,6 @@ export async function getGroupFeed(
     throw new Error("GROUP_NOT_FOUND");
   }
 
-  // Lazily reveal any bets whose match has started since the last read.
-  // This is the source of truth for the anti-snoop mask — DB-backed.
-  await revealBetsForGroup(groupId);
-
   const [matches, members, allBets] = await Promise.all([
     prisma.match.findMany({
       where: { competitionId: group.competitionId },
@@ -105,9 +100,11 @@ export async function getGroupFeed(
               isMasked: false,
             };
           }
-          // Anti-snoop: foreign bets are masked until DB flips isRevealed
-          // (which happens lazily in revealBetsForGroup above).
-          if (!bet.isRevealed) {
+          // Anti-snoop: foreign bets are masked until availableFrom <= now.
+          // availableFrom is set to match.kickoffTime at first save, so
+          // this is equivalent to "hide until kickoff". Stored on the
+          // row, queried directly — no lazy update needed.
+          if (bet.availableFrom > now) {
             return {
               userId: m.userId,
               nickname: m.user.nickname,

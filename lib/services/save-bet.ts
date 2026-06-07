@@ -52,7 +52,11 @@ export async function saveBet(userId: string, input: SaveBetInput) {
   // 4. Validate the predicted value against the market type
   validatePrediction(market.type, market.options, input.predictedValue);
 
-  // 5. Upsert on the (userId, groupId, marketId) unique key
+  // 5. availableFrom is set ONCE at first save (= match.kickoffTime) and
+  //    preserved on update. Outright markets (no match) are revealed
+  //    immediately. Query-side filter: WHERE availableFrom <= now().
+  const availableFrom = market.match?.kickoffTime ?? new Date();
+
   const bet = await prisma.userBet.upsert({
     where: {
       userId_groupId_marketId: {
@@ -61,12 +65,16 @@ export async function saveBet(userId: string, input: SaveBetInput) {
         marketId: input.marketId,
       },
     },
+    // On update: do NOT change availableFrom. The reveal time is fixed
+    // by the bet's first save — the user can't "re-publish" later to
+    // extend the visibility window.
     update: { predictedValue: input.predictedValue },
     create: {
       userId,
       groupId: input.groupId,
       marketId: input.marketId,
       predictedValue: input.predictedValue,
+      availableFrom,
     },
   });
 

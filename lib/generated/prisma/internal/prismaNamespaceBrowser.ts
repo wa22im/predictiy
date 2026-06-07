@@ -153,7 +153,7 @@ export const UserBetScalarFieldEnum = {
   marketId: 'marketId',
   predictedValue: 'predictedValue',
   pointsAwarded: 'pointsAwarded',
-  isRevealed: 'isRevealed',
+  availableFrom: 'availableFrom',
   updatedAt: 'updatedAt'
 } as const
 

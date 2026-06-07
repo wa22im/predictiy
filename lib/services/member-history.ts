@@ -1,7 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import { getStrategy } from "@/lib/scoring";
-import { revealBetsForGroup } from "@/lib/services/reveal-bets";
 import type { ScoringConfig } from "@/lib/scoring/default-config";
 
 export type MemberHistoryItem = {
@@ -39,10 +38,6 @@ export async function getMemberHistory(
   items: MemberHistoryItem[];
 }> {
   const isSelf = targetUserId === viewerId;
-
-  // Lazily reveal bets whose match has started — applies the DB rule
-  // uniformly so the time check and the stored flag stay in lockstep.
-  await revealBetsForGroup(groupId);
 
   const [member, bets, allMarkets] = await Promise.all([
     prisma.groupMember.findUnique({
@@ -85,9 +80,10 @@ export async function getMemberHistory(
         breakdown = "Strategy not found";
       }
     }
-    // Anti-snoop: hide foreign bets until DB says they're revealed.
-    // Owner can always see their own picks.
-    const masked = !isSelf && !bet.isRevealed;
+    // Anti-snoop: hide foreign bets until availableFrom <= now.
+    // availableFrom is set to match.kickoffTime at save time. Owner
+    // can always see their own picks regardless of availableFrom.
+    const masked = !isSelf && bet.availableFrom > new Date();
     return {
       marketId: bet.marketId,
       marketTitle: m?.title ?? "—",
