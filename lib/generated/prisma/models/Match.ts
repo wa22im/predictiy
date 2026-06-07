@@ -32,7 +32,7 @@ export type MatchMinAggregateOutputType = {
   awayTeam: string | null
   kickoffTime: Date | null
   stage: string | null
-  status: string | null
+  status: $Enums.MatchStatus | null
 }
 
 export type MatchMaxAggregateOutputType = {
@@ -43,7 +43,7 @@ export type MatchMaxAggregateOutputType = {
   awayTeam: string | null
   kickoffTime: Date | null
   stage: string | null
-  status: string | null
+  status: $Enums.MatchStatus | null
 }
 
 export type MatchCountAggregateOutputType = {
@@ -173,7 +173,7 @@ export type MatchGroupByOutputType = {
   awayTeam: string
   kickoffTime: Date
   stage: string
-  status: string
+  status: $Enums.MatchStatus
   _count: MatchCountAggregateOutputType | null
   _min: MatchMinAggregateOutputType | null
   _max: MatchMaxAggregateOutputType | null
@@ -205,7 +205,7 @@ export type MatchWhereInput = {
   awayTeam?: Prisma.StringFilter<"Match"> | string
   kickoffTime?: Prisma.DateTimeFilter<"Match"> | Date | string
   stage?: Prisma.StringFilter<"Match"> | string
-  status?: Prisma.StringFilter<"Match"> | string
+  status?: Prisma.EnumMatchStatusFilter<"Match"> | $Enums.MatchStatus
   competition?: Prisma.XOR<Prisma.CompetitionScalarRelationFilter, Prisma.CompetitionWhereInput>
   markets?: Prisma.BetMarketListRelationFilter
 }
@@ -234,7 +234,7 @@ export type MatchWhereUniqueInput = Prisma.AtLeast<{
   awayTeam?: Prisma.StringFilter<"Match"> | string
   kickoffTime?: Prisma.DateTimeFilter<"Match"> | Date | string
   stage?: Prisma.StringFilter<"Match"> | string
-  status?: Prisma.StringFilter<"Match"> | string
+  status?: Prisma.EnumMatchStatusFilter<"Match"> | $Enums.MatchStatus
   competition?: Prisma.XOR<Prisma.CompetitionScalarRelationFilter, Prisma.CompetitionWhereInput>
   markets?: Prisma.BetMarketListRelationFilter
 }, "id" | "apiMatchId">
@@ -264,7 +264,7 @@ export type MatchScalarWhereWithAggregatesInput = {
   awayTeam?: Prisma.StringWithAggregatesFilter<"Match"> | string
   kickoffTime?: Prisma.DateTimeWithAggregatesFilter<"Match"> | Date | string
   stage?: Prisma.StringWithAggregatesFilter<"Match"> | string
-  status?: Prisma.StringWithAggregatesFilter<"Match"> | string
+  status?: Prisma.EnumMatchStatusWithAggregatesFilter<"Match"> | $Enums.MatchStatus
 }
 
 export type MatchCreateInput = {
@@ -274,7 +274,7 @@ export type MatchCreateInput = {
   awayTeam: string
   kickoffTime: Date | string
   stage: string
-  status?: string
+  status?: $Enums.MatchStatus
   competition: Prisma.CompetitionCreateNestedOneWithoutMatchesInput
   markets?: Prisma.BetMarketCreateNestedManyWithoutMatchInput
 }
@@ -287,7 +287,7 @@ export type MatchUncheckedCreateInput = {
   awayTeam: string
   kickoffTime: Date | string
   stage: string
-  status?: string
+  status?: $Enums.MatchStatus
   markets?: Prisma.BetMarketUncheckedCreateNestedManyWithoutMatchInput
 }
 
@@ -298,7 +298,7 @@ export type MatchUpdateInput = {
   awayTeam?: Prisma.StringFieldUpdateOperationsInput | string
   kickoffTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stage?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   competition?: Prisma.CompetitionUpdateOneRequiredWithoutMatchesNestedInput
   markets?: Prisma.BetMarketUpdateManyWithoutMatchNestedInput
 }
@@ -311,7 +311,7 @@ export type MatchUncheckedUpdateInput = {
   awayTeam?: Prisma.StringFieldUpdateOperationsInput | string
   kickoffTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stage?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   markets?: Prisma.BetMarketUncheckedUpdateManyWithoutMatchNestedInput
 }
 
@@ -323,7 +323,7 @@ export type MatchCreateManyInput = {
   awayTeam: string
   kickoffTime: Date | string
   stage: string
-  status?: string
+  status?: $Enums.MatchStatus
 }
 
 export type MatchUpdateManyMutationInput = {
@@ -333,7 +333,7 @@ export type MatchUpdateManyMutationInput = {
   awayTeam?: Prisma.StringFieldUpdateOperationsInput | string
   kickoffTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stage?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
 }
 
 export type MatchUncheckedUpdateManyInput = {
@@ -344,7 +344,7 @@ export type MatchUncheckedUpdateManyInput = {
   awayTeam?: Prisma.StringFieldUpdateOperationsInput | string
   kickoffTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stage?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
 }
 
 export type MatchListRelationFilter = {
@@ -437,6 +437,10 @@ export type MatchUncheckedUpdateManyWithoutCompetitionNestedInput = {
   deleteMany?: Prisma.MatchScalarWhereInput | Prisma.MatchScalarWhereInput[]
 }
 
+export type EnumMatchStatusFieldUpdateOperationsInput = {
+  set?: $Enums.MatchStatus
+}
+
 export type MatchCreateNestedOneWithoutMarketsInput = {
   create?: Prisma.XOR<Prisma.MatchCreateWithoutMarketsInput, Prisma.MatchUncheckedCreateWithoutMarketsInput>
   connectOrCreate?: Prisma.MatchCreateOrConnectWithoutMarketsInput
@@ -460,7 +464,7 @@ export type MatchCreateWithoutCompetitionInput = {
   awayTeam: string
   kickoffTime: Date | string
   stage: string
-  status?: string
+  status?: $Enums.MatchStatus
   markets?: Prisma.BetMarketCreateNestedManyWithoutMatchInput
 }
 
@@ -471,7 +475,7 @@ export type MatchUncheckedCreateWithoutCompetitionInput = {
   awayTeam: string
   kickoffTime: Date | string
   stage: string
-  status?: string
+  status?: $Enums.MatchStatus
   markets?: Prisma.BetMarketUncheckedCreateNestedManyWithoutMatchInput
 }
 
@@ -512,7 +516,7 @@ export type MatchScalarWhereInput = {
   awayTeam?: Prisma.StringFilter<"Match"> | string
   kickoffTime?: Prisma.DateTimeFilter<"Match"> | Date | string
   stage?: Prisma.StringFilter<"Match"> | string
-  status?: Prisma.StringFilter<"Match"> | string
+  status?: Prisma.EnumMatchStatusFilter<"Match"> | $Enums.MatchStatus
 }
 
 export type MatchCreateWithoutMarketsInput = {
@@ -522,7 +526,7 @@ export type MatchCreateWithoutMarketsInput = {
   awayTeam: string
   kickoffTime: Date | string
   stage: string
-  status?: string
+  status?: $Enums.MatchStatus
   competition: Prisma.CompetitionCreateNestedOneWithoutMatchesInput
 }
 
@@ -534,7 +538,7 @@ export type MatchUncheckedCreateWithoutMarketsInput = {
   awayTeam: string
   kickoffTime: Date | string
   stage: string
-  status?: string
+  status?: $Enums.MatchStatus
 }
 
 export type MatchCreateOrConnectWithoutMarketsInput = {
@@ -560,7 +564,7 @@ export type MatchUpdateWithoutMarketsInput = {
   awayTeam?: Prisma.StringFieldUpdateOperationsInput | string
   kickoffTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stage?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   competition?: Prisma.CompetitionUpdateOneRequiredWithoutMatchesNestedInput
 }
 
@@ -572,7 +576,7 @@ export type MatchUncheckedUpdateWithoutMarketsInput = {
   awayTeam?: Prisma.StringFieldUpdateOperationsInput | string
   kickoffTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stage?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
 }
 
 export type MatchCreateManyCompetitionInput = {
@@ -582,7 +586,7 @@ export type MatchCreateManyCompetitionInput = {
   awayTeam: string
   kickoffTime: Date | string
   stage: string
-  status?: string
+  status?: $Enums.MatchStatus
 }
 
 export type MatchUpdateWithoutCompetitionInput = {
@@ -592,7 +596,7 @@ export type MatchUpdateWithoutCompetitionInput = {
   awayTeam?: Prisma.StringFieldUpdateOperationsInput | string
   kickoffTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stage?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   markets?: Prisma.BetMarketUpdateManyWithoutMatchNestedInput
 }
 
@@ -603,7 +607,7 @@ export type MatchUncheckedUpdateWithoutCompetitionInput = {
   awayTeam?: Prisma.StringFieldUpdateOperationsInput | string
   kickoffTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stage?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   markets?: Prisma.BetMarketUncheckedUpdateManyWithoutMatchNestedInput
 }
 
@@ -614,7 +618,7 @@ export type MatchUncheckedUpdateManyWithoutCompetitionInput = {
   awayTeam?: Prisma.StringFieldUpdateOperationsInput | string
   kickoffTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stage?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
 }
 
 
@@ -724,7 +728,7 @@ export type $MatchPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     awayTeam: string
     kickoffTime: Date
     stage: string
-    status: string
+    status: $Enums.MatchStatus
   }, ExtArgs["result"]["match"]>
   composites: {}
 }
@@ -1157,7 +1161,7 @@ export interface MatchFieldRefs {
   readonly awayTeam: Prisma.FieldRef<"Match", 'String'>
   readonly kickoffTime: Prisma.FieldRef<"Match", 'DateTime'>
   readonly stage: Prisma.FieldRef<"Match", 'String'>
-  readonly status: Prisma.FieldRef<"Match", 'String'>
+  readonly status: Prisma.FieldRef<"Match", 'MatchStatus'>
 }
     
 

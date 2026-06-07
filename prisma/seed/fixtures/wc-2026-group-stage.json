@@ -1,0 +1,90 @@
+{
+  "competition": {
+    "name": "World Cup 2026"
+  },
+  "matches": [
+    {
+      "apiMatchId": "wc26-group-a-1",
+      "homeTeam": "Brazil",
+      "awayTeam": "Croatia",
+      "kickoffTime": "2026-06-11T20:00:00.000Z",
+      "stage": "GROUP_STAGE",
+      "markets": [
+        {
+          "type": "EXACT_SCORE",
+          "title": "Predict the final score"
+        }
+      ]
+    },
+    {
+      "apiMatchId": "wc26-group-a-2",
+      "homeTeam": "Morocco",
+      "awayTeam": "Canada",
+      "kickoffTime": "2026-06-11T23:00:00.000Z",
+      "stage": "GROUP_STAGE",
+      "markets": [
+        {
+          "type": "EXACT_SCORE",
+          "title": "Predict the final score"
+        }
+      ]
+    },
+    {
+      "apiMatchId": "wc26-group-b-1",
+      "homeTeam": "Argentina",
+      "awayTeam": "Iceland",
+      "kickoffTime": "2026-06-12T20:00:00.000Z",
+      "stage": "GROUP_STAGE",
+      "markets": [
+        {
+          "type": "EXACT_SCORE",
+          "title": "Predict the final score"
+        }
+      ]
+    },
+    {
+      "apiMatchId": "wc26-group-b-2",
+      "homeTeam": "France",
+      "awayTeam": "Senegal",
+      "kickoffTime": "2026-06-12T23:00:00.000Z",
+      "stage": "GROUP_STAGE",
+      "markets": [
+        {
+          "type": "EXACT_SCORE",
+          "title": "Predict the final score"
+        }
+      ]
+    },
+    {
+      "apiMatchId": "wc26-group-c-1",
+      "homeTeam": "England",
+      "awayTeam": "USA",
+      "kickoffTime": "2026-06-13T20:00:00.000Z",
+      "stage": "GROUP_STAGE",
+      "markets": [
+        {
+          "type": "EXACT_SCORE",
+          "title": "Predict the final score"
+        }
+      ]
+    },
+    {
+      "apiMatchId": "wc26-outright-winner",
+      "homeTeam": "Tournament Winner",
+      "awayTeam": "",
+      "kickoffTime": "2026-07-19T20:00:00.000Z",
+      "stage": "OUTRIGHT",
+      "markets": [
+        {
+          "type": "OUTRIGHT_TEXT",
+          "title": "Who will win the tournament?"
+        },
+        {
+          "type": "OUTRIGHT_TEXT",
+          "title": "Golden Boot Winner?",
+          "options": ["Mbappe", "Haaland", "Vinicius Jr", "Bellingham", "Saka"]
+        }
+      ]
+    }
+  ]
+}

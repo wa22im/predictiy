@@ -244,10 +244,10 @@ export type UserScalarWhereWithAggregatesInput = {
 }
 
 export type UserCreateInput = {
-  id?: string
+  id: string
   email: string
-  nickname: string
-  emoji: string
+  nickname?: string
+  emoji?: string
   isAdmin?: boolean
   createdAt?: Date | string
   memberships?: Prisma.GroupMemberCreateNestedManyWithoutUserInput
@@ -255,10 +255,10 @@ export type UserCreateInput = {
 }
 
 export type UserUncheckedCreateInput = {
-  id?: string
+  id: string
   email: string
-  nickname: string
-  emoji: string
+  nickname?: string
+  emoji?: string
   isAdmin?: boolean
   createdAt?: Date | string
   memberships?: Prisma.GroupMemberUncheckedCreateNestedManyWithoutUserInput
@@ -288,10 +288,10 @@ export type UserUncheckedUpdateInput = {
 }
 
 export type UserCreateManyInput = {
-  id?: string
+  id: string
   email: string
-  nickname: string
-  emoji: string
+  nickname?: string
+  emoji?: string
   isAdmin?: boolean
   createdAt?: Date | string
 }
@@ -387,20 +387,20 @@ export type UserUpdateOneRequiredWithoutBetsNestedInput = {
 }
 
 export type UserCreateWithoutMembershipsInput = {
-  id?: string
+  id: string
   email: string
-  nickname: string
-  emoji: string
+  nickname?: string
+  emoji?: string
   isAdmin?: boolean
   createdAt?: Date | string
   bets?: Prisma.UserBetCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutMembershipsInput = {
-  id?: string
+  id: string
   email: string
-  nickname: string
-  emoji: string
+  nickname?: string
+  emoji?: string
   isAdmin?: boolean
   createdAt?: Date | string
   bets?: Prisma.UserBetUncheckedCreateNestedManyWithoutUserInput
@@ -443,20 +443,20 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
 }
 
 export type UserCreateWithoutBetsInput = {
-  id?: string
+  id: string
   email: string
-  nickname: string
-  emoji: string
+  nickname?: string
+  emoji?: string
   isAdmin?: boolean
   createdAt?: Date | string
   memberships?: Prisma.GroupMemberCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutBetsInput = {
-  id?: string
+  id: string
   email: string
-  nickname: string
-  emoji: string
+  nickname?: string
+  emoji?: string
   isAdmin?: boolean
   createdAt?: Date | string
   memberships?: Prisma.GroupMemberUncheckedCreateNestedManyWithoutUserInput

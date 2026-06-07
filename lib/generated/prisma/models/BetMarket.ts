@@ -47,6 +47,7 @@ export type BetMarketCountAggregateOutputType = {
   matchId: number
   type: number
   title: number
+  options: number
   correctAnswer: number
   isSettled: number
   _all: number
@@ -76,6 +77,7 @@ export type BetMarketCountAggregateInputType = {
   matchId?: true
   type?: true
   title?: true
+  options?: true
   correctAnswer?: true
   isSettled?: true
   _all?: true
@@ -158,6 +160,7 @@ export type BetMarketGroupByOutputType = {
   matchId: string | null
   type: string
   title: string
+  options: runtime.JsonValue | null
   correctAnswer: string | null
   isSettled: boolean
   _count: BetMarketCountAggregateOutputType | null
@@ -188,6 +191,7 @@ export type BetMarketWhereInput = {
   matchId?: Prisma.StringNullableFilter<"BetMarket"> | string | null
   type?: Prisma.StringFilter<"BetMarket"> | string
   title?: Prisma.StringFilter<"BetMarket"> | string
+  options?: Prisma.JsonNullableFilter<"BetMarket">
   correctAnswer?: Prisma.StringNullableFilter<"BetMarket"> | string | null
   isSettled?: Prisma.BoolFilter<"BetMarket"> | boolean
   match?: Prisma.XOR<Prisma.MatchNullableScalarRelationFilter, Prisma.MatchWhereInput> | null
@@ -199,6 +203,7 @@ export type BetMarketOrderByWithRelationInput = {
   matchId?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
   title?: Prisma.SortOrder
+  options?: Prisma.SortOrderInput | Prisma.SortOrder
   correctAnswer?: Prisma.SortOrderInput | Prisma.SortOrder
   isSettled?: Prisma.SortOrder
   match?: Prisma.MatchOrderByWithRelationInput
@@ -207,23 +212,26 @@ export type BetMarketOrderByWithRelationInput = {
 
 export type BetMarketWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  matchId_type_title?: Prisma.BetMarketMatchIdTypeTitleCompoundUniqueInput
   AND?: Prisma.BetMarketWhereInput | Prisma.BetMarketWhereInput[]
   OR?: Prisma.BetMarketWhereInput[]
   NOT?: Prisma.BetMarketWhereInput | Prisma.BetMarketWhereInput[]
   matchId?: Prisma.StringNullableFilter<"BetMarket"> | string | null
   type?: Prisma.StringFilter<"BetMarket"> | string
   title?: Prisma.StringFilter<"BetMarket"> | string
+  options?: Prisma.JsonNullableFilter<"BetMarket">
   correctAnswer?: Prisma.StringNullableFilter<"BetMarket"> | string | null
   isSettled?: Prisma.BoolFilter<"BetMarket"> | boolean
   match?: Prisma.XOR<Prisma.MatchNullableScalarRelationFilter, Prisma.MatchWhereInput> | null
   userBets?: Prisma.UserBetListRelationFilter
-}, "id">
+}, "id" | "matchId_type_title">
 
 export type BetMarketOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   matchId?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
   title?: Prisma.SortOrder
+  options?: Prisma.SortOrderInput | Prisma.SortOrder
   correctAnswer?: Prisma.SortOrderInput | Prisma.SortOrder
   isSettled?: Prisma.SortOrder
   _count?: Prisma.BetMarketCountOrderByAggregateInput
@@ -239,6 +247,7 @@ export type BetMarketScalarWhereWithAggregatesInput = {
   matchId?: Prisma.StringNullableWithAggregatesFilter<"BetMarket"> | string | null
   type?: Prisma.StringWithAggregatesFilter<"BetMarket"> | string
   title?: Prisma.StringWithAggregatesFilter<"BetMarket"> | string
+  options?: Prisma.JsonNullableWithAggregatesFilter<"BetMarket">
   correctAnswer?: Prisma.StringNullableWithAggregatesFilter<"BetMarket"> | string | null
   isSettled?: Prisma.BoolWithAggregatesFilter<"BetMarket"> | boolean
 }
@@ -247,6 +256,7 @@ export type BetMarketCreateInput = {
   id?: string
   type: string
   title: string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: string | null
   isSettled?: boolean
   match?: Prisma.MatchCreateNestedOneWithoutMarketsInput
@@ -258,6 +268,7 @@ export type BetMarketUncheckedCreateInput = {
   matchId?: string | null
   type: string
   title: string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: string | null
   isSettled?: boolean
   userBets?: Prisma.UserBetUncheckedCreateNestedManyWithoutMarketInput
@@ -267,6 +278,7 @@ export type BetMarketUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isSettled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   match?: Prisma.MatchUpdateOneWithoutMarketsNestedInput
@@ -278,6 +290,7 @@ export type BetMarketUncheckedUpdateInput = {
   matchId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isSettled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   userBets?: Prisma.UserBetUncheckedUpdateManyWithoutMarketNestedInput
@@ -288,6 +301,7 @@ export type BetMarketCreateManyInput = {
   matchId?: string | null
   type: string
   title: string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: string | null
   isSettled?: boolean
 }
@@ -296,6 +310,7 @@ export type BetMarketUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isSettled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -305,6 +320,7 @@ export type BetMarketUncheckedUpdateManyInput = {
   matchId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isSettled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -319,11 +335,18 @@ export type BetMarketOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type BetMarketMatchIdTypeTitleCompoundUniqueInput = {
+  matchId: string
+  type: string
+  title: string
+}
+
 export type BetMarketCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   matchId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   title?: Prisma.SortOrder
+  options?: Prisma.SortOrder
   correctAnswer?: Prisma.SortOrder
   isSettled?: Prisma.SortOrder
 }
@@ -415,6 +438,7 @@ export type BetMarketCreateWithoutMatchInput = {
   id?: string
   type: string
   title: string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: string | null
   isSettled?: boolean
   userBets?: Prisma.UserBetCreateNestedManyWithoutMarketInput
@@ -424,6 +448,7 @@ export type BetMarketUncheckedCreateWithoutMatchInput = {
   id?: string
   type: string
   title: string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: string | null
   isSettled?: boolean
   userBets?: Prisma.UserBetUncheckedCreateNestedManyWithoutMarketInput
@@ -463,6 +488,7 @@ export type BetMarketScalarWhereInput = {
   matchId?: Prisma.StringNullableFilter<"BetMarket"> | string | null
   type?: Prisma.StringFilter<"BetMarket"> | string
   title?: Prisma.StringFilter<"BetMarket"> | string
+  options?: Prisma.JsonNullableFilter<"BetMarket">
   correctAnswer?: Prisma.StringNullableFilter<"BetMarket"> | string | null
   isSettled?: Prisma.BoolFilter<"BetMarket"> | boolean
 }
@@ -471,6 +497,7 @@ export type BetMarketCreateWithoutUserBetsInput = {
   id?: string
   type: string
   title: string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: string | null
   isSettled?: boolean
   match?: Prisma.MatchCreateNestedOneWithoutMarketsInput
@@ -481,6 +508,7 @@ export type BetMarketUncheckedCreateWithoutUserBetsInput = {
   matchId?: string | null
   type: string
   title: string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: string | null
   isSettled?: boolean
 }
@@ -505,6 +533,7 @@ export type BetMarketUpdateWithoutUserBetsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isSettled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   match?: Prisma.MatchUpdateOneWithoutMarketsNestedInput
@@ -515,6 +544,7 @@ export type BetMarketUncheckedUpdateWithoutUserBetsInput = {
   matchId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isSettled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -523,6 +553,7 @@ export type BetMarketCreateManyMatchInput = {
   id?: string
   type: string
   title: string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: string | null
   isSettled?: boolean
 }
@@ -531,6 +562,7 @@ export type BetMarketUpdateWithoutMatchInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isSettled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   userBets?: Prisma.UserBetUpdateManyWithoutMarketNestedInput
@@ -540,6 +572,7 @@ export type BetMarketUncheckedUpdateWithoutMatchInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isSettled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   userBets?: Prisma.UserBetUncheckedUpdateManyWithoutMarketNestedInput
@@ -549,6 +582,7 @@ export type BetMarketUncheckedUpdateManyWithoutMatchInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  options?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   correctAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isSettled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -589,6 +623,7 @@ export type BetMarketSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   matchId?: boolean
   type?: boolean
   title?: boolean
+  options?: boolean
   correctAnswer?: boolean
   isSettled?: boolean
   match?: boolean | Prisma.BetMarket$matchArgs<ExtArgs>
@@ -601,6 +636,7 @@ export type BetMarketSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   matchId?: boolean
   type?: boolean
   title?: boolean
+  options?: boolean
   correctAnswer?: boolean
   isSettled?: boolean
   match?: boolean | Prisma.BetMarket$matchArgs<ExtArgs>
@@ -611,6 +647,7 @@ export type BetMarketSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   matchId?: boolean
   type?: boolean
   title?: boolean
+  options?: boolean
   correctAnswer?: boolean
   isSettled?: boolean
   match?: boolean | Prisma.BetMarket$matchArgs<ExtArgs>
@@ -621,11 +658,12 @@ export type BetMarketSelectScalar = {
   matchId?: boolean
   type?: boolean
   title?: boolean
+  options?: boolean
   correctAnswer?: boolean
   isSettled?: boolean
 }
 
-export type BetMarketOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "matchId" | "type" | "title" | "correctAnswer" | "isSettled", ExtArgs["result"]["betMarket"]>
+export type BetMarketOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "matchId" | "type" | "title" | "options" | "correctAnswer" | "isSettled", ExtArgs["result"]["betMarket"]>
 export type BetMarketInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   match?: boolean | Prisma.BetMarket$matchArgs<ExtArgs>
   userBets?: boolean | Prisma.BetMarket$userBetsArgs<ExtArgs>
@@ -649,6 +687,7 @@ export type $BetMarketPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     matchId: string | null
     type: string
     title: string
+    options: runtime.JsonValue | null
     correctAnswer: string | null
     isSettled: boolean
   }, ExtArgs["result"]["betMarket"]>
@@ -1080,6 +1119,7 @@ export interface BetMarketFieldRefs {
   readonly matchId: Prisma.FieldRef<"BetMarket", 'String'>
   readonly type: Prisma.FieldRef<"BetMarket", 'String'>
   readonly title: Prisma.FieldRef<"BetMarket", 'String'>
+  readonly options: Prisma.FieldRef<"BetMarket", 'Json'>
   readonly correctAnswer: Prisma.FieldRef<"BetMarket", 'String'>
   readonly isSettled: Prisma.FieldRef<"BetMarket", 'Boolean'>
 }

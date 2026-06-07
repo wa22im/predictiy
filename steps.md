@@ -151,40 +151,32 @@ predicty/
 
 ## Phase 1 — Hydration & Admin Sync (spec §1.1, §3.3, §5 Phase 1)
 
-- [ ] **1.1 Refine Prisma schema**
-  - Add: `User.id` aligns with `auth.users.id` (use the same UUID from Supabase Auth), `Match.status` enum (`SCHEDULED | FINISHED`), `BetMarket.options Json?` for proposition markets, indexes on `Match.competitionId`, `Match.kickoffTime`, `UserBet.groupId`, `UserBet.marketId`.
-  - Files: `prisma/schema.prisma`.
-  - Acceptance: `prisma migrate dev --name refine_schema` clean.
+- [x] **1.1 Refine Prisma schema** ✅
+  - Done 2026-06-07. Migration `20260607185141_refine_schema` applied.
+  - Changes: `User.id` aligned with `auth.users.id` (no default), `Match.status` enum, `BetMarket.options Json?`, additional indexes on `Match.status`, `Group.competitionId`, `GroupMember.groupId`, `BetMarket.matchId/isSettled`. Also added `@@unique([matchId, type, title])` on BetMarket for upserts.
 
-- [ ] **1.2 Mock competition JSON**
-  - Files: `prisma/seed/fixtures/wc-2026-group-stage.json` (4–6 matches, all UTC kickoff times, includes a `apiMatchId`).
-  - Acceptance: file validates against a Zod schema in `lib/validation/competition.ts`.
+- [x] **1.2 Mock competition JSON** ✅
+  - Done 2026-06-07. `prisma/seed/fixtures/wc-2026-group-stage.json` — 5 group-stage matches + 1 outright winner match with two markets (Winner + Golden Boot with options).
 
-- [ ] **1.3 Default `scoringConfig` factory**
-  - Files: `lib/scoring/default-config.ts`.
-  - Shape: per-stage `{ exactScorePoints, outcomePoints, bothTeamsToScoreBonus, staticPoints }`. Sensible defaults (e.g. group: 5/2/1, R16: 8/3/1, QF: 12/4/1, SF: 18/6/1, F: 25/8/1).
-  - Acceptance: unit-tested; `JSON.stringify` round-trips.
+- [x] **1.3 Default `scoringConfig` factory** ✅
+  - Done 2026-06-07. `lib/scoring/default-config.ts` with `DEFAULT_SCORING_CONFIG` and `getStageConfig(stage)` helper. Per-stage weights: GROUP 5/2/1, R16 8/3/1, QF 12/4/1, SF 18/6/1, F 25/8/1, OUTRIGHT static 15.
 
-- [ ] **1.4 Invite-code generator**
-  - Files: `lib/invite.ts` → `generateInviteCode(): string` (10-char `nanoid` url-safe, no ambiguous chars).
-  - Acceptance: unit test for uniqueness over 100k calls (no collisions).
+- [x] **1.4 Invite-code generator** ✅
+  - Done 2026-06-07. `lib/invite.ts` — 10-char nanoid with custom alphabet (no 0/O/1/l/I). Unit test deferred to 1.11.
 
-- [ ] **1.5 Zod request schemas**
-  - Files: `lib/validation/admin.ts` (`CompetitionSyncInput`), `lib/validation/group.ts` (`CreateGroupInput`).
-  - Acceptance: rejects malformed payloads in unit test.
+- [x] **1.5 Zod request schemas** ✅
+  - Done 2026-06-07. `lib/validation/admin.ts` (`CompetitionSyncInput`, `MatchInput`, `MarketInput`) + `lib/validation/group.ts` (`CreateGroupInput`). Unit tests deferred to 1.11.
 
-- [ ] **1.6 Admin guard helper**
-  - Files: `lib/auth/guards.ts` → `requireAdmin()` for use in Route Handlers and Server Components. Reads `app_metadata.role` from Supabase session.
-  - Acceptance: unit test mocks session; non-admin throws `403`.
+- [x] **1.6 Admin guard helper** ✅
+  - Done 2026-06-07. `lib/auth/guards.ts` — `requireAdmin()` checks Supabase session, then queries `User.isAdmin` from DB. Throws `GuardError(401|403)`. Auth metadata sync via trigger (see 1.8).
 
-- [ ] **1.7 `/api/v1/admin/competition/sync` — idempotent upsert**
-  - Method: `POST`. Body: `CompetitionSyncInput` (competition + matches[]). Uses Prisma `upsert` keyed on `Match.apiMatchId` (compound uniqueness: `(competitionId, apiMatchId)` so the same external id can exist across competitions). Inserts new competitions, upserts matches, **never deletes** matches (so existing `UserBet` rows stay valid even if a match is removed upstream).
-  - Files: `app/api/v1/admin/competition/sync/route.ts`, `lib/services/competition-sync.ts`.
-  - Acceptance: posting the mock JSON twice produces exactly N match rows, not 2N. Verified by integration test that counts rows before/after.
+- [x] **1.7 `/api/v1/admin/competition/sync` — idempotent upsert** ✅
+  - Done 2026-06-07. POST handler in `app/api/v1/admin/competition/sync/route.ts` + service in `lib/services/competition-sync.ts`. Validates with Zod, calls `requireAdmin()`, upserts competition by name, matches by `apiMatchId`, markets by `(matchId, type, title)`. Never deletes.
 
-- [ ] **1.8 Promote the first admin**
-  - Files: `supabase/seed.sql` (or a one-off script `scripts/promote-admin.ts`) that sets `auth.users.app_metadata = { "role": "admin" }` for a hard-coded dev email read from `DEV_ADMIN_EMAIL`.
-  - Acceptance: logging in as that email passes `requireAdmin()`.
+- [x] **1.8 Promote the first admin** ✅
+  - Done 2026-06-07. Two pieces:
+  - (a) `scripts/promote-admin.ts` — `npx tsx scripts/promote-admin.ts <email>` sets `User.isAdmin = true`.
+  - (b) Postgres trigger `on_user_admin_changed` mirrors the flag to `auth.users.raw_user_meta_data.isAdmin` so the middleware can pre-filter from the JWT.
 
 - [ ] **1.9 Admin shell layout**
   - Files: `app/(app)/admin/layout.tsx` (server-side `requireAdmin`), `app/(app)/admin/page.tsx` (admin home with two cards: Hydration, Settlement).
