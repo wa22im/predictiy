@@ -49,3 +49,29 @@ export function formatCountdown(ms: number): string {
   if (minutes > 0) return `${minutes}m ${seconds}s`;
   return `${seconds}s`;
 }
+
+/**
+ * Format a kickoff timestamp in UTC.
+ * Examples:
+ *   "Mon 14 Jun, 20:00 UTC"
+ *   "Sun 12 Jul, 02:30 UTC"
+ *
+ * Pure, deterministic, locale-stable. Use this anywhere we want a
+ * single canonical display of a UTC time.
+ */
+export function formatUtc(iso: string | Date): string {
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  const date = d.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    timeZone: "UTC",
+  });
+  const time = d.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+  });
+  return `${date}, ${time} UTC`;
+}

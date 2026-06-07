@@ -1,6 +1,7 @@
 "use client";
 
 import type { FeedMatch } from "@/lib/services/group-feed";
+import { formatUtc } from "@/lib/time";
 import { Countdown } from "./Countdown";
 import { MemberPredictions } from "./MemberPredictions";
 import { PredictionForm } from "./PredictionForm";
@@ -29,12 +30,7 @@ export function MatchCard({
             {teams}
           </p>
           <p className="text-xs text-muted-foreground font-mono">
-            {new Date(match.kickoffTime).toLocaleString(undefined, {
-              weekday: "short",
-              hour: "2-digit",
-              minute: "2-digit",
-              timeZoneName: "short",
-            })}
+            {formatUtc(match.kickoffTime)}
           </p>
         </div>
         <div className="text-right shrink-0">
@@ -42,12 +38,14 @@ export function MatchCard({
             <span className="micro-label text-muted-foreground">Settled</span>
           ) : match.isLocked ? (
             <span className="micro-label text-destructive">Locked</span>
-          ) : (
+          ) : match.timeUntilLockMs <= 2 * 60 * 60 * 1000 ? (
             <Countdown
               kickoffTime={match.kickoffTime}
               lockdownMs={lockdownMs}
               serverNow={serverNow}
             />
+          ) : (
+            <span className="micro-label text-muted-foreground">Open</span>
           )}
         </div>
       </header>

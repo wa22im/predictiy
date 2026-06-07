@@ -52,16 +52,18 @@ export function MatchList({
 }
 
 function groupByDay(matches: FeedMatch[], serverNow: string) {
-  // Use the device locale for display; the date for grouping is in the
-  // viewer's local timezone (which is what the user expects).
+  // Group by UTC date — display stays consistent across users in any
+  // timezone. The serverNow param is unused but kept for forward
+  // compatibility (e.g. "today / tomorrow" labels).
   const serverStart = new Date(serverNow).getTime();
   const buckets = new Map<string, FeedMatch[]>();
   for (const m of matches) {
     const date = new Date(m.kickoffTime);
-    const day = date.toLocaleDateString(undefined, {
+    const day = date.toLocaleDateString("en-GB", {
       weekday: "long",
+      day: "2-digit",
       month: "long",
-      day: "numeric",
+      timeZone: "UTC",
     });
     if (!buckets.has(day)) buckets.set(day, []);
     buckets.get(day)!.push(m);
