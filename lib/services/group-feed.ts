@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { isLocked, LOCKDOWN_MS } from "@/lib/time";
+import { isLocked, isViewLocked, LOCKDOWN_MS } from "@/lib/time";
 
 export type FeedOtherBet = {
   userId: string;
@@ -78,7 +78,8 @@ export async function getGroupFeed(
 
   const feedMatches: FeedMatch[] = matches.map((match) => {
     const settled = match.status === "FINISHED";
-    const locked = !settled && isLocked({ kickoffTime: match.kickoffTime }, now);
+    const saveLocked = !settled && isLocked({ kickoffTime: match.kickoffTime }, now);
+    const viewLocked = !settled && isViewLocked({ kickoffTime: match.kickoffTime }, now);
     const timeUntilLockMs = settled
       ? 0
       : Math.max(0, match.kickoffTime.getTime() - LOCKDOWN_MS - now.getTime());
@@ -100,7 +101,8 @@ export async function getGroupFeed(
               isMasked: false,
             };
           }
-          if (locked) {
+          // View-lock: mask foreign bets until the match has started.
+          if (viewLocked) {
             return {
               userId: m.userId,
               nickname: m.user.nickname,
@@ -137,7 +139,7 @@ export async function getGroupFeed(
       kickoffTime: match.kickoffTime.toISOString(),
       stage: match.stage,
       status: match.status,
-      isLocked: locked,
+      isLocked: saveLocked,
       timeUntilLockMs,
       markets: feedMarkets,
     };
