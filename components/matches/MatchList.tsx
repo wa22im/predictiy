@@ -50,7 +50,7 @@ export function MatchList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space">
       {grouped.map(({ day, items }) => {
         const isOpen = openDays.has(day);
         return (

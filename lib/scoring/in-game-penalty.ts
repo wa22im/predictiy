@@ -28,7 +28,7 @@ import type { ScoringStrategy, StrategyInput, StrategyResult } from "./types";
  * strategy so the score result is already clamped; settle-market.ts
  * also clamps as a safety net.
  */
-const IN_GAME_PENALTY_OPTIONS = new Set(["HOME", "AWAY", "NONE"]);
+const IN_GAME_PENALTY_OPTIONS = new Set(["HOME", "AWAY"]);
 
 export const InGamePenaltyStrategy: ScoringStrategy = {
   score(input: StrategyInput): StrategyResult {

@@ -168,6 +168,30 @@
       0 0 0 3px var(--ring);
   }
 
+  .command-strip-flat {
+    background-color: oklch(0.88 0.18 95);
+    color: oklch(0.18 0.02 80);
+    border-radius: 9999px;
+    padding: 0.5rem 1.25rem;
+    font-weight: 700;
+    box-shadow: 0 6px 16px -8px oklch(0.78 0.18 95 / 0.55);
+    transition: filter 150ms ease, transform 150ms ease;
+  }
+  .command-strip-flat:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+  .command-strip-flat:focus-visible {
+    outline: none;
+    box-shadow:
+      0 6px 16px -8px oklch(0.78 0.18 95 / 0.55),
+      0 0 0 3px var(--ring);
+  }
+  .command-strip-flat:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
   .micro-label {
     font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
     text-transform: uppercase;

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { getGroupFeed } from "@/lib/services/group-feed";
 import { MatchList } from "@/components/matches/MatchList";
+import { ScoringExplainedPopover } from "@/components/matches/ScoringExplainedPopover";
 
 // Force dynamic rendering — the page reads cookies() via Supabase AND
 // computes per-request time-dependent state (isLocked, timeUntilLockMs).
@@ -52,11 +53,15 @@ export default async function MatchesPage({ params }: { params: Params }) {
         <h1 className="font-display text-4xl md:text-5xl tracking-tight mb-2">
           Matches
         </h1>
-        <p className="text-muted-foreground text-sm leading-6 mb-8">
+        <p className="text-muted-foreground text-sm leading-6 mb-4">
           {group._count.members}{" "}
           {group._count.members === 1 ? "member" : "members"} · predictions lock
           5 minutes before kickoff.
         </p>
+
+        <div className="mb-8">
+          <ScoringExplainedPopover label="How scoring works" />
+        </div>
 
         <MatchList
           matches={feed.matches}

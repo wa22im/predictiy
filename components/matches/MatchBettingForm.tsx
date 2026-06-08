@@ -9,17 +9,63 @@ import type { FeedMatch } from "@/lib/services/group-feed";
 // The underlying value, save-batch validation, and scoring strategies
 // continue to use the canonical codes. Mutating these maps would
 // break the save-batch validation and scoring strategy.
-const HALF_SCORING_LABELS: Record<string, string> = {
+const IN_GAME_PENALTY_LABELS: Record<string, string> = {
+  HOME: "Home team",
+  AWAY: "Away team",
+};
+
+// Team names are truncated to 7 chars in chips; the full name is shown
+// on hover via the `title` attribute. Used for IN_GAME_PENALTY chips
+// (HOME / AWAY codes are canonical — display-only swap) and HALF_SCORING
+// chips (A_1H / A_2H = home half, B_1H / B_2H = away half). Falls back
+// to the static label map if the team name is missing (edge case).
+const TEAM_NAME_MAX = 7;
+function teamLabel(
+  code: string,
+  homeTeam: string | undefined,
+  awayTeam: string | undefined,
+): { display: string; fullName: string | null } {
+  if (code === "HOME" && homeTeam) {
+    return truncate(homeTeam);
+  }
+  if (code === "AWAY" && awayTeam) {
+    return truncate(awayTeam);
+  }
+  return { display: IN_GAME_PENALTY_LABELS[code] ?? code, fullName: null };
+}
+
+// HALF_SCORING codes are team-based: A = home, B = away, 1H/2H = which
+// half. The display is "<team> 1H" / "<team> 2H" with the team name
+// truncated to 7 chars (truncation applies only to the team part —
+// the " 1H"/" 2H" suffix is always appended). Falls back to "Home" /
+// "Away" if the team name is missing.
+const HALF_SCORING_FALLBACK: Record<string, string> = {
   A_1H: "Home 1H",
   A_2H: "Home 2H",
   B_1H: "Away 1H",
   B_2H: "Away 2H",
 };
+function halfScoringLabel(
+  code: string,
+  homeTeam: string | undefined,
+  awayTeam: string | undefined,
+): { display: string; fullName: string | null } {
+  const half = code.endsWith("_2H") ? " 2H" : " 1H";
+  if (code.startsWith("A_") && homeTeam) {
+    const { display, fullName } = truncate(homeTeam);
+    return { display: `${display}${half}`, fullName: `${fullName}${half}` };
+  }
+  if (code.startsWith("B_") && awayTeam) {
+    const { display, fullName } = truncate(awayTeam);
+    return { display: `${display}${half}`, fullName: `${fullName}${half}` };
+  }
+  return { display: HALF_SCORING_FALLBACK[code] ?? code, fullName: null };
+}
 
-const IN_GAME_PENALTY_LABELS: Record<string, string> = {
-  HOME: "Home team",
-  AWAY: "Away team",
-};
+function truncate(name: string): { display: string; fullName: string } {
+  if (name.length <= TEAM_NAME_MAX) return { display: name, fullName: name };
+  return { display: `${name.slice(0, TEAM_NAME_MAX)}…`, fullName: name };
+}
 
 // ---- Component -------------------------------------------------------------
 
@@ -139,6 +185,8 @@ export function MatchBettingForm({
                 ? exactScore.viewerBet?.pointsAwarded ?? null
                 : null
             }
+            homeTeam={match.homeTeam}
+            awayTeam={match.awayTeam}
           />
         )}
         {halfScoring && (
@@ -152,6 +200,8 @@ export function MatchBettingForm({
                 ? halfScoring.viewerBet?.pointsAwarded ?? null
                 : null
             }
+            homeTeam={match.homeTeam}
+            awayTeam={match.awayTeam}
           />
         )}
         {inGamePenalty && (
@@ -165,6 +215,8 @@ export function MatchBettingForm({
                 ? inGamePenalty.viewerBet?.pointsAwarded ?? null
                 : null
             }
+            homeTeam={match.homeTeam}
+            awayTeam={match.awayTeam}
           />
         )}
         {outrightMarkets.map((m) => (
@@ -177,6 +229,8 @@ export function MatchBettingForm({
             pointsAwarded={
               m.isSettled ? m.viewerBet?.pointsAwarded ?? null : null
             }
+            homeTeam={match.homeTeam}
+            awayTeam={match.awayTeam}
           />
         ))}
       </div>
@@ -200,6 +254,8 @@ export function MatchBettingForm({
           options={halfScoring.options ?? []}
           value={picks[halfScoring.id] ?? ""}
           onToggle={(code) => toggleHalfScoring(halfScoring.id, code)}
+          homeTeam={match.homeTeam}
+          awayTeam={match.awayTeam}
         />
       )}
 
@@ -210,6 +266,8 @@ export function MatchBettingForm({
           value={picks[inGamePenalty.id] ?? ""}
           onChange={(v) => setPick(inGamePenalty.id, v)}
           onClear={() => clearPick(inGamePenalty.id)}
+          homeTeam={match.homeTeam}
+          awayTeam={match.awayTeam}
         />
       )}
 
@@ -232,7 +290,7 @@ export function MatchBettingForm({
         <button
           type="submit"
           disabled={isPending || !canSave}
-          className="command-strip px-5 py-2 text-sm font-bold disabled:opacity-50 disabled:pointer-events-none"
+          className="command-strip-flat px-5 py-2 text-sm disabled:opacity-50 disabled:pointer-events-none"
         >
           {isPending ? "Saving…" : "Save predictions"}
         </button>
@@ -290,11 +348,15 @@ function HalfScoringRow({
   options,
   value,
   onToggle,
+  homeTeam,
+  awayTeam,
 }: {
   marketId: string;
   options: string[];
   value: string;
   onToggle: (code: string) => void;
+  homeTeam: string;
+  awayTeam: string;
 }) {
   const selected = useMemo(
     () =>
@@ -316,12 +378,14 @@ function HalfScoringRow({
         {options.map((opt) => {
           const isSelected = selected.has(opt);
           const isAtCap = !isSelected && selected.size >= 2;
+          const { display, fullName } = halfScoringLabel(opt, homeTeam, awayTeam);
           return (
             <button
               key={opt}
               type="button"
               onClick={() => onToggle(opt)}
               disabled={isAtCap}
+              title={fullName ?? undefined}
               className={`rounded-full px-3 py-1 text-sm border transition-colors ${
                 isSelected
                   ? "bg-primary/20 border-primary"
@@ -330,7 +394,7 @@ function HalfScoringRow({
                   : "bg-background/40 border-border hover:bg-background/60"
               }`}
             >
-              {HALF_SCORING_LABELS[opt] ?? opt}
+              {display}
             </button>
           );
         })}
@@ -348,12 +412,16 @@ function InGamePenaltyRow({
   value,
   onChange,
   onClear,
+  homeTeam,
+  awayTeam,
 }: {
   marketId: string;
   options: string[];
   value: string;
   onChange: (v: string) => void;
   onClear: () => void;
+  homeTeam: string;
+  awayTeam: string;
 }) {
   return (
     <div>
@@ -362,20 +430,24 @@ function InGamePenaltyRow({
         Optional — +3 for correct, -2 for wrong (min -1)
       </p>
       <div className="flex items-center gap-2 flex-wrap">
-        {options.map((opt) => (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => onChange(opt)}
-            className={`rounded-full px-3 py-1 text-sm border transition-colors ${
-              value === opt
-                ? "bg-primary/20 border-primary"
-                : "bg-background/40 border-border hover:bg-background/60"
-            }`}
-          >
-            {IN_GAME_PENALTY_LABELS[opt] ?? opt}
-          </button>
-        ))}
+        {options.map((opt) => {
+          const { display, fullName } = teamLabel(opt, homeTeam, awayTeam);
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => onChange(opt)}
+              title={fullName ?? undefined}
+              className={`rounded-full px-3 py-1 text-sm border transition-colors ${
+                value === opt
+                  ? "bg-primary/20 border-primary"
+                  : "bg-background/40 border-border hover:bg-background/60"
+              }`}
+            >
+              {display}
+            </button>
+          );
+        })}
         {value && (
           <button
             type="button"
@@ -459,19 +531,23 @@ function LockedMarketRow({
   type,
   savedValue,
   pointsAwarded,
+  homeTeam,
+  awayTeam,
 }: {
   title: string;
   type: string;
   marketId: string;
   savedValue: string | null;
   pointsAwarded: number | null;
+  homeTeam: string;
+  awayTeam: string;
 }) {
   return (
     <div className="rounded-xl bg-background/40 border border-border p-3 text-sm">
       <p className="font-medium">{title}</p>
       <p className="text-xs text-muted-foreground">
         {savedValue
-          ? <>Your pick: <span className="font-mono text-foreground">{formatValue(type, savedValue)}</span></>
+          ? <>Your pick: <span className="font-mono text-foreground">{formatValue(type, savedValue, homeTeam, awayTeam)}</span></>
           : "No prediction placed."}
         {pointsAwarded !== null && (
           <>
@@ -496,18 +572,23 @@ function LockedMarketRow({
 
 // ---- Helpers --------------------------------------------------------------
 
-function formatValue(type: string, value: string): string {
+function formatValue(
+  type: string,
+  value: string,
+  homeTeam?: string,
+  awayTeam?: string,
+): string {
   if (type === "EXACT_SCORE") return value.replace("-", " — ");
   if (type === "HALF_SCORING") {
     return value
       .split(",")
       .map((s) => s.trim())
       .filter((s) => s.length > 0)
-      .map((code) => HALF_SCORING_LABELS[code] ?? code)
+      .map((code) => halfScoringLabel(code, homeTeam, awayTeam).display)
       .join(" + ");
   }
   if (type === "IN_GAME_PENALTY") {
-    return IN_GAME_PENALTY_LABELS[value] ?? value;
+    return teamLabel(value, homeTeam, awayTeam).display;
   }
   return value;
 }
