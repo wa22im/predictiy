@@ -49,8 +49,13 @@ export async function saveBet(userId: string, input: SaveBetInput) {
     throw new SaveBetError(403, "BETTING_LOCKED");
   }
 
-  // 4. Validate the predicted value against the market type
-  validatePrediction(market.type, market.options, input.predictedValue);
+  // 4. Validate the predicted value against the market type; may
+  //    return a normalized form (e.g. uppercase for IN_GAME_PENALTY).
+  const normalized = validatePrediction(
+    market.type,
+    market.options,
+    input.predictedValue,
+  );
 
   // 5. availableFrom is set ONCE at first save (= match.kickoffTime) and
   //    preserved on update. Outright markets (no match) are revealed
@@ -68,12 +73,12 @@ export async function saveBet(userId: string, input: SaveBetInput) {
     // On update: do NOT change availableFrom. The reveal time is fixed
     // by the bet's first save — the user can't "re-publish" later to
     // extend the visibility window.
-    update: { predictedValue: input.predictedValue },
+    update: { predictedValue: normalized },
     create: {
       userId,
       groupId: input.groupId,
       marketId: input.marketId,
-      predictedValue: input.predictedValue,
+      predictedValue: normalized,
       availableFrom,
     },
   });
@@ -85,7 +90,7 @@ function validatePrediction(
   type: string,
   options: unknown,
   value: string,
-): void {
+): string {
   const trimmed = value.trim();
   if (!trimmed) {
     throw new SaveBetError(400, "Prediction cannot be empty", "predictedValue");
@@ -100,23 +105,50 @@ function validatePrediction(
         "predictedValue",
       );
     }
-  } else if (type === "HT_FT") {
-    // One of 9 combos: H/H, H/D, H/A, D/H, D/D, D/A, A/H, A/D, A/A
-    if (!/^[HDA]\/[HDA]$/.test(trimmed)) {
+  } else if (type === "HALF_SCORING") {
+    // Comma-separated set of exactly 2 distinct codes from
+    // {A_1H, A_2H, B_1H, B_2H}. e.g. "A_1H,B_2H".
+    const parts = trimmed
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    if (parts.length !== 2) {
       throw new SaveBetError(
         400,
-        "Half-time / Full-time must be one of H/H, H/D, H/A, D/H, D/D, D/A, A/H, A/D, A/A",
+        "Half-scoring pick must be exactly 2 codes (e.g. A_1H,B_2H)",
         "predictedValue",
       );
     }
-  } else if (type === "PENALTY_SHOOTOUT") {
-    if (!["HOME", "AWAY", "NO_SHOOTOUT"].includes(trimmed)) {
+    const valid = new Set(["A_1H", "A_2H", "B_1H", "B_2H"]);
+    const seen = new Set<string>();
+    for (const p of parts) {
+      if (!valid.has(p)) {
+        throw new SaveBetError(
+          400,
+          "Half-scoring pick must be from A_1H, A_2H, B_1H, B_2H",
+          "predictedValue",
+        );
+      }
+      if (seen.has(p)) {
+        throw new SaveBetError(
+          400,
+          "Half-scoring pick must not contain duplicates",
+          "predictedValue",
+        );
+      }
+      seen.add(p);
+    }
+  } else if (type === "IN_GAME_PENALTY") {
+    // Case-insensitive on input; normalized to uppercase for storage.
+    const upper = trimmed.toUpperCase();
+    if (!["HOME", "AWAY", "NONE"].includes(upper)) {
       throw new SaveBetError(
         400,
-        "Penalty shootout pick must be HOME, AWAY, or NO_SHOOTOUT",
+        "In-game penalty pick must be HOME, AWAY, or NONE",
         "predictedValue",
       );
     }
+    return upper;
   } else if (type === "PROPOSITION_CHOICE") {
     const opts = (options as string[] | null) ?? [];
     if (opts.length > 0 && !opts.includes(trimmed)) {
@@ -128,4 +160,5 @@ function validatePrediction(
     }
   }
   // OUTRIGHT_TEXT: any non-empty string is allowed (free-form pick)
+  return trimmed;
 }

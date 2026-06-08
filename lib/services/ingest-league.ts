@@ -228,9 +228,6 @@ async function applyFixtures(
       const stage = mapStage(f.league.round);
       const status = mapStatus(f.fixture.status.short);
 
-      const hadPenaltyShootout =
-        f.score.penalty.home !== null && f.score.penalty.away !== null;
-
       const match = await prisma.match.upsert({
         where: { apiMatchId },
         update: {
@@ -272,9 +269,9 @@ async function applyFixtures(
         f.fixture.status.short === "FT" && f.goals.home !== null && f.goals.away !== null;
 
       // Default markets per match:
-      //   1. EXACT_SCORE       "Predict the final score"
-      //   2. HT_FT             "Half-time / Full-time"  (always)
-      //   3. PENALTY_SHOOTOUT  "Penalty shootout winner" (knockout only)
+      //   1. EXACT_SCORE     "Predict the final score"
+      //   2. HALF_SCORING    "Which teams score in which half?"  (always)
+      //   3. IN_GAME_PENALTY "Which team gets an in-game penalty?" (knockout only)
       //
       // Each is idempotent via (matchId, type, title).
       await prisma.betMarket.upsert({
@@ -297,16 +294,16 @@ async function applyFixtures(
         where: {
           matchId_type_title: {
             matchId: match.id,
-            type: "HT_FT",
-            title: "Half-time / Full-time",
+            type: "HALF_SCORING",
+            title: "Which teams score in which half?",
           },
         },
         update: {},
         create: {
           matchId: match.id,
-          type: "HT_FT",
-          title: "Half-time / Full-time",
-          options: HT_FT_OPTIONS,
+          type: "HALF_SCORING",
+          title: "Which teams score in which half?",
+          options: HALF_SCORING_OPTIONS,
         },
       });
 
@@ -315,16 +312,16 @@ async function applyFixtures(
           where: {
             matchId_type_title: {
               matchId: match.id,
-              type: "PENALTY_SHOOTOUT",
-              title: "Penalty shootout winner",
+              type: "IN_GAME_PENALTY",
+              title: "Which team gets an in-game penalty?",
             },
           },
           update: {},
           create: {
             matchId: match.id,
-            type: "PENALTY_SHOOTOUT",
-            title: "Penalty shootout winner",
-            options: PENALTY_OPTIONS,
+            type: "IN_GAME_PENALTY",
+            title: "Which team gets an in-game penalty?",
+            options: IN_GAME_PENALTY_OPTIONS,
           },
         });
       }
@@ -336,22 +333,32 @@ async function applyFixtures(
           `${f.goals.home}-${f.goals.away}`,
           apiMatchId, result);
 
-        // 2. HT_FT — only if we have HT data
+        // 2. HALF_SCORING — only if we have HT data. Derived from the
+        //    score object: which (team, half) pairs actually scored.
         if (f.score.halftime.home !== null && f.score.halftime.away !== null) {
-          const ftOutcome = outcome(f.goals.home, f.goals.away);
-          const htOutcome = outcome(f.score.halftime.home, f.score.halftime.away);
-          await tryAutoSettle(match.id, "HT_FT", "Half-time / Full-time",
-            `${htOutcome}/${ftOutcome}`,
-            apiMatchId, result);
+          const homeHt = f.score.halftime.home;
+          const awayHt = f.score.halftime.away;
+          const homeSecond = (f.goals.home ?? 0) - homeHt;
+          const awaySecond = (f.goals.away ?? 0) - awayHt;
+          const codes: string[] = [];
+          if (homeHt > 0) codes.push("A_1H");
+          if (homeSecond > 0) codes.push("A_2H");
+          if (awayHt > 0) codes.push("B_1H");
+          if (awaySecond > 0) codes.push("B_2H");
+          await tryAutoSettle(
+            match.id,
+            "HALF_SCORING",
+            "Which teams score in which half?",
+            codes.join(","),
+            apiMatchId,
+            result,
+          );
         }
 
-        // 3. PENALTY_SHOOTOUT — only for knockout with shootout data
-        if (stage === "KNOCKOUT" && hadPenaltyShootout) {
-          const winner =
-            f.score.penalty.home! > f.score.penalty.away! ? "HOME" : "AWAY";
-          await tryAutoSettle(match.id, "PENALTY_SHOOTOUT", "Penalty shootout winner",
-            winner, apiMatchId, result);
-        }
+        // 3. IN_GAME_PENALTY — no auto-settle. The API only surfaces
+        //    shootout penalties, not in-game penalties during regular/
+        //    extra time. Admin settles these manually via the Settlement
+        //    Hub.
       }
     } catch (e) {
       result.errors.push({
@@ -402,28 +409,22 @@ function mapStatus(short: string): "SCHEDULED" | "FINISHED" {
 // ---- Market option presets -----------------------------------------------
 
 /**
- * All 9 Half-time / Full-time combinations.
- * Format: "<HT outcome>/<FT outcome>" where outcome is H (home win),
- * D (draw), A (away win). E.g. "H/H" = home led at HT and won FT.
+ * Half-scoring option set. Codes are "<team>_<half>": A = home, B = away,
+ * 1H = first half, 2H = second half. Auto-settle derives the correct
+ * answer from the score object (see the HALF_SCORING auto-settle branch
+ * above).
  */
-const HT_FT_OPTIONS = [
-  "H/H", "H/D", "H/A",
-  "D/H", "D/D", "D/A",
-  "A/H", "A/D", "A/A",
-];
+const HALF_SCORING_OPTIONS = ["A_1H", "A_2H", "B_1H", "B_2H"];
 
-/** Penalty shootout winner options (only relevant for knockout matches). */
-const PENALTY_OPTIONS = ["HOME", "AWAY", "NO_SHOOTOUT"];
+/**
+ * In-game penalty options (only relevant for knockout matches).
+ * Refers to a penalty awarded during regular/extra time, NOT the
+ * post-match shootout. The API doesn't surface this data, so the
+ * market is created but never auto-settled — admin settles manually.
+ */
+const IN_GAME_PENALTY_OPTIONS = ["HOME", "AWAY", "NONE"];
 
-// ---- Outcome helper + auto-settle helper --------------------------------
-
-/** "H" if home score > away, "D" if equal, "A" if away score > home. */
-function outcome(home: number | null, away: number | null): "H" | "D" | "A" {
-  if (home === null || away === null) return "D";
-  if (home > away) return "H";
-  if (home < away) return "A";
-  return "D";
-}
+// ---- Auto-settle helper -------------------------------------------------
 
 async function tryAutoSettle(
   matchId: string,

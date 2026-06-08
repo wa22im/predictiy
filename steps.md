@@ -339,9 +339,207 @@ predicty/
 
 ---
 
-## Phase 6 — Hardening, RLS, E2E, Deploy (spec §3.2 tenant isolation)
+## Phase 6 — External API Integration: api-football.com (spec §1.4, §2)
 
-- [ ] **6.1 Supabase RLS policies**
+- [x] **6.1 Schema: external provider fields on Competition + Match** ✅
+  - Done 2026-06-07. Migration `20260608040000_external_provider_fields` applied.
+  - `Competition.externalSource`, `externalLeagueId`, `externalSeason`, `lastSyncedAt` (all nullable — NULL for hand-seeded comps, non-NULL for auto-synced).
+  - `Match.homeScore`, `Match.awayScore`, `Match.externalStatus` (all nullable — final score + raw status from the provider).
+  - `@@index([externalSource])` on Competition for the cron scan query.
+  - Acceptance: `npx prisma validate` + migration applied cleanly.
+
+- [x] **6.2 API client: api-football.com** ✅
+  - Done 2026-06-07. `lib/services/api-football.ts` — typed HTTP client with 5-min in-memory cache (free tier = 100 req/day).
+  - `searchLeagues(query)`, `getLeagueFixtures(leagueId, season)`, `getFixture(id)`, `getLeagueById(id)`.
+  - Strict TS types (`League`, `Fixture`, `Status`, `ApiFootballError`) — response nests `id/date/status` under a `fixture` object.
+  - Acceptance: client caches responses, handles errors with status + body.
+
+- [x] **6.3 Ingestion service: onboard leagues** ✅
+  - Done 2026-06-07. `lib/services/ingest-league.ts` — `ingestLeague()` creates Competition + upserts all fixtures + default EXACT_SCORE market per match. `syncCompetition()` updates kickoff/score/status for existing matches, auto-settles EXACT_SCORE via `settleMarket()` when status=FT with goals. `syncAllCompetitions()` is the cron entry point.
+  - Status mapping: FT/AET/PEN/AWD/WO → FINISHED, else SCHEDULED.
+  - Stage mapping: round label → GROUP_STAGE / REGULAR_SEASON / KNOCKOUT.
+  - Idempotent: re-running updates existing rows, no duplicates.
+
+- [x] **6.4 CRON scheduling + CLI** ✅
+  - Done 2026-06-07. `app/api/v1/cron/sync/route.ts` — GET handler guarded by `CRON_SECRET` Bearer token. Calls `syncAllCompetitions()`. `vercel.json`: `*/7 * * * *`.
+  - `scripts/sync-fixtures.ts` — CLI entry (`npm run sync:fixtures`) uses local Prisma, bypasses server-only route.
+  - Acceptance: cron hits the endpoint, syncs all external competitions, logs results.
+
+- [x] **6.5 Admin UI: League Roster & search** ✅
+  - Done 2026-06-07.
+  - `app/(app)/admin/leagues/page.tsx` — lists onboarded + manual competitions with sync button per row (Auto-Sync column shows last synced time or "Manual").
+  - `app/(app)/admin/leagues/new/page.tsx` — search box, dropdown of leagues x seasons, ingest button per season (greys out once taken).
+  - `app/api/v1/admin/leagues/search/route.ts` — POST server-side proxy to api-football.com (hides API key from client).
+  - `components/admin/LeagueSearchForm.tsx` — typeahead search with debounce, season picker.
+  - `components/admin/SyncCompetitionButton.tsx` — triggers re-sync for a single competition.
+  - Admin index updated with a 'League Roster' card.
+  - Acceptance: admin can search, onboard, and manually trigger sync from the UI.
+
+- [x] **6.6 Env var: FOOTBALL_API_KEY** ✅
+  - Done 2026-06-07. Env var renamed from `API_FOOTBALL_KEY` → `FOOTBALL_API_KEY` (matches user's actual `.env.local`). `.env` placeholder removed (only `.env.local` kept — it's the one Next.js reads).
+  - Acceptance: `npm run sync:fixtures` connects and ingests data.
+
+- [x] **6.7 Policy: current/upcoming seasons only** ✅
+  - Done 2026-06-08. `ingestLeague()` now calls `getLeagueById(id)` and verifies the requested season is marked `current` by api-football. Throws if not. Belt-and-suspenders: also rejects seasons >1 year in the past.
+  - `LeagueSearchForm`: hides non-current season buttons entirely, shows a small 'N past seasons hidden' note.
+  - Verified: WC 2026 current=true, WC 2022 current=false, PL 2025 current=true, PL 2024 current=false.
+
+---
+
+## Phase 7 — Betting Market Expansion (spec §1.2, §1.4) — REDESIGNED 2026-06-08
+
+The original Phase 7 (HT_FT + PENALTY_SHOOTOUT) was reviewed and replaced
+on 2026-06-08 with a cleaner pair of markets: HALF_SCORING and
+IN_GAME_PENALTY. Entries 7.1–7.5 below are kept as an audit trail
+(marked REPLACED); the new shape lives in 7.6–7.8.
+
+**Why redesign:**
+- HT_FT's 9-option grid (H/H, H/D, …) was hard to reason about and the
+  W/D/L+outcome partial credit was hard to explain to new users.
+- PENALTY_SHOOTOUT was mis-named: the original spec intent was an
+  in-game penalty (regular/extra time), not the post-match shootout. The
+  data source (api-football) only exposes shootout penalties, so the
+  market was effectively unscoreable as designed.
+- The new markets have a smaller option surface, crisper semantics, and
+  a clear auto-settle path (where data permits).
+
+**Replaced by:**
+- HT_FT → `HALF_SCORING` "Which teams score in which half?"
+- PENALTY_SHOOTOUT → `IN_GAME_PENALTY` "Which team gets an in-game penalty?"
+
+**Migration impact:** None — no schema changes were needed. The 7.1
+migration (`20260608050000_match_ht_and_penalties`) is still in use
+(HALF_SCORING reads `homeHtGoals`/`awayHtGoals`); the
+`homePenalties`/`awayPenalties` columns are now unused but retained
+(no destructive change to the schema in this refactor).
+
+**Legacy-row safety:** `lib/services/settle-market.ts` now wraps
+`getStrategy(market.type)` in a try/catch. If a legacy HT_FT or
+PENALTY_SHOOTOUT row exists, settlement logs a warning and skips the
+per-bet scoring loop (the market is still marked `isSettled=true` and
+its `correctAnswer` is preserved). This keeps the cron from crashing
+on pre-redesign data.
+
+---
+
+- [x] **7.1 Schema: HT goals + penalty fields on Match** ✅ (REPLACED — schema columns retained; HT goals still drive HALF_SCORING)
+  - Done 2026-06-08. Migration `20260608050000_match_ht_and_penalties` applied.
+  - `Match.homeHtGoals`, `Match.awayHtGoals` (nullable Int — half-time score, drives HALF_SCORING).
+  - `Match.homePenalties`, `Match.awayPenalties` (nullable Int — shootout result, now unused by any market; kept for forward compatibility).
+  - Acceptance: migration applied, all existing rows have NULL for these fields.
+
+- [x] **7.2 HT/FT (Half-time / Full-time) market** — **REPLACED by 7.6**
+  - Original 2026-06-08: 9-option HT_FT market, exact=exactScorePoints, 1-of-2=outcomePoints/2.
+  - Replaced 2026-06-08 by `HALF_SCORING` (see 7.6). `lib/scoring/ht-ft.ts` deleted.
+
+- [x] **7.3 Penalty Shootout market (knockout only)** — **REPLACED by 7.7**
+  - Original 2026-06-08: HOME/AWAY/NO_SHOOTOUT market on knockouts, exact=exactScorePoints.
+  - Replaced 2026-06-08 by `IN_GAME_PENALTY` (see 7.7). `lib/scoring/penalty-shootout.ts` deleted.
+
+- [x] **7.4 Auto-settle HT/FT + Penalty on FT detection** — **REPLACED by 7.6 (HALF_SCORING) + 7.7 (IN_GAME_PENALTY, manual only)**
+  - Original 2026-06-08: settled HT_FT and PENALTY_SHOOTOUT on FT detection.
+  - Replaced 2026-06-08: HALF_SCORING auto-settles from the score object; IN_GAME_PENALTY has no auto-settle path (API doesn't expose in-game penalty data) — admin settles manually via the Settlement Hub.
+
+- [x] **7.5 PredictionForm: HT_FT + PENALTY_SHOOTOUT display** — **REPLACED by 7.8**
+  - Original 2026-06-08: 9-button grid for HT_FT, 3-pill picker for PENALTY_SHOOTOUT.
+  - Replaced 2026-06-08: multi-select chip picker for HALF_SCORING (cap=2, count visible), 3-pill picker for IN_GAME_PENALTY (see 7.8).
+
+- [x] **7.6 HALF_SCORING market (replaces HT_FT)** ✅
+  - Done 2026-06-08. New market type `HALF_SCORING` with 4 options: `A_1H`, `A_2H`, `B_1H`, `B_2H` (A = home, B = away, 1H/2H = which half).
+  - **Multi-select:** users pick exactly 2 options. UI cap enforced client-side; server validates "exactly 2 distinct valid codes, no duplicates".
+  - **Storage:** comma-separated string, e.g. `"A_1H,B_2H"`. Order is irrelevant (parsed as a Set).
+  - **Scoring:** `lib/scoring/half-scoring.ts` — `HalfScoringStrategy.score` returns the size of the intersection between the predicted and correct sets, capped at the predicted set size (max 2). Range 0–2. Invalid input returns `{ points: 0, breakdown: "Invalid pick: …" }` — never throws.
+  - **Auto-settle:** `applyFixtures` in `ingest-league.ts` derives the correct answer from the score object: `A_1H` if `homeHtGoals > 0`, `A_2H` if `(homeScore - homeHtGoals) > 0`, `B_1H` if `awayHtGoals > 0`, `B_2H` if `(awayScore - awayHtGoals) > 0`. Only fires when BOTH `homeHtGoals` and `awayHtGoals` are non-null.
+  - Created on every ingested match (both api-football and fixturedownload sources).
+  - Registered in `lib/scoring/index.ts`. `lib/scoring/ht-ft.ts` deleted.
+  - `save-bet.ts`: validates with split-by-comma, exactly 2 distinct codes from the allowed set, no duplicates; throws `SaveBetError(400, …)` on failure.
+  - Verification: HALF_SCORING bets save and score correctly end-to-end.
+
+- [x] **7.7 IN_GAME_PENALTY market (replaces PENALTY_SHOOTOUT)** ✅
+  - Done 2026-06-08. New market type `IN_GAME_PENALTY` with 3 options: `HOME`, `AWAY`, `NONE`.
+  - Refers to a penalty awarded during regular/extra time, NOT the post-match shootout (the original spec intent).
+  - **Auto-created** only on knockout-stage matches (stage = KNOCKOUT) in `ingest-league.ts`. **Not created** by `ingest-fixturedownload.ts` (group stage only by default).
+  - **No auto-settle:** the api-football feed only exposes shootout penalties, not in-game penalties. Admin enters the correct answer manually via the Settlement Hub.
+  - **Scoring:** `lib/scoring/in-game-penalty.ts` — `InGamePenaltyStrategy.score` returns 3 points on exact match (case-insensitive on both sides), 0 otherwise. No negatives.
+  - `save-bet.ts`: case-insensitive on input, normalized to uppercase for storage; accepts HOME/AWAY/NONE only.
+  - Registered in `lib/scoring/index.ts`. `lib/scoring/penalty-shootout.ts` deleted.
+
+- [x] **7.8 PredictionForm: HALF_SCORING + IN_GAME_PENALTY display** ✅
+  - Done 2026-06-08. `components/matches/PredictionForm.tsx` updated.
+  - **HALF_SCORING:** new multi-select chip picker. User can toggle up to 2 options; the other buttons become visually disabled once 2 are selected. A `Pick 2 — N/2 selected` counter is shown above the chips. Submit value is the comma-separated string (e.g. `"A_1H,B_2H"`). On load, `market.viewerBet.predictedValue` is split by comma and the matching chips are pre-selected.
+  - **IN_GAME_PENALTY:** 3-pill single-select chip picker, same UI as `PROPOSITION_CHOICE`.
+  - HT_FT and PENALTY_SHOOTOUT branches removed; legacy rows render as a generic proposition (with no styling branching on the removed type).
+  - Locked-state display: HALF_SCORING values shown as `"A_1H + B_2H"` (joined with ` + `) for readability.
+
+- [x] **7.9 Seed data + UI label updates** ✅
+  - Done 2026-06-08. Three connected changes so the user can wipe & re-onboard cleanly.
+  - **`prisma/seed/fixtures/wc-2026-group-stage.json`:** added a `HALF_SCORING` market (title "Which teams score in which half?", options `["A_1H","A_2H","B_1H","B_2H"]`) to each of the 5 group-stage matches. The `wc26-outright-winner` match is unchanged (it keeps only its `OUTRIGHT_TEXT` markets).
+  - **`prisma/seed.ts`:** extended the `MarketInput` type union from `"EXACT_SCORE" | "OUTRIGHT_TEXT" | "PROPOSITION_CHOICE"` to also include `"HALF_SCORING"`. `IN_GAME_PENALTY` is deliberately NOT in the union — it's knockout-only, and the only non-group match in the seed is OUTRIGHT, so no seed match has it.
+  - **`scripts/wipe-db.ts` + `npm run wipe:db`:** new one-shot wipe. Deletes `UserBet` → `BetMarket` → `GroupMember` → `Group` → `Match` → `Competition` in FK-safe order, all inside a single `prisma.$transaction([...])`. Preserves `User` rows. Requires `WIPE_CONFIRM=yes-i-am-sure` in the env or refuses safely (exits 0). Idempotent — re-runs on empty DB are no-ops.
+  - **`components/matches/PredictionForm.tsx`:** added two exported label maps — `HALF_SCORING_LABELS` (`A_1H` → "Home 1H", `A_2H` → "Home 2H", `B_1H` → "Away 1H", `B_2H` → "Away 2H") and `IN_GAME_PENALTY_LABELS` (`HOME` → "Home team", `AWAY` → "Away team", `NONE` → "No penalty"). The chip pickers render the human-readable label as text content, but the onClick handlers still toggle / set the underlying canonical code — the value state, saved bet, validation, and scoring strategy all continue to use the codes. `formatValue()` updated so the locked-state display shows the labels (e.g. `"A_1H,B_2H"` → `"Home 1H + Away 2H"`).
+  - **`components/matches/MatchCard.tsx`:** small description paragraphs rendered below the market title for the two new market types — `"Pick 2 — +1 per correct, 0 per miss"` for HALF_SCORING and `"+3 for correct, 0 for miss"` for IN_GAME_PENALTY. Styled `text-xs text-muted-foreground`.
+  - **Usage:** `WIPE_CONFIRM=yes-i-am-sure npm run wipe:db && npm run db:seed`. The wipe script does NOT pass the env var — the user must set it themselves.
+
+---
+
+## Phase 8 — Alternative Data Source: fixturedownload.com
+
+- [x] **8.1 fixturedownload.com client** ✅
+  - Done 2026-06-08. `lib/services/fixturedownload.ts` — fetches + parses CSV schedule from fixturedownload.com. `isPlaceholderTeam()` filters knockout TBD entries (2A, 'To be announced', etc.).
+  - Required because api-football has 0 fixtures for WC 2026 (the schedule isn't published on their platform yet).
+
+- [x] **8.2 fixturedownload ingestion service + CLI** ✅
+  - Done 2026-06-08.
+  - `lib/services/ingest-fixturedownload.ts` — programmatic service. Default: group stage only (Rounds 1-3). Pass `--all-rounds` to include knockouts.
+  - `scripts/ingest-fixturedownload.ts` — CLI entry (`npm run ingest:fd`).
+  - Creates EXACT_SCORE + HALF_SCORING markets per match (no IN_GAME_PENALTY — knockout-only, and fixturedownload defaults to group stage).
+  - Idempotent: re-running updates existing rows, no duplicates.
+  - Competition.externalSource = 'fixturedownload', externalLeagueId = null (no numeric id).
+  - Verified: 72 group-stage matches ingested for 'FIFA World Cup 2026', first match Mexico vs South Africa on 2026-06-11 19:00 UTC. Re-run shows 0 created / 72 updated.
+
+---
+
+## Phase 9 — Time, Visibility & UI Hardening
+
+- [x] **9.1 Convert Match.kickoffTime to TIMESTAMPTZ** ✅
+  - Done 2026-06-08. Migration `20260608030000_kickoff_to_timestamptz` applied.
+  - Changed from naive `TIMESTAMP` to `TIMESTAMPTZ`. No data change (DB session is UTC, values interpreted the same) — but makes the instant unambiguous regardless of reader timezone.
+
+- [x] **9.2 Dev time-shift tooling** ✅
+  - Done 2026-06-08. `scripts/dev-shift-times.ts` — `npm run dev:shift <offset>` sets all match kickoff times to `now + offset` (e.g. `2h`, `30m`, `-5m`, `1d`). `npm run dev:shift 30m 90m` distributes across a range. `npm run dev:reset-times` restores from seed JSON.
+  - Eliminates the 'I ran a SQL UPDATE and forgot' confusion.
+
+- [x] **9.3 UTC display everywhere** ✅
+  - Done 2026-06-08. MatchCard now shows BOTH absolute UTC time AND relative 'in 3d 20h'. Day-grouping in MatchList uses UTC dates (consistent across timezones).
+  - `lib/time.ts`: new `formatUtc()` helper. All kickoff timestamps formatted with en-GB locale, explicit timeZone: 'UTC'.
+
+- [x] **9.4 Always show countdown (drop 2h gate)** ✅
+  - Done 2026-06-08. The 2-hour gate was removed — the countdown component now shows a live timer at all times for open matches (3d 20h, 2h 5m, 12m 30s formatted naturally). Server-time-anchored, cannot be gamed by device clock changes.
+  - `components/matches/Countdown.tsx` updated.
+
+- [x] **9.5 UserBet.availableFrom — reveal timing refactoring** ✅
+  - Done 2026-06-08. Replaced `isRevealed` boolean with `UserBet.availableFrom DateTime`.
+  - Migration `20260608010000_userbet_available_from`: drops `isRevealed` + index, adds `availableFrom` + index (migration `20260608000000_add_userbet_is_revealed` creates the boolean then the next migration replaces it — consolidated).
+  - `saveBet` sets `availableFrom = match.kickoffTime` on first save, preserves on update.
+  - `group-feed`: masks foreign bets where `availableFrom > now`.
+  - `member-history`: same filter; owner always sees their own.
+  - `lib/services/reveal-bets.ts` removed (lazy update no longer needed).
+
+- [x] **9.6 force-dynamic on group pages** ✅
+  - Done 2026-06-08. Added `export const dynamic = "force-dynamic"` to matches, leaderboard, member-history, and group shell pages. Fixes UI staleness where a match near lockdown appeared editable but was actually locked on the server.
+
+- [x] **9.7 Admin trigger fixes + demote script** ✅
+  - Done 2026-06-08.
+  - Migration `20260608020000_fix_admin_trigger_uuid_cast`: fixes "operator does not exist: uuid = text" by casting `NEW.id` to uuid in sync_admin_metadata trigger.
+  - `scripts/demote-admin.ts` + `npm run admin:demote` — companion to promote script.
+  - Auto-load `.env`/`.env.local` in promote-admin.ts so it works without manual sourcing.
+  - Better error messages (DATABASE_URL missing, user not found).
+
+---
+
+## Phase 10 — Hardening, RLS, E2E, Deploy (spec §3.2 tenant isolation)
+
+- [ ] **10.1 Supabase RLS policies**
   - Files: `supabase/migrations/<ts>_rls_policies.sql`.
   - Rules:
     - `User`: row visible only to self.
@@ -350,24 +548,24 @@ predicty/
     - `Match`, `Competition`, `BetMarket`: read for all authenticated users; write only via service role.
   - Acceptance: a test user signed in via the anon key can read only their own groups' data; direct DB probes fail.
 
-- [ ] **6.2 Service-role key is server-only**
+- [ ] **10.2 Service-role key is server-only**
   - Files: `lib/supabase/server.ts` exports a `getServiceSupabase()` that is imported **only** in `app/api/v1/admin/*` and `lib/services/settlement*`. Add a `tests/unit/no-service-role-leak.test.ts` that greps the repo for `SUPABASE_SERVICE_ROLE_KEY` outside `lib/supabase/server.ts` and `app/api/v1/admin/**`.
   - Acceptance: test passes; the only place the env var is referenced is server-side.
 
-- [ ] **6.3 Vitest coverage gate**
+- [ ] **10.3 Vitest coverage gate**
   - `package.json` script `test:ci` runs Vitest with `--coverage` and a 70% line threshold on `lib/`.
   - Acceptance: `lib/scoring`, `lib/time`, `lib/services/*` are ≥ 90%; overall `lib/` ≥ 70%.
 
-- [ ] **6.4 Playwright E2E: the three journeys**
+- [ ] **10.4 Playwright E2E: the three journeys**
   - Files: `tests/e2e/journey-1-organizer.spec.ts`, `journey-2-invited-friend.spec.ts`, `journey-3-active-competitor.spec.ts`.
   - Each runs against a freshly-reset test Supabase project.
   - Acceptance: all three pass in CI.
 
-- [ ] **6.5 Vercel + Supabase production setup**
-  - Files: `vercel.json` (if needed for cron — see 6.6), `README.md` updated with deploy steps.
+- [ ] **10.5 Vercel + Supabase production setup**
+  - Files: `vercel.json` (if needed for cron — see 10.6), `README.md` updated with deploy steps.
   - Acceptance: pushing to a branch deploys a preview that connects to the staging Supabase project.
 
-- [ ] **6.6 (Optional) Settlement cron**
+- [ ] **10.6 (Optional) Settlement cron**
   - Files: `app/api/v1/cron/sweep-settlements/route.ts`, Vercel cron config to call it hourly. Auto-settles matches whose `kickoffTime + 3h` is past. Off by default; flip on after manual settlement flow is stable.
   - Acceptance: hourly run settles 0 markets in steady state; settles correct markets after a match finishes and an admin types the score.
 

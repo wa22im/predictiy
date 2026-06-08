@@ -18,7 +18,9 @@
     "dev:shift": "tsx scripts/dev-shift-times.ts",
     "dev:reset-times": "tsx scripts/dev-shift-times.ts reset",
     "sync:fixtures": "tsx scripts/sync-fixtures.ts",
-    "ingest:fd": "tsx scripts/ingest-fixturedownload.ts"
+    "ingest:fd": "tsx scripts/ingest-fixturedownload.ts",
+    "cleanup:legacy": "tsx scripts/cleanup-legacy-markets.ts",
+    "wipe:db": "tsx scripts/wipe-db.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

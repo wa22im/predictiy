@@ -58,6 +58,16 @@ export function MatchCard({
         {match.markets.map((mk) => (
           <div key={mk.id} className="space-y-2">
             <p className="text-sm font-medium">{mk.title}</p>
+            {mk.type === "HALF_SCORING" && (
+              <p className="text-xs text-muted-foreground">
+                Pick 2 — +1 per correct, 0 per miss
+              </p>
+            )}
+            {mk.type === "IN_GAME_PENALTY" && (
+              <p className="text-xs text-muted-foreground">
+                +3 for correct, 0 for miss
+              </p>
+            )}
             <PredictionForm
               market={mk}
               groupId={groupId}

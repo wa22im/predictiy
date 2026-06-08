@@ -70,39 +70,57 @@ export async function settleMarket(input: SettleInput): Promise<SettleResult> {
     include: { group: { select: { id: true, name: true, scoringConfig: true } } },
   });
 
-  const strategy = getStrategy(market.type);
   const stage = market.match?.stage ?? "OUTRIGHT";
   const byGroupMap = new Map<string, SettleByGroup>();
   let scoredRows = 0;
 
-  for (const bet of bets) {
-    const scoringConfig = bet.group.scoringConfig as unknown as ScoringConfig;
-    const result = strategy.score({
-      predictedValue: bet.predictedValue,
-      correctAnswer: input.correctAnswer.trim(),
-      marketType: market.type,
-      matchStage: stage,
-      scoringConfig,
-      options: (market.options as string[] | null) ?? null,
-    });
+  // Look up a scoring strategy. If the market type is not in the
+  // registry (e.g. a legacy row whose market type was removed in a
+  // later redesign), log a warning and skip the scoring loop. The
+  // market is still marked settled + correctAnswer is preserved; only
+  // the per-bet pointsAwarded is not updated.
+  let strategy: ReturnType<typeof getStrategy> | null = null;
+  try {
+    strategy = getStrategy(market.type);
+  } catch (e) {
+    console.warn(
+      `[settleMarket] No scoring strategy for market type ${market.type} ` +
+        `(marketId=${market.id}); skipping scoring loop. ` +
+        `Likely a legacy row predating a market redesign. ` +
+        `Error: ${(e as Error).message}`,
+    );
+  }
 
-    await prisma.userBet.update({
-      where: { id: bet.id },
-      data: { pointsAwarded: result.points },
-    });
-
-    scoredRows += 1;
-    const existing = byGroupMap.get(bet.groupId);
-    if (existing) {
-      existing.scoredRows += 1;
-      existing.totalPoints += result.points;
-    } else {
-      byGroupMap.set(bet.groupId, {
-        groupId: bet.groupId,
-        groupName: bet.group.name,
-        scoredRows: 1,
-        totalPoints: result.points,
+  if (strategy) {
+    for (const bet of bets) {
+      const scoringConfig = bet.group.scoringConfig as unknown as ScoringConfig;
+      const result = strategy.score({
+        predictedValue: bet.predictedValue,
+        correctAnswer: input.correctAnswer.trim(),
+        marketType: market.type,
+        matchStage: stage,
+        scoringConfig,
+        options: (market.options as string[] | null) ?? null,
       });
+
+      await prisma.userBet.update({
+        where: { id: bet.id },
+        data: { pointsAwarded: result.points },
+      });
+
+      scoredRows += 1;
+      const existing = byGroupMap.get(bet.groupId);
+      if (existing) {
+        existing.scoredRows += 1;
+        existing.totalPoints += result.points;
+      } else {
+        byGroupMap.set(bet.groupId, {
+          groupId: bet.groupId,
+          groupName: bet.group.name,
+          scoredRows: 1,
+          totalPoints: result.points,
+        });
+      }
     }
   }
 

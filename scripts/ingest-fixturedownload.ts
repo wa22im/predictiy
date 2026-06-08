@@ -22,9 +22,7 @@ import { PrismaClient } from "../lib/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { fetchFixtures, isPlaceholderTeam, parseDateUtc } from "../lib/services/fixturedownload";
 
-const HT_FT_OPTIONS = [
-  "H/H","H/D","H/A","D/H","D/D","D/A","A/H","A/D","A/A",
-];
+const HALF_SCORING_OPTIONS = ["A_1H","A_2H","B_1H","B_2H"];
 
 async function main() {
   if (!process.env.DATABASE_URL) {
@@ -131,16 +129,16 @@ async function main() {
     });
     if (!exExisted) mkCreated += 1;
 
-    const htExisted = await prisma.betMarket.findUnique({
-      where: { matchId_type_title: { matchId: match.id, type: "HT_FT", title: "Half-time / Full-time" } },
+    const halfExisted = await prisma.betMarket.findUnique({
+      where: { matchId_type_title: { matchId: match.id, type: "HALF_SCORING", title: "Which teams score in which half?" } },
       select: { id: true },
     });
     await prisma.betMarket.upsert({
-      where: { matchId_type_title: { matchId: match.id, type: "HT_FT", title: "Half-time / Full-time" } },
-      create: { matchId: match.id, type: "HT_FT", title: "Half-time / Full-time", options: HT_FT_OPTIONS },
-      update: { options: HT_FT_OPTIONS },
+      where: { matchId_type_title: { matchId: match.id, type: "HALF_SCORING", title: "Which teams score in which half?" } },
+      create: { matchId: match.id, type: "HALF_SCORING", title: "Which teams score in which half?", options: HALF_SCORING_OPTIONS },
+      update: { options: HALF_SCORING_OPTIONS },
     });
-    if (!htExisted) mkCreated += 1;
+    if (!halfExisted) mkCreated += 1;
   }
 
   console.log("");

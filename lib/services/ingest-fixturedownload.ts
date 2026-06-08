@@ -12,9 +12,10 @@
  *     ("2A", "To be announced") are dropped.
  *
  * For each match we create the same two markets the api-football
- * pipeline creates (no PENALTY_SHOOTOUT — only for knockouts):
- *   - EXACT_SCORE  "Predict the final score"
- *   - HT_FT        "Half-time / Full-time"
+ * pipeline creates (no IN_GAME_PENALTY — only for knockouts, and
+ * this source only ingests group stage by default):
+ *   - EXACT_SCORE   "Predict the final score"
+ *   - HALF_SCORING  "Which teams score in which half?"
  *
  * Stage mapping from RoundNumber:
  *   1, 2, 3  →  GROUP_STAGE
@@ -48,11 +49,7 @@ export type IngestFromFixtureDownloadResult = {
   total: number;
 };
 
-const HT_FT_OPTIONS = [
-  "H/H", "H/D", "H/A",
-  "D/H", "D/D", "D/A",
-  "A/H", "A/D", "A/A",
-];
+const HALF_SCORING_OPTIONS = ["A_1H", "A_2H", "B_1H", "B_2H"];
 
 export async function ingestFromFixtureDownload(
   input: IngestFromFixtureDownloadInput,
@@ -115,12 +112,12 @@ export async function ingestFromFixtureDownload(
     await upsertMarket(match.id, "EXACT_SCORE", "Predict the final score", null);
     if (!exactExisted) marketsCreated += 1;
 
-    const htftExisted = await prisma.betMarket.findUnique({
-      where: { matchId_type_title: { matchId: match.id, type: "HT_FT", title: "Half-time / Full-time" } },
+    const halfExisted = await prisma.betMarket.findUnique({
+      where: { matchId_type_title: { matchId: match.id, type: "HALF_SCORING", title: "Which teams score in which half?" } },
       select: { id: true },
     });
-    await upsertMarket(match.id, "HT_FT", "Half-time / Full-time", HT_FT_OPTIONS);
-    if (!htftExisted) marketsCreated += 1;
+    await upsertMarket(match.id, "HALF_SCORING", "Which teams score in which half?", HALF_SCORING_OPTIONS);
+    if (!halfExisted) marketsCreated += 1;
   }
 
   return {
