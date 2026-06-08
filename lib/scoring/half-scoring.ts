@@ -62,9 +62,17 @@ export const HalfScoringStrategy: ScoringStrategy = {
     }
     const points = Math.max(-1, sum);
 
-    if (points === 2) return { points, breakdown: "Full match (2/2)" };
-    if (points === 1) return { points, breakdown: "Partial (1/2)" };
-    if (points === 0) return { points, breakdown: "Mixed (0/2)" };
-    return { points, breakdown: "Both wrong" };
+    const pickCount = pParse.set.size;
+    const correctCount = [...pParse.set].filter((c) => cParse.set.has(c)).length;
+
+    if (pickCount === 0) return { points, breakdown: "No pick" };
+    if (pickCount === 1) {
+      if (correctCount === 1) return { points, breakdown: "Full match (1/1)" };
+      return { points, breakdown: "Wrong (0/1)" };
+    }
+    // pickCount === 2
+    if (correctCount === 2) return { points, breakdown: "Full match (2/2)" };
+    if (correctCount === 1) return { points, breakdown: "Partial (1/2)" };
+    return { points, breakdown: "Both wrong (0/2, floored to -1)" };
   },
 };

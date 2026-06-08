@@ -123,9 +123,14 @@ export async function saveBetsBatch(
 
   // 5. Upsert each normalized pick. availableFrom is preserved on
   //    update (set to match.kickoffTime on first save).
+  //
+  //    Skip empty normalized values — an empty HALF_SCORING value
+  //    means "I skipped this market". The step-6 delete behavior
+  //    below will clear any prior row for the same market.
   const availableFrom = match.kickoffTime;
   const results = [];
   for (const pick of normalized) {
+    if (!pick.value) continue;
     const bet = await prisma.userBet.upsert({
       where: {
         userId_groupId_marketId: {
@@ -185,6 +190,16 @@ export function validatePrediction(
   value: string,
 ): string {
   const trimmed = value.trim();
+
+  // HALF_SCORING is optional. An empty value means "I skipped this
+  // market" — return "" and the caller will skip the upsert (and the
+  // step-6 delete behavior will clear any prior row). This must be
+  // checked before the general "Prediction cannot be empty" throw
+  // below, because toggling all chips off in the form produces "".
+  if (type === "HALF_SCORING" && !trimmed) {
+    return "";
+  }
+
   if (!trimmed) {
     throw new SaveBetError(400, "Prediction cannot be empty", "predictedValue");
   }
@@ -202,10 +217,10 @@ export function validatePrediction(
       .split(",")
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
-    if (parts.length !== 2) {
+    if (parts.length > 2) {
       throw new SaveBetError(
         400,
-        "Half-scoring pick must be exactly 2 codes (e.g. A_1H,B_2H)",
+        "Half-scoring pick must be at most 2 codes (e.g. A_1H,B_2H or A_1H alone)",
         "predictedValue",
       );
     }

@@ -372,7 +372,7 @@ function HalfScoringRow({
     <div>
       <p className="text-sm font-medium">Which teams score in which half?</p>
       <p className="text-[11px] text-muted-foreground mb-2">
-        Optional — Pick 2 — +1 per correct, -1 per wrong (min -1)
+        Optional — Pick 1 or 2 — +1 per correct, -1 per wrong (min -1)
       </p>
       <div className="flex items-center gap-2 flex-wrap">
         {options.map((opt) => {

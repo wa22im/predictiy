@@ -59,8 +59,9 @@ export function ScoringExplainedPopover({
               </button>
             </div>
             <p className="text-[11px] text-muted-foreground mb-3">
-              7 examples — group stage uses +3 / +1 weights, knockout uses +5 / +2. Every bet is
-              floored at -1, so a single bad pick can never cost you more than -1.
+              9 examples — group stage uses +3 / +1 weights, knockout uses +5 / +2. Every bet is
+              floored at -1, so a single bad pick can never cost you more than -1. Half-scoring
+              accepts 1 or 2 codes; a 1-pick ranges from -1 to +1, a 2-pick from -1 to +2.
             </p>
             <div className="space-y-3 pr-1">
               {SCORING_EXAMPLES.map((ex, i) => (

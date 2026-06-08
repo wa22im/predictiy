@@ -305,4 +305,70 @@ export const SCORING_EXAMPLES: ScoringExample[] = [
     explanation:
       "The per-bet floor keeps this at -2 instead of -4. The HALF_SCORING market floors at -1 even though both picks were wrong.",
   },
+  {
+    title: "Japan vs Germany — half-scoring 1-pick (correct)",
+    match: "Japan vs Germany",
+    stage: "GROUP",
+    userBet: {
+      exactScore: "2-1",
+      halfScoring: "A_1H",
+      inGamePenalty: "",
+    },
+    result: {
+      finalScore: "2-1",
+      winner: "HOME",
+      halfScoring: "A_1H",
+      inGamePenalty: "NONE",
+    },
+    breakdown: [
+      {
+        market: "EXACT_SCORE",
+        pick: "2-1",
+        points: 4,
+        note: "Exact match (+3) + winner (+1) = +4",
+      },
+      {
+        market: "HALF_SCORING",
+        pick: "A_1H",
+        points: 1,
+        note: "1-pick: Japan 1H correct → +1 (range -1 to +1 for a 1-pick)",
+      },
+    ],
+    total: 5,
+    explanation:
+      "HALF_SCORING accepts 1 or 2 codes. A single correct pick scores +1; a single wrong pick scores -1 (the per-bet floor still applies).",
+  },
+  {
+    title: "Spain vs Costa Rica — half-scoring 1-pick (wrong)",
+    match: "Spain vs Costa Rica",
+    stage: "GROUP",
+    userBet: {
+      exactScore: "3-0",
+      halfScoring: "B_1H",
+      inGamePenalty: "",
+    },
+    result: {
+      finalScore: "3-0",
+      winner: "HOME",
+      halfScoring: "A_1H",
+      inGamePenalty: "NONE",
+    },
+    breakdown: [
+      {
+        market: "EXACT_SCORE",
+        pick: "3-0",
+        points: 4,
+        note: "Exact match (+3) + winner (+1) = +4",
+      },
+      {
+        market: "HALF_SCORING",
+        pick: "B_1H",
+        points: -1,
+        note: "1-pick: Costa Rica 1H wrong → -1 (per-bet floor)",
+      },
+    ],
+    total: 3,
+    explanation:
+      "A 1-pick HALF_SCORING bet has a range of -1 to +1. The per-bet floor caps a wrong 1-pick at -1, same as a wrong 2-pick.",
+  },
 ];
