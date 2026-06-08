@@ -17,7 +17,7 @@ export type FeedMarket = {
   options: string[] | null;
   correctAnswer: string | null;
   isSettled: boolean;
-  viewerBet: { predictedValue: string } | null;
+  viewerBet: { predictedValue: string; pointsAwarded: number | null } | null;
   otherBets: FeedOtherBet[];
 };
 
@@ -129,7 +129,12 @@ export async function getGroupFeed(
         options: (market.options as string[] | null) ?? null,
         correctAnswer: market.correctAnswer,
         isSettled: market.isSettled,
-        viewerBet: viewerBet ? { predictedValue: viewerBet.predictedValue } : null,
+        viewerBet: viewerBet
+          ? {
+              predictedValue: viewerBet.predictedValue,
+              pointsAwarded: viewerBet.pointsAwarded,
+            }
+          : null,
         otherBets,
       };
     });

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { saveBet, SaveBetError } from "@/lib/services/save-bet";
+import { saveBetsBatch, SaveBetError } from "@/lib/services/save-bets-batch";
 
 const Input = z.object({
   groupId: z.string().uuid(),
-  marketId: z.string().uuid(),
-  predictedValue: z.string().min(1).max(64),
+  matchId: z.string().uuid(),
+  picks: z.record(z.string().uuid(), z.string().min(1).max(64)),
 });
 
 export async function POST(request: Request) {
@@ -35,8 +35,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const bet = await saveBet(user.id, parsed.data);
-    return NextResponse.json({ bet });
+    const bets = await saveBetsBatch(user.id, parsed.data);
+    return NextResponse.json({ bets });
   } catch (e) {
     if (e instanceof SaveBetError) {
       return NextResponse.json(

@@ -432,53 +432,92 @@ on pre-redesign data.
   - Original 2026-06-08: 9-option HT_FT market, exact=exactScorePoints, 1-of-2=outcomePoints/2.
   - Replaced 2026-06-08 by `HALF_SCORING` (see 7.6). `lib/scoring/ht-ft.ts` deleted.
 
-- [x] **7.3 Penalty Shootout market (knockout only)** — **REPLACED by 7.7**
-  - Original 2026-06-08: HOME/AWAY/NO_SHOOTOUT market on knockouts, exact=exactScorePoints.
+- [x] **7.3 Penalty Shootout market** — **REPLACED by 7.7**
+  - Original 2026-06-08: HOME/AWAY/NO_SHOOTOUT market, exact=exactScorePoints.
   - Replaced 2026-06-08 by `IN_GAME_PENALTY` (see 7.7). `lib/scoring/penalty-shootout.ts` deleted.
 
 - [x] **7.4 Auto-settle HT/FT + Penalty on FT detection** — **REPLACED by 7.6 (HALF_SCORING) + 7.7 (IN_GAME_PENALTY, manual only)**
   - Original 2026-06-08: settled HT_FT and PENALTY_SHOOTOUT on FT detection.
   - Replaced 2026-06-08: HALF_SCORING auto-settles from the score object; IN_GAME_PENALTY has no auto-settle path (API doesn't expose in-game penalty data) — admin settles manually via the Settlement Hub.
 
-- [x] **7.5 PredictionForm: HT_FT + PENALTY_SHOOTOUT display** — **REPLACED by 7.8**
+- [x] **7.5 PredictionForm: HT_FT + PENALTY_SHOOTOUT display** — **REPLACED by 7.8, then 7.10**
   - Original 2026-06-08: 9-button grid for HT_FT, 3-pill picker for PENALTY_SHOOTOUT.
   - Replaced 2026-06-08: multi-select chip picker for HALF_SCORING (cap=2, count visible), 3-pill picker for IN_GAME_PENALTY (see 7.8).
+  - Replaced again 2026-06-08 by the per-match form in 7.10 — `PredictionForm.tsx` was deleted in favor of `MatchBettingForm.tsx`.
 
-- [x] **7.6 HALF_SCORING market (replaces HT_FT)** ✅
+- [x] **7.6 HALF_SCORING market (replaces HT_FT)** ✅ (REPLACED by 7.10 — scoring rule changed to per-pick ±1 with -1 floor)
   - Done 2026-06-08. New market type `HALF_SCORING` with 4 options: `A_1H`, `A_2H`, `B_1H`, `B_2H` (A = home, B = away, 1H/2H = which half).
   - **Multi-select:** users pick exactly 2 options. UI cap enforced client-side; server validates "exactly 2 distinct valid codes, no duplicates".
   - **Storage:** comma-separated string, e.g. `"A_1H,B_2H"`. Order is irrelevant (parsed as a Set).
-  - **Scoring:** `lib/scoring/half-scoring.ts` — `HalfScoringStrategy.score` returns the size of the intersection between the predicted and correct sets, capped at the predicted set size (max 2). Range 0–2. Invalid input returns `{ points: 0, breakdown: "Invalid pick: …" }` — never throws.
+  - **Scoring (original):** `lib/scoring/half-scoring.ts` returned the size of the intersection between predicted and correct sets, capped at the predicted set size. Range 0–2.
+  - **Scoring (REPLACED by 7.10):** per-pick ±1 with -1 floor. Each of the 2 picks: +1 if in the correct set, -1 if not. Sum, then `Math.max(-1, sum)`. Range: -1 to +2.
   - **Auto-settle:** `applyFixtures` in `ingest-league.ts` derives the correct answer from the score object: `A_1H` if `homeHtGoals > 0`, `A_2H` if `(homeScore - homeHtGoals) > 0`, `B_1H` if `awayHtGoals > 0`, `B_2H` if `(awayScore - awayHtGoals) > 0`. Only fires when BOTH `homeHtGoals` and `awayHtGoals` are non-null.
   - Created on every ingested match (both api-football and fixturedownload sources).
   - Registered in `lib/scoring/index.ts`. `lib/scoring/ht-ft.ts` deleted.
-  - `save-bet.ts`: validates with split-by-comma, exactly 2 distinct codes from the allowed set, no duplicates; throws `SaveBetError(400, …)` on failure.
+  - `save-bets-batch.ts`: validates with split-by-comma, exactly 2 distinct codes from the allowed set, no duplicates; throws `SaveBetError(400, …)` on failure.
   - Verification: HALF_SCORING bets save and score correctly end-to-end.
 
-- [x] **7.7 IN_GAME_PENALTY market (replaces PENALTY_SHOOTOUT)** ✅
+- [x] **7.7 IN_GAME_PENALTY market (replaces PENALTY_SHOOTOUT)** ✅ (REPLACED by 7.10 — scoring rule changed to +3/-2 with -1 floor)
   - Done 2026-06-08. New market type `IN_GAME_PENALTY` with 3 options: `HOME`, `AWAY`, `NONE`.
   - Refers to a penalty awarded during regular/extra time, NOT the post-match shootout (the original spec intent).
-  - **Auto-created** only on knockout-stage matches (stage = KNOCKOUT) in `ingest-league.ts`. **Not created** by `ingest-fixturedownload.ts` (group stage only by default).
+  - **Auto-created** on every ingested match (group stage + knockout) in both api-football and fixturedownload pipelines.
   - **No auto-settle:** the api-football feed only exposes shootout penalties, not in-game penalties. Admin enters the correct answer manually via the Settlement Hub.
-  - **Scoring:** `lib/scoring/in-game-penalty.ts` — `InGamePenaltyStrategy.score` returns 3 points on exact match (case-insensitive on both sides), 0 otherwise. No negatives.
-  - `save-bet.ts`: case-insensitive on input, normalized to uppercase for storage; accepts HOME/AWAY/NONE only.
+  - **Scoring (original):** `InGamePenaltyStrategy.score` returned 3 points on exact match (case-insensitive on both sides), 0 otherwise. No negatives.
+  - **Scoring (REPLACED by 7.10):** +3 on exact match, -2 on miss, then `Math.max(-1, raw)`. Range: -1 to +3. The -1 floor is the per-bet minimum (no single bet ever costs more than -1).
+  - `save-bets-batch.ts`: case-insensitive on input, normalized to uppercase for storage; accepts HOME/AWAY/NONE only.
   - Registered in `lib/scoring/index.ts`. `lib/scoring/penalty-shootout.ts` deleted.
 
-- [x] **7.8 PredictionForm: HALF_SCORING + IN_GAME_PENALTY display** ✅
+- [x] **7.8 PredictionForm: HALF_SCORING + IN_GAME_PENALTY display** ✅ (REPLACED by 7.10 — per-match form)
   - Done 2026-06-08. `components/matches/PredictionForm.tsx` updated.
   - **HALF_SCORING:** new multi-select chip picker. User can toggle up to 2 options; the other buttons become visually disabled once 2 are selected. A `Pick 2 — N/2 selected` counter is shown above the chips. Submit value is the comma-separated string (e.g. `"A_1H,B_2H"`). On load, `market.viewerBet.predictedValue` is split by comma and the matching chips are pre-selected.
   - **IN_GAME_PENALTY:** 3-pill single-select chip picker, same UI as `PROPOSITION_CHOICE`.
   - HT_FT and PENALTY_SHOOTOUT branches removed; legacy rows render as a generic proposition (with no styling branching on the removed type).
   - Locked-state display: HALF_SCORING values shown as `"A_1H + B_2H"` (joined with ` + `) for readability.
+  - **REPLACED 2026-06-08 by 7.10:** `PredictionForm.tsx` deleted. The per-market form is replaced by `MatchBettingForm.tsx`, which renders one form per match containing all 4 markets with a single Save button at the bottom.
 
 - [x] **7.9 Seed data + UI label updates** ✅
   - Done 2026-06-08. Three connected changes so the user can wipe & re-onboard cleanly.
   - **`prisma/seed/fixtures/wc-2026-group-stage.json`:** added a `HALF_SCORING` market (title "Which teams score in which half?", options `["A_1H","A_2H","B_1H","B_2H"]`) to each of the 5 group-stage matches. The `wc26-outright-winner` match is unchanged (it keeps only its `OUTRIGHT_TEXT` markets).
-  - **`prisma/seed.ts`:** extended the `MarketInput` type union from `"EXACT_SCORE" | "OUTRIGHT_TEXT" | "PROPOSITION_CHOICE"` to also include `"HALF_SCORING"`. `IN_GAME_PENALTY` is deliberately NOT in the union — it's knockout-only, and the only non-group match in the seed is OUTRIGHT, so no seed match has it.
+  - **`prisma/seed.ts`:** extended the `MarketInput` type union from `"EXACT_SCORE" | "OUTRIGHT_TEXT" | "PROPOSITION_CHOICE"` to also include `"HALF_SCORING" | "IN_GAME_PENALTY"`.
   - **`scripts/wipe-db.ts` + `npm run wipe:db`:** new one-shot wipe. Deletes `UserBet` → `BetMarket` → `GroupMember` → `Group` → `Match` → `Competition` in FK-safe order, all inside a single `prisma.$transaction([...])`. Preserves `User` rows. Requires `WIPE_CONFIRM=yes-i-am-sure` in the env or refuses safely (exits 0). Idempotent — re-runs on empty DB are no-ops.
   - **`components/matches/PredictionForm.tsx`:** added two exported label maps — `HALF_SCORING_LABELS` (`A_1H` → "Home 1H", `A_2H` → "Home 2H", `B_1H` → "Away 1H", `B_2H` → "Away 2H") and `IN_GAME_PENALTY_LABELS` (`HOME` → "Home team", `AWAY` → "Away team", `NONE` → "No penalty"). The chip pickers render the human-readable label as text content, but the onClick handlers still toggle / set the underlying canonical code — the value state, saved bet, validation, and scoring strategy all continue to use the codes. `formatValue()` updated so the locked-state display shows the labels (e.g. `"A_1H,B_2H"` → `"Home 1H + Away 2H"`).
   - **`components/matches/MatchCard.tsx`:** small description paragraphs rendered below the market title for the two new market types — `"Pick 2 — +1 per correct, 0 per miss"` for HALF_SCORING and `"+3 for correct, 0 for miss"` for IN_GAME_PENALTY. Styled `text-xs text-muted-foreground`.
   - **Usage:** `WIPE_CONFIRM=yes-i-am-sure npm run wipe:db && npm run db:seed`. The wipe script does NOT pass the env var — the user must set it themselves.
+
+---
+
+## Phase 7.10 — Big redesign: 4 markets, per-bet floor -1, one save button, stage-dependent scoring
+
+- [x] **7.10 Big redesign: 4 markets, per-bet floor -1, one save button, stage-dependent scoring** ✅ (REPLACED by 7.10.1 — WIN_TEAM folded into EXACT_SCORE)
+  - Done 2026-06-08. Replaces 7.5/7.6/7.7/7.8. The user's design pass re-imagined the betting surface; this entry captures the full sweep. **Wipe + re-seed required** to apply (`WIPE_CONFIRM=yes-i-am-sure npm run wipe:db && npm run db:seed`).
+  - **4 markets per match (replaces the 3-market shape from 7.6/7.7/7.8):**
+    1. `EXACT_SCORE`   — "Predict the final score" — **required** — +3 group / +5 knockout on exact match, 0 on miss. BTTS bonus dropped.
+    2. `WIN_TEAM`      — "Who will win?" (NEW) — **required** — HOME / DRAW / AWAY. +1 group / +2 knockout on match, 0 on miss. Auto-settles from the final score (HOME if home>away, DRAW if equal, AWAY if away>home).
+    3. `HALF_SCORING`  — "Which teams score in which half?" — **optional** — per-pick ±1 with -1 floor. +1 per correct code, -1 per wrong code, sum, then `Math.max(-1, sum)`. Range: -1 to +2. Auto-settles from HT + final scores.
+    4. `IN_GAME_PENALTY` — "Which team gets an in-game penalty?" — **optional** — +3 on match, -2 on miss, then `Math.max(-1, raw)`. Range: -1 to +3. Manual settlement only (API doesn't expose in-game penalty data).
+  - **Per-bet floor of -1:** no individual bet ever costs the user more than -1 point. Applied centrally in `lib/services/settle-market.ts` as `Math.max(-1, result.points)` BEFORE persisting to `UserBet.pointsAwarded`. This is the single source of truth — strategies return their natural values, the settlement clamps. The `byGroup` totalPoints aggregation also uses the clamped value for consistency.
+  - **Stage-dependent scoring:** `lib/scoring/default-config.ts` updated. New `winTeamPoints` field on `StageScoring`. Values:
+    - GROUP_STAGE: `winTeamPoints=1`, `exactScorePoints=3`.
+    - All knockout stages (ROUND_OF_16, QUARTER_FINAL, SEMI_FINAL, FINAL, THIRD_PLACE): `winTeamPoints=2`, `exactScorePoints=5`.
+    - OUTRIGHT: unchanged (staticPoints=15 for OUTRIGHT_TEXT markets; all others 0).
+  - **One save button per match.** `components/matches/MatchBettingForm.tsx` is a new client component that renders all 4 markets for a match in a single form. The Save button at the bottom is disabled if WIN_TEAM or EXACT_SCORE is missing. HALF_SCORING and IN_GAME_PENALTY are visually marked as "Optional" and can be skipped. On submit, all 4 picks (or fewer if optionals skipped) are sent to `saveBetsBatch` in one call. `components/matches/PredictionForm.tsx` deleted. `components/matches/MatchCard.tsx` rewritten to render one `MatchBettingForm` per match (no more per-market loop).
+  - **Multi-market save flow.** `lib/services/save-bets-batch.ts` replaces `lib/services/save-bet.ts` (now a thin re-export shim). `saveBetsBatch(userId, { groupId, matchId, picks })` validates: user is a member; match exists and is not in the 5-min lockdown window; WIN_TEAM and EXACT_SCORE are both present in `picks` (else throws `SaveBetError(400, "Missing required pick: <TYPE>", fieldName)`); each `marketId` exists on the match; each value passes per-type `validatePrediction`. Upserts one `UserBet` per pick (preserves `availableFrom` on update). **Delete behavior:** if a previously-bet-on OPTIONAL market is NOT in the new `picks` map, the stale `UserBet` row is DELETED (so users can fully remove a pick). `app/api/v1/bets/save/route.ts` and `app/(app)/groups/[groupId]/matches/actions.ts` updated to use the new payload shape `{ groupId, matchId, picks: Record<marketId, value> }`. The Server Action is renamed `saveBetsBatchAction`.
+  - **Ingest updates:** `lib/services/ingest-league.ts`, `lib/services/ingest-fixturedownload.ts`, and `scripts/ingest-fixturedownload.ts` all create the WIN_TEAM market on every ingested match (in addition to the existing 3). The api-football pipeline auto-settles WIN_TEAM on FT detection alongside EXACT_SCORE. WIN_TEAM_OPTIONS = `["HOME","DRAW","AWAY"]`.
+  - **Seed data:** `prisma/seed/fixtures/wc-2026-group-stage.json` extended — each of the 5 group-stage matches now has 4 markets `[EXACT_SCORE, WIN_TEAM, HALF_SCORING, IN_GAME_PENALTY]`. The OUTRIGHT match is unchanged (no WIN_TEAM on outright). `prisma/seed.ts` MarketInput type union extended with `"WIN_TEAM"`.
+  - **Settlement:** `lib/services/settle-market.ts` wraps `result.points` with `Math.max(-1, result.points)` before persisting, and uses the clamped value in the byGroup aggregation.
+  - **Feed:** `lib/services/group-feed.ts` extended — `FeedMarket.viewerBet` now includes `pointsAwarded: number | null` so the locked/settled row in `MatchBettingForm` can render the per-bet score.
+  - **Replaced:** 7.5, 7.6, 7.7, 7.8 (each marked with a REPLACED-by-7.10 supersedes note above).
+
+- [x] **7.10.1 Drop WIN_TEAM + collapse matches list by day** ✅
+  - Done 2026-06-08. Two refinements on top of 7.10: (1) drop the separate WIN_TEAM market — derive the winner from the predicted EXACT_SCORE pick; (2) collapse the matches list so only the first 2 days are open by default, the rest are closed accordions. **Wipe + re-seed required** (`WIPE_CONFIRM=yes-i-am-sure npm run wipe:db && npm run db:seed`).
+  - **WIN_TEAM credit folded into EXACT_SCORE.** `lib/scoring/exact-score.ts` is rewritten. New scoring: exact match → `exactScorePoints + winTeamPoints` (with breakdown "Exact score"); winner-only match (HOME/DRAW/AWAY derived from predicted vs. correct score) → `winTeamPoints` (breakdown "Correct winner"); miss → 0. Helper `winner(home, away): "HOME" | "DRAW" | "AWAY"` derives the winner from the score. Draw handling: 1-1 vs 2-2 → both DRAW → winner correct. Invalid input still returns `{ points: 0, breakdown: "Invalid score" }` (no throw). `lib/scoring/win-team.ts` deleted; `lib/scoring/index.ts` registry no longer references it. OUTRIGHT's staticPoints=15 strategy is unchanged (different strategy).
+  - **3 markets per match** (was 4): `EXACT_SCORE` (required), `HALF_SCORING` (optional), `IN_GAME_PENALTY` (optional). OUTRIGHT matches keep their OUTRIGHT_TEXT markets. All three ingest paths (`lib/services/ingest-league.ts`, `lib/services/ingest-fixturedownload.ts`, `scripts/ingest-fixturedownload.ts`) and the seed JSON no longer create a WIN_TEAM market. `prisma/seed.ts` MarketInput type union no longer includes `"WIN_TEAM"`. The api-football pipeline no longer auto-settles WIN_TEAM on FT detection.
+  - **Form:** `components/matches/MatchBettingForm.tsx` no longer renders the WIN_TEAM chip picker. Required market description now reads: "Required — +3 for exact, +1 for correct winner (group); +5 / +2 (knockout). 0 if wrong." Save button is disabled if EXACT_SCORE is empty. `WIN_TEAM_LABELS` map and the `WinTeamRow` sub-component are removed. The locked-state display no longer has a WIN_TEAM row. Optional markets' description text uses `text-[11px]` (smaller than the previous `text-xs`).
+  - **Server validation:** `lib/services/save-bets-batch.ts` — `REQUIRED_MARKET_TYPES = new Set(["EXACT_SCORE"])`. The WIN_TEAM branch in `validatePrediction` is removed. The missing-required error field is `"exactScore"` (no longer also `"winTeam"`). The optional-delete logic is unchanged in shape — only the set of required types is smaller.
+  - **Legacy WIN_TEAM rows:** the user has not wiped the DB yet, so existing WIN_TEAM markets and UserBets will linger. `lib/services/settle-market.ts` already wraps `getStrategy(market.type)` in a try/catch — unknown types log a warning and skip scoring. No code change needed. The wipe + re-seed removes them.
+  - **Day accordion in MatchList.** `components/matches/MatchList.tsx` rewritten. The day-grouping logic (`groupByDay`) is preserved (UTC-keyed buckets). New: `useState<Set<string>>(openDayKeys)` with a lazy initializer that opens the first 2 day keys. Each day header is a button (`<button type="button" aria-expanded={isOpen}>`) showing "Friday, 12 June 2026 · 5 matches" plus a `▶` chevron that rotates 90° (visual `▼`) when the day is open. When closed, only the header renders (no match cards). The accordion state is local React state — not persisted. The header keeps the existing `micro-label` style.
+  - **Density.** `components/matches/MatchCard.tsx` paper-card padding reduced from `p-4 md:p-5` to `p-3 md:p-4` so each card takes less vertical space. The accordion is the big win on perceived density; the smaller padding is the secondary effect.
+  - **steps.md updates:** the 7.10 entry is left intact as historical record (its inner list of 4 markets is now superseded by 7.10.1's 3-market shape); 7.10.1 above is the new source of truth.
 
 ---
 
@@ -492,7 +531,7 @@ on pre-redesign data.
   - Done 2026-06-08.
   - `lib/services/ingest-fixturedownload.ts` — programmatic service. Default: group stage only (Rounds 1-3). Pass `--all-rounds` to include knockouts.
   - `scripts/ingest-fixturedownload.ts` — CLI entry (`npm run ingest:fd`).
-  - Creates EXACT_SCORE + HALF_SCORING markets per match (no IN_GAME_PENALTY — knockout-only, and fixturedownload defaults to group stage).
+  - Creates EXACT_SCORE + HALF_SCORING + IN_GAME_PENALTY markets per match (all three default markets, no stage gating).
   - Idempotent: re-running updates existing rows, no duplicates.
   - Competition.externalSource = 'fixturedownload', externalLeagueId = null (no numeric id).
   - Verified: 72 group-stage matches ingested for 'FIFA World Cup 2026', first match Mexico vs South Africa on 2026-06-11 19:00 UTC. Re-run shows 0 created / 72 updated.

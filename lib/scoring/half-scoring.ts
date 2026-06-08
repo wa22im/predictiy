@@ -7,10 +7,17 @@ import type { ScoringStrategy, StrategyInput, StrategyResult } from "./types";
  * from {A_1H, A_2H, B_1H, B_2H} (A = home, B = away, 1H/2H = which half).
  * Order is irrelevant; both are parsed as Sets.
  *
- * Scoring:
- *   points = |predicted ∩ correct|, capped at the predicted set size
- *            (and the spec caps the predicted set at 2).
- *   Range: 0 to 2.
+ * Scoring (per-pick, then clamped):
+ *   for each of the user's up-to-2 picks:
+ *     +1 if the code is in the correct set
+ *     -1 if not
+ *   sum them, then clamp to `Math.max(-1, sum)`.
+ *   Range: -1 (both wrong) to +2 (both correct).
+ *
+ * The -1 floor is the per-bet minimum points (no single bet ever costs
+ * more than -1), which is applied here at the strategy level. The
+ * settlement service also clamps to -1 as a belt-and-suspenders, but
+ * the strategy itself never returns less than -1.
  *
  * Invalid input (wrong count, duplicate values, invalid codes, etc.)
  * yields `points: 0` with a clear breakdown. Never throws.
@@ -49,19 +56,15 @@ export const HalfScoringStrategy: ScoringStrategy = {
       return { points: 0, breakdown: `Invalid correct answer: ${cParse.reason}` };
     }
 
-    const predictedSize = Math.min(pParse.set.size, 2);
-    let overlap = 0;
+    let sum = 0;
     for (const code of pParse.set) {
-      if (cParse.set.has(code)) overlap += 1;
+      sum += cParse.set.has(code) ? 1 : -1;
     }
-    const points = Math.max(0, Math.min(overlap, predictedSize));
+    const points = Math.max(-1, sum);
 
-    if (points === 0) {
-      return { points: 0, breakdown: "No overlap" };
-    }
-    if (points === predictedSize) {
-      return { points, breakdown: `Full match (${points}/${predictedSize})` };
-    }
-    return { points, breakdown: `Partial match (${points}/${predictedSize})` };
+    if (points === 2) return { points, breakdown: "Full match (2/2)" };
+    if (points === 1) return { points, breakdown: "Partial (1/2)" };
+    if (points === 0) return { points, breakdown: "Mixed (0/2)" };
+    return { points, breakdown: "Both wrong" };
   },
 };

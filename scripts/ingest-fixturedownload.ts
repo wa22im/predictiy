@@ -23,6 +23,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { fetchFixtures, isPlaceholderTeam, parseDateUtc } from "../lib/services/fixturedownload";
 
 const HALF_SCORING_OPTIONS = ["A_1H","A_2H","B_1H","B_2H"];
+const IN_GAME_PENALTY_OPTIONS = ["HOME","AWAY","NONE"];
 
 async function main() {
   if (!process.env.DATABASE_URL) {
@@ -139,6 +140,17 @@ async function main() {
       update: { options: HALF_SCORING_OPTIONS },
     });
     if (!halfExisted) mkCreated += 1;
+
+    const penaltyExisted = await prisma.betMarket.findUnique({
+      where: { matchId_type_title: { matchId: match.id, type: "IN_GAME_PENALTY", title: "Which team gets an in-game penalty?" } },
+      select: { id: true },
+    });
+    await prisma.betMarket.upsert({
+      where: { matchId_type_title: { matchId: match.id, type: "IN_GAME_PENALTY", title: "Which team gets an in-game penalty?" } },
+      create: { matchId: match.id, type: "IN_GAME_PENALTY", title: "Which team gets an in-game penalty?", options: IN_GAME_PENALTY_OPTIONS },
+      update: { options: IN_GAME_PENALTY_OPTIONS },
+    });
+    if (!penaltyExisted) mkCreated += 1;
   }
 
   console.log("");

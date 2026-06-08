@@ -11,11 +11,13 @@
  *   - skip placeholders: matches with placeholder team names
  *     ("2A", "To be announced") are dropped.
  *
- * For each match we create the same two markets the api-football
- * pipeline creates (no IN_GAME_PENALTY — only for knockouts, and
- * this source only ingests group stage by default):
- *   - EXACT_SCORE   "Predict the final score"
- *   - HALF_SCORING  "Which teams score in which half?"
+ * For each match we create the same three default markets the
+ * api-football pipeline creates (EXACT_SCORE, HALF_SCORING, and
+ * IN_GAME_PENALTY — all on every match, no stage gating). The
+ * "correct winner" credit is folded into EXACT_SCORE's scoring.
+ *   - EXACT_SCORE      "Predict the final score"
+ *   - HALF_SCORING     "Which teams score in which half?"
+ *   - IN_GAME_PENALTY  "Which team gets an in-game penalty?"
  *
  * Stage mapping from RoundNumber:
  *   1, 2, 3  →  GROUP_STAGE
@@ -50,6 +52,7 @@ export type IngestFromFixtureDownloadResult = {
 };
 
 const HALF_SCORING_OPTIONS = ["A_1H", "A_2H", "B_1H", "B_2H"];
+const IN_GAME_PENALTY_OPTIONS = ["HOME", "AWAY", "NONE"];
 
 export async function ingestFromFixtureDownload(
   input: IngestFromFixtureDownloadInput,
@@ -118,6 +121,13 @@ export async function ingestFromFixtureDownload(
     });
     await upsertMarket(match.id, "HALF_SCORING", "Which teams score in which half?", HALF_SCORING_OPTIONS);
     if (!halfExisted) marketsCreated += 1;
+
+    const penaltyExisted = await prisma.betMarket.findUnique({
+      where: { matchId_type_title: { matchId: match.id, type: "IN_GAME_PENALTY", title: "Which team gets an in-game penalty?" } },
+      select: { id: true },
+    });
+    await upsertMarket(match.id, "IN_GAME_PENALTY", "Which team gets an in-game penalty?", IN_GAME_PENALTY_OPTIONS);
+    if (!penaltyExisted) marketsCreated += 1;
   }
 
   return {

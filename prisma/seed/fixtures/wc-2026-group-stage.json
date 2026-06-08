@@ -18,6 +18,11 @@
           "type": "HALF_SCORING",
           "title": "Which teams score in which half?",
           "options": ["A_1H", "A_2H", "B_1H", "B_2H"]
+        },
+        {
+          "type": "IN_GAME_PENALTY",
+          "title": "Which team gets an in-game penalty?",
+          "options": ["HOME", "AWAY", "NONE"]
         }
       ]
     },
@@ -36,6 +41,11 @@
           "type": "HALF_SCORING",
           "title": "Which teams score in which half?",
           "options": ["A_1H", "A_2H", "B_1H", "B_2H"]
+        },
+        {
+          "type": "IN_GAME_PENALTY",
+          "title": "Which team gets an in-game penalty?",
+          "options": ["HOME", "AWAY", "NONE"]
         }
       ]
     },
@@ -54,6 +64,11 @@
           "type": "HALF_SCORING",
           "title": "Which teams score in which half?",
           "options": ["A_1H", "A_2H", "B_1H", "B_2H"]
+        },
+        {
+          "type": "IN_GAME_PENALTY",
+          "title": "Which team gets an in-game penalty?",
+          "options": ["HOME", "AWAY", "NONE"]
         }
       ]
     },
@@ -72,6 +87,11 @@
           "type": "HALF_SCORING",
           "title": "Which teams score in which half?",
           "options": ["A_1H", "A_2H", "B_1H", "B_2H"]
+        },
+        {
+          "type": "IN_GAME_PENALTY",
+          "title": "Which team gets an in-game penalty?",
+          "options": ["HOME", "AWAY", "NONE"]
         }
       ]
     },
@@ -90,6 +110,11 @@
           "type": "HALF_SCORING",
           "title": "Which teams score in which half?",
           "options": ["A_1H", "A_2H", "B_1H", "B_2H"]
+        },
+        {
+          "type": "IN_GAME_PENALTY",
+          "title": "Which team gets an in-game penalty?",
+          "options": ["HOME", "AWAY", "NONE"]
         }
       ]
     },

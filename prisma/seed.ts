@@ -33,7 +33,7 @@ const adapter = new PrismaPg(process.env.DATABASE_URL!);
 const prisma = new PrismaClient({ adapter });
 
 type MarketInput = {
-  type: "EXACT_SCORE" | "OUTRIGHT_TEXT" | "PROPOSITION_CHOICE" | "HALF_SCORING";
+  type: "EXACT_SCORE" | "OUTRIGHT_TEXT" | "PROPOSITION_CHOICE" | "HALF_SCORING" | "IN_GAME_PENALTY";
   title: string;
   options?: string[];
 };

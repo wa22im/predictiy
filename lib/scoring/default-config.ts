@@ -1,16 +1,18 @@
 /**
  * Default scoring config for new groups.
  * Per-stage weights for the Strategy Factory:
- *  - exactScorePoints: awarded for an exact score match
- *  - outcomePoints:    awarded for matching the W/D/L outcome only
- *  - bothTeamsToScoreBonus: stacked on top of exact OR outcome
- *  - staticPoints:     flat points for OUTRIGHT_TEXT markets
+ *  - exactScorePoints:   awarded for an exact score match
+ *  - winTeamPoints:      awarded for picking the right winner (HOME/DRAW/AWAY)
+ *  - outcomePoints:      legacy — no longer used by any strategy
+ *  - bothTeamsToScoreBonus: legacy — no longer used by any strategy
+ *  - staticPoints:       flat points for OUTRIGHT_TEXT markets
  *
  * Late-stage matches count for more to amplify risk in knockouts.
  */
 
 export type StageScoring = {
   exactScorePoints: number;
+  winTeamPoints: number;
   outcomePoints: number;
   bothTeamsToScoreBonus: number;
   staticPoints: number;
@@ -28,43 +30,50 @@ export type ScoringConfig = {
 
 export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
   GROUP_STAGE: {
-    exactScorePoints: 5,
-    outcomePoints: 2,
-    bothTeamsToScoreBonus: 1,
+    exactScorePoints: 3,
+    winTeamPoints: 1,
+    outcomePoints: 0,
+    bothTeamsToScoreBonus: 0,
     staticPoints: 0,
   },
   ROUND_OF_16: {
-    exactScorePoints: 8,
-    outcomePoints: 3,
-    bothTeamsToScoreBonus: 1,
+    exactScorePoints: 5,
+    winTeamPoints: 2,
+    outcomePoints: 0,
+    bothTeamsToScoreBonus: 0,
     staticPoints: 0,
   },
   QUARTER_FINAL: {
-    exactScorePoints: 12,
-    outcomePoints: 4,
-    bothTeamsToScoreBonus: 1,
+    exactScorePoints: 5,
+    winTeamPoints: 2,
+    outcomePoints: 0,
+    bothTeamsToScoreBonus: 0,
     staticPoints: 0,
   },
   SEMI_FINAL: {
-    exactScorePoints: 18,
-    outcomePoints: 6,
-    bothTeamsToScoreBonus: 1,
+    exactScorePoints: 5,
+    winTeamPoints: 2,
+    outcomePoints: 0,
+    bothTeamsToScoreBonus: 0,
     staticPoints: 0,
   },
   THIRD_PLACE: {
-    exactScorePoints: 18,
-    outcomePoints: 6,
-    bothTeamsToScoreBonus: 1,
+    exactScorePoints: 5,
+    winTeamPoints: 2,
+    outcomePoints: 0,
+    bothTeamsToScoreBonus: 0,
     staticPoints: 0,
   },
   FINAL: {
-    exactScorePoints: 25,
-    outcomePoints: 8,
-    bothTeamsToScoreBonus: 1,
+    exactScorePoints: 5,
+    winTeamPoints: 2,
+    outcomePoints: 0,
+    bothTeamsToScoreBonus: 0,
     staticPoints: 0,
   },
   OUTRIGHT: {
     exactScorePoints: 0,
+    winTeamPoints: 0,
     outcomePoints: 0,
     bothTeamsToScoreBonus: 0,
     staticPoints: 15,

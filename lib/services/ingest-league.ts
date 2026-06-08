@@ -18,6 +18,21 @@
  * markets (e.g., tournament winner) which are not created by this
  * service — those are still managed via the JSON-paste hydration
  * terminal.
+ *
+ * For each match, three default markets are created (unconditional,
+ * idempotent via (matchId, type, title)):
+ *   - EXACT_SCORE      "Predict the final score"
+ *   - HALF_SCORING     "Which teams score in which half?"
+ *   - IN_GAME_PENALTY  "Which team gets an in-game penalty?"
+ *
+ * The "correct winner" credit is folded into EXACT_SCORE's scoring — the
+ * winner is derived from the predicted vs. final score, so a separate
+ * winner market is not needed.
+ *
+ * Auto-settle (on FT detection with both goals present):
+ *   - EXACT_SCORE   ← "X-Y" from final score
+ *   - HALF_SCORING  ← derived from HT + final scores (when HT data exists)
+ *   - IN_GAME_PENALTY  ← manual settlement only (API doesn't expose data)
  */
 
 import { prisma } from "@/lib/prisma";
@@ -269,9 +284,9 @@ async function applyFixtures(
         f.fixture.status.short === "FT" && f.goals.home !== null && f.goals.away !== null;
 
       // Default markets per match:
-      //   1. EXACT_SCORE     "Predict the final score"
-      //   2. HALF_SCORING    "Which teams score in which half?"  (always)
-      //   3. IN_GAME_PENALTY "Which team gets an in-game penalty?" (knockout only)
+      //   1. EXACT_SCORE       "Predict the final score"
+      //   2. HALF_SCORING      "Which teams score in which half?"
+      //   3. IN_GAME_PENALTY   "Which team gets an in-game penalty?"
       //
       // Each is idempotent via (matchId, type, title).
       await prisma.betMarket.upsert({
@@ -307,24 +322,22 @@ async function applyFixtures(
         },
       });
 
-      if (stage === "KNOCKOUT") {
-        await prisma.betMarket.upsert({
-          where: {
-            matchId_type_title: {
-              matchId: match.id,
-              type: "IN_GAME_PENALTY",
-              title: "Which team gets an in-game penalty?",
-            },
-          },
-          update: {},
-          create: {
+      await prisma.betMarket.upsert({
+        where: {
+          matchId_type_title: {
             matchId: match.id,
             type: "IN_GAME_PENALTY",
             title: "Which team gets an in-game penalty?",
-            options: IN_GAME_PENALTY_OPTIONS,
           },
-        });
-      }
+        },
+        update: {},
+        create: {
+          matchId: match.id,
+          type: "IN_GAME_PENALTY",
+          title: "Which team gets an in-game penalty?",
+          options: IN_GAME_PENALTY_OPTIONS,
+        },
+      });
 
       // Auto-settle each market if the fixture is FT and we have the data.
       if (justFinished) {
@@ -417,10 +430,10 @@ function mapStatus(short: string): "SCHEDULED" | "FINISHED" {
 const HALF_SCORING_OPTIONS = ["A_1H", "A_2H", "B_1H", "B_2H"];
 
 /**
- * In-game penalty options (only relevant for knockout matches).
- * Refers to a penalty awarded during regular/extra time, NOT the
- * post-match shootout. The API doesn't surface this data, so the
- * market is created but never auto-settled — admin settles manually.
+ * In-game penalty options. Refers to a penalty awarded during
+ * regular/extra time, NOT the post-match shootout. The API doesn't
+ * surface this data, so the market is created but never auto-settled —
+ * admin settles manually via the Settlement Hub.
  */
 const IN_GAME_PENALTY_OPTIONS = ["HOME", "AWAY", "NONE"];
 

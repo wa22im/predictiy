@@ -4,21 +4,23 @@ import { z } from "zod";
 
 const Input = z.object({
   groupId: z.string().uuid(),
-  marketId: z.string().uuid(),
-  predictedValue: z.string().min(1).max(64),
+  matchId: z.string().uuid(),
+  picks: z.record(z.string().uuid(), z.string().min(1).max(64)),
 });
 
-export type SaveBetActionResult = {
+export type SaveBetsBatchActionResult = {
   ok: boolean;
   error?: string;
   field?: string;
 };
 
-export async function saveBetAction(
+export async function saveBetsBatchAction(
   input: z.infer<typeof Input>,
-): Promise<SaveBetActionResult> {
+): Promise<SaveBetsBatchActionResult> {
   const { createClient } = await import("@/lib/supabase/server");
-  const { saveBet, SaveBetError } = await import("@/lib/services/save-bet");
+  const { saveBetsBatch, SaveBetError } = await import(
+    "@/lib/services/save-bets-batch"
+  );
 
   const supabase = await createClient();
   const {
@@ -38,7 +40,7 @@ export async function saveBetAction(
   }
 
   try {
-    await saveBet(user.id, parsed.data);
+    await saveBetsBatch(user.id, parsed.data);
     return { ok: true };
   } catch (e) {
     if (e instanceof SaveBetError) {

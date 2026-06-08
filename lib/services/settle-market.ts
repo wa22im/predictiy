@@ -103,22 +103,29 @@ export async function settleMarket(input: SettleInput): Promise<SettleResult> {
         options: (market.options as string[] | null) ?? null,
       });
 
+      // Per-bet floor: no individual bet ever costs the user more than
+      // -1 point, regardless of what the strategy returns. This is the
+      // single source of truth for the floor — strategies can return
+      // their natural values (-2, +2, +3, etc.) and we clamp here so
+      // we never double-clamp or behave inconsistently.
+      const clampedPoints = Math.max(-1, result.points);
+
       await prisma.userBet.update({
         where: { id: bet.id },
-        data: { pointsAwarded: result.points },
+        data: { pointsAwarded: clampedPoints },
       });
 
       scoredRows += 1;
       const existing = byGroupMap.get(bet.groupId);
       if (existing) {
         existing.scoredRows += 1;
-        existing.totalPoints += result.points;
+        existing.totalPoints += clampedPoints;
       } else {
         byGroupMap.set(bet.groupId, {
           groupId: bet.groupId,
           groupName: bet.group.name,
           scoredRows: 1,
-          totalPoints: result.points,
+          totalPoints: clampedPoints,
         });
       }
     }
