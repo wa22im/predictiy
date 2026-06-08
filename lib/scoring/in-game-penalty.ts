@@ -9,9 +9,14 @@ import type { ScoringStrategy, StrategyInput, StrategyResult } from "./types";
  * never auto-settled — the admin enters the correct answer manually
  * via the Settlement Hub.
  *
- * Predicted value: one of "HOME", "AWAY", "NONE" (case-insensitive on
- * input; stored uppercase by the save flow).
- * Correct answer:  the same shape.
+ * Predicted value: one of "HOME", "AWAY" (case-insensitive on input;
+ * stored uppercase by the save flow). Phase 7.16 (2026-06-08) removed
+ * "NONE" from new markets, but this strategy still ACCEPTS "NONE" for
+ * backward-compat scoring of legacy rows (markets persisted with the
+ * 3-option shape). Saving a new "NONE" pick is rejected by
+ * `validatePrediction`; only historical rows reach this code path.
+ * Correct answer:  the same shape (HOME / AWAY; "NONE" is still
+ * accepted because a legacy correctAnswer could in theory carry it).
  *
  * Scoring (raw, then clamped to per-bet floor):
  *   exact match → +3

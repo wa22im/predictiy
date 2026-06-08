@@ -230,10 +230,10 @@ export function validatePrediction(
     }
   } else if (type === "IN_GAME_PENALTY") {
     const upper = trimmed.toUpperCase();
-    if (!["HOME", "AWAY", "NONE"].includes(upper)) {
+    if (!["HOME", "AWAY"].includes(upper)) {
       throw new SaveBetError(
         400,
-        "In-game penalty pick must be HOME, AWAY, or NONE",
+        "In-game penalty pick must be HOME or AWAY",
         "predictedValue",
       );
     }

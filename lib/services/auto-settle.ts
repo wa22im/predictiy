@@ -116,12 +116,22 @@ async function autoSettleAll(
     match.awayPenalties,
   );
   if (penaltyAnswer === null) {
-    // Both teams > 0 — out of scope for the auto-settler. Surface
-    // a warning so the admin knows to settle manually.
-    result.warnings.push(
-      "IN_GAME_PENALTY not auto-settled: both teams received at least one in-game penalty. " +
-        "Settle this market manually via the Settlement Hub.",
-    );
+    // Distinguish the two null cases: no penalties at all (Phase 7.16
+    // — the market is void, users get 0 points) vs. both teams
+    // penalised (still out of scope for the auto-settler — admin
+    // settles manually). Different warning text so the admin can tell
+    // the cases apart in the UI.
+    if ((match.homePenalties ?? 0) === 0 && (match.awayPenalties ?? 0) === 0) {
+      result.warnings.push(
+        "IN_GAME_PENALTY not auto-settled: no penalties were awarded in this match. " +
+          "The market is void — bets receive 0 points.",
+      );
+    } else {
+      result.warnings.push(
+        "IN_GAME_PENALTY not auto-settled: both teams received at least one in-game penalty. " +
+          "Settle this market manually via the Settlement Hub.",
+      );
+    }
   } else {
     await trySettle(
       matchId,
@@ -135,24 +145,32 @@ async function autoSettleAll(
 
 /**
  * Derive the IN_GAME_PENALTY correctAnswer from the per-team counts.
- * Returns null when the auto-settler can't make a clear call (both
- * teams > 0) — the caller should surface this as a warning.
+ * Returns null when the auto-settler can't make a clear call — the
+ * caller should surface this as a warning.
  *
  * The column values are nullable: null === 0 (the admin hasn't
- * entered anything yet), so nulls are treated as zero. This means a
- * FINISHED match with no penalty data auto-settles to "NONE" — the
- * most common case.
+ * entered anything yet), so nulls are treated as zero.
+ *
+ * Phase 7.16 (2026-06-08): "NONE" was removed from the market's
+ * option list. The return type dropped it. Now the function returns
+ * `null` for two distinct cases:
+ *   1. both teams have 0 penalties — the market is void, no clear
+ *      answer exists, and "NONE" is no longer a valid option to
+ *      settle to. Caller logs a "void" warning.
+ *   2. both teams have > 0 penalties — would need a "BOTH" option
+ *      that the market doesn't expose. Caller logs a "settle
+ *      manually" warning (existing behaviour).
  */
 function derivePenaltyAnswer(
   homePenalties: number | null | undefined,
   awayPenalties: number | null | undefined,
-): "HOME" | "AWAY" | "NONE" | null {
+): "HOME" | "AWAY" | null {
   const home = homePenalties ?? 0;
   const away = awayPenalties ?? 0;
+  if (home === 0 && away === 0) return null;
   if (home > 0 && away > 0) return null;
-  if (home > 0 && away === 0) return "HOME";
-  if (away > 0 && home === 0) return "AWAY";
-  return "NONE";
+  if (home > 0) return "HOME";
+  return "AWAY";
 }
 
 async function trySettle(

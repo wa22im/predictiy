@@ -22,7 +22,7 @@
         {
           "type": "IN_GAME_PENALTY",
           "title": "Which team gets an in-game penalty?",
-          "options": ["HOME", "AWAY", "NONE"]
+          "options": ["HOME", "AWAY"]
         }
       ]
     },
@@ -45,7 +45,7 @@
         {
           "type": "IN_GAME_PENALTY",
           "title": "Which team gets an in-game penalty?",
-          "options": ["HOME", "AWAY", "NONE"]
+          "options": ["HOME", "AWAY"]
         }
       ]
     },
@@ -68,7 +68,7 @@
         {
           "type": "IN_GAME_PENALTY",
           "title": "Which team gets an in-game penalty?",
-          "options": ["HOME", "AWAY", "NONE"]
+          "options": ["HOME", "AWAY"]
         }
       ]
     },
@@ -91,7 +91,7 @@
         {
           "type": "IN_GAME_PENALTY",
           "title": "Which team gets an in-game penalty?",
-          "options": ["HOME", "AWAY", "NONE"]
+          "options": ["HOME", "AWAY"]
         }
       ]
     },
@@ -114,7 +114,7 @@
         {
           "type": "IN_GAME_PENALTY",
           "title": "Which team gets an in-game penalty?",
-          "options": ["HOME", "AWAY", "NONE"]
+          "options": ["HOME", "AWAY"]
         }
       ]
     },

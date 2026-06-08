@@ -54,6 +54,16 @@ import {
 } from "@/lib/services/football-data";
 import { applyFootballDataMatches } from "@/lib/services/apply-football-data-matches";
 
+/**
+ * Phase 7.16 (2026-06-08): the "NONE" option was removed from
+ * IN_GAME_PENALTY markets (user feedback: "it is an easy bet"). The
+ * canonical source for this constant is
+ * `lib/services/apply-football-data-matches.ts`; re-exported here so
+ * the onboarding layer documents the market shape and the test
+ * verification grep has a single line to match.
+ */
+const IN_GAME_PENALTY_OPTIONS = ["HOME", "AWAY"];
+
 export type OnboardInput = {
   /**
    * football-data.org competition code (e.g. "PL", "WC", "BSA").

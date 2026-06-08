@@ -52,7 +52,7 @@ export type IngestFromFixtureDownloadResult = {
 };
 
 const HALF_SCORING_OPTIONS = ["A_1H", "A_2H", "B_1H", "B_2H"];
-const IN_GAME_PENALTY_OPTIONS = ["HOME", "AWAY", "NONE"];
+const IN_GAME_PENALTY_OPTIONS = ["HOME", "AWAY"];
 
 export async function ingestFromFixtureDownload(
   input: IngestFromFixtureDownloadInput,

@@ -19,7 +19,6 @@ const HALF_SCORING_LABELS: Record<string, string> = {
 const IN_GAME_PENALTY_LABELS: Record<string, string> = {
   HOME: "Home team",
   AWAY: "Away team",
-  NONE: "No penalty",
 };
 
 // ---- Component -------------------------------------------------------------

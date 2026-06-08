@@ -23,7 +23,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { fetchFixtures, isPlaceholderTeam, parseDateUtc } from "../lib/services/fixturedownload";
 
 const HALF_SCORING_OPTIONS = ["A_1H","A_2H","B_1H","B_2H"];
-const IN_GAME_PENALTY_OPTIONS = ["HOME","AWAY","NONE"];
+const IN_GAME_PENALTY_OPTIONS = ["HOME","AWAY"];
 
 async function main() {
   if (!process.env.DATABASE_URL) {

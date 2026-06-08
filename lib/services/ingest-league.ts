@@ -457,8 +457,13 @@ const HALF_SCORING_OPTIONS = ["A_1H", "A_2H", "B_1H", "B_2H"];
  * regular/extra time, NOT the post-match shootout. The API doesn't
  * surface this data, so the market is created but never auto-settled —
  * admin settles manually via the Settlement Hub.
+ *
+ * Phase 7.16 (2026-06-08): the "NONE" option was removed. Users told
+ * us it was an easy bet, so new markets have only HOME / AWAY. Legacy
+ * markets with NONE in their options array still render (the form is
+ * backward-compatible).
  */
-const IN_GAME_PENALTY_OPTIONS = ["HOME", "AWAY", "NONE"];
+const IN_GAME_PENALTY_OPTIONS = ["HOME", "AWAY"];
 
 // ---- Auto-settle helper -------------------------------------------------
 
