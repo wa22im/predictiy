@@ -1,0 +1,38 @@
+name: football-data-sync
+
+on:
+  schedule:
+    # Every hour on the hour (UTC). The action is a thin wrapper: it
+    # hits the Vercel cron endpoint, which reads competitions from the
+    # DB and does the actual sync. All sync logic lives on Vercel — the
+    # action is just the scheduler.
+    - cron: '0 * * * *'
+  # Manual trigger for testing. From the GitHub UI: Actions →
+  # "football-data-sync" → "Run workflow".
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel cron
+        env:
+          VERCEL_URL: ${{ secrets.VERCEL_APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$VERCEL_URL" ]; then
+            echo "VERCEL_APP_URL secret not set" && exit 1
+          fi
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET secret not set" && exit 1
+          fi
+          echo "Hitting $VERCEL_URL/api/v1/cron/sync"
+          response=$(curl -sS -w "\nHTTP_STATUS:%{http_code}\n" \
+            -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$VERCEL_URL/api/v1/cron/sync")
+          echo "$response"
+          status=$(echo "$response" | grep -oP 'HTTP_STATUS:\K\d+' | head -1)
+          if [ "$status" != "200" ]; then
+            echo "Non-200 response: $status" && exit 1
+          fi

@@ -727,7 +727,7 @@ on pre-redesign data.
 
 ## Phase 10 — Hardening, RLS, E2E, Deploy (spec §3.2 tenant isolation)
 
-- [ ] **10.1 Supabase RLS policies**
+- [ ] **10.1 Supabase RLS policies** ⏭ **deferred to a future session**
   - Files: `supabase/migrations/<ts>_rls_policies.sql`.
   - Rules:
     - `User`: row visible only to self.
@@ -735,27 +735,59 @@ on pre-redesign data.
     - `UserBet`: read only if `GroupMember.userId = auth.uid()` for the same `groupId`; insert/update only if group membership exists and the match isn't locked (DB-side function `is_match_locked(match_id)`).
     - `Match`, `Competition`, `BetMarket`: read for all authenticated users; write only via service role.
   - Acceptance: a test user signed in via the anon key can read only their own groups' data; direct DB probes fail.
+  - **Status:** Deferred — out of scope for the deploy-docs session. Picks up in a future hardening pass.
 
-- [ ] **10.2 Service-role key is server-only**
+- [ ] **10.2 Service-role key is server-only** ⏭ **deferred to a future session**
   - Files: `lib/supabase/server.ts` exports a `getServiceSupabase()` that is imported **only** in `app/api/v1/admin/*` and `lib/services/settlement*`. Add a `tests/unit/no-service-role-leak.test.ts` that greps the repo for `SUPABASE_SERVICE_ROLE_KEY` outside `lib/supabase/server.ts` and `app/api/v1/admin/**`.
   - Acceptance: test passes; the only place the env var is referenced is server-side.
+  - **Status:** Deferred — bundles naturally with 10.1 (RLS pass).
 
-- [ ] **10.3 Vitest coverage gate**
+- [ ] **10.3 Vitest coverage gate** ⏭ **deferred to a future session**
   - `package.json` script `test:ci` runs Vitest with `--coverage` and a 70% line threshold on `lib/`.
   - Acceptance: `lib/scoring`, `lib/time`, `lib/services/*` are ≥ 90%; overall `lib/` ≥ 70%.
+  - **Status:** Deferred — depends on 0.13 (Vitest setup), which is itself still open. Picks up once the unit-test foundation is in place.
 
-- [ ] **10.4 Playwright E2E: the three journeys**
+- [ ] **10.4 Playwright E2E: the three journeys** ⏭ **deferred per user request**
   - Files: `tests/e2e/journey-1-organizer.spec.ts`, `journey-2-invited-friend.spec.ts`, `journey-3-active-competitor.spec.ts`.
   - Each runs against a freshly-reset test Supabase project.
   - Acceptance: all three pass in CI.
+  - **Status:** Deferred at the user's explicit request (deploy now, test the journeys manually on production). Will resume in a later session once the deploy is stable.
 
-- [ ] **10.5 Vercel + Supabase production setup**
-  - Files: `vercel.json` (if needed for cron — see 10.6), `README.md` updated with deploy steps.
-  - Acceptance: pushing to a branch deploys a preview that connects to the staging Supabase project.
+- [x] **10.5 Vercel + Supabase production setup** ✅
+  - Done 2026-06-08. **Docs-only change** — no code, schema, or vercel.json edits. The deploy surface was already complete; the missing piece was documentation.
+  - **Files changed:**
+    - `README.md` — rewritten from the Next.js `create-next-app` boilerplate. New structure: title + 1-line description → Features → Tech stack → Quick start → Database → Admin → Project structure → Deployment (link to DEPLOY.md). The Geist font, `create-next-app`, and "Learn Next.js" boilerplate are gone.
+    - `DEPLOY.md` — new file. Step-by-step Vercel + Supabase production setup: prereqs → Supabase project (already provisioned) → Prisma migration apply → Vercel↔GitHub connection → env-var checklist (every required + optional variable with source) → Deploy → first-deploy smoke tests (10 steps) → ongoing operations → cron config explanation → troubleshooting.
+    - `steps.md` — this entry.
+  - **`vercel.json`** — UNCHANGED. Schedule `*/7 * * * *` and path `/api/v1/cron/sync` were already correct; no edit needed.
+  - **`package.json`** — UNCHANGED. The `db:migrate`, `db:seed`, `admin:promote` scripts were already in place; DEPLOY.md references them as-is.
+  - **Acceptance:** `npx next build` succeeds (no code changes, so a sanity check) · `grep "Geist\|create-next-app" README.md` returns ZERO · `grep "DEPLOY" README.md` shows the link · `grep "DATABASE_URL\|DIRECT_URL\|CRON_SECRET" DEPLOY.md` shows the env-var mentions · the first-deploy smoke tests in DEPLOY.md step the user through every required manual action (sign up, promote admin, onboard a competition, place a bet, trigger the cron, settle a match).
+  - **Handoff note:** the working tree was clean at the start of this step. The new files (`README.md` rewritten, `DEPLOY.md` created, `steps.md` updated) are **uncommitted** — the user should `git add` and commit them on the `feat/init-foundation` branch BEFORE the first Vercel deploy, otherwise Vercel won't see them in the production build (it builds from `main` by default; ensure `feat/init-foundation` is merged or Vercel's production branch is set correctly).
 
-- [ ] **10.6 (Optional) Settlement cron**
+- [ ] **10.6 (Optional) Settlement cron** ⏭ **deferred to a future session**
   - Files: `app/api/v1/cron/sweep-settlements/route.ts`, Vercel cron config to call it hourly. Auto-settles matches whose `kickoffTime + 3h` is past. Off by default; flip on after manual settlement flow is stable.
   - Acceptance: hourly run settles 0 markets in steady state; settles correct markets after a match finishes and an admin types the score.
+  - **Status:** Deferred — manual settlement via `/admin/settlement` is sufficient for the first deploy. The auto-settle-on-FT logic in `adminUpdateMatch` already covers the most common case; the cron is only needed for matches the admin doesn't manually settle within 3 hours of kickoff.
+
+- [x] **10.7 GitHub Actions cron → Vercel endpoint + rate-limit serialize** ✅
+  - Done 2026-06-08. Three changes: the cron is now scheduled by a GitHub Actions workflow (one-line `curl` to the Vercel endpoint) instead of a Vercel cron, the Vercel endpoint's per-competition syncs are serialized to stay under football-data.org's free-tier rate limit, and the `vercel.json` `crons` array is removed (superseded by the workflow).
+  - **GitHub Actions workflow — `.github/workflows/football-data-sync.yml`.** New file. Triggers on `cron: '0 * * * *'` (every hour on the hour, UTC) and on `workflow_dispatch` (manual trigger from the Actions tab). One job, one step: a `curl` POST to `https://${{ secrets.VERCEL_APP_URL }}/api/v1/cron/sync` with `Authorization: Bearer ${{ secrets.CRON_SECRET }}`. The step exits 1 if either secret is missing or if the HTTP status isn't 200. **No checkout, no install** — the action is purely a scheduler; all the work happens on Vercel. The user sets two GitHub repo secrets: `VERCEL_APP_URL` (the production Vercel URL, no trailing slash) and `CRON_SECRET` (the same value as the Vercel env var from step 10.5).
+  - **`vercel.json` — `crons` array removed.** The file is now `{}`. The Vercel endpoint is still reachable for manual curl testing and for the GitHub Action to hit, but Vercel no longer schedules the cron itself. The cron is fully GitHub-owned.
+  - **Rate-limit serialize — `app/api/v1/cron/sync/route.ts`.** The `Promise.all` block (which ran the per-competition syncs in parallel) is replaced with a sequential `for...of` loop with a 200ms gap between competitions. The previous behaviour would have hit the football-data.org 10 req/min free-tier limit as soon as the DB had 2+ football-data competitions. Sequential execution + 200ms keeps us comfortably under the limit even with 5+ competitions. The file's JSDoc header is updated to reflect the new scheduling owner and to flag the rate-limit guard. The rest of the function (auth check, DB scan, response shape) is UNCHANGED. **The apply helper is unchanged** — only the loop shape changed. The 200ms gap is suppressed when there's only 1 competition (no point waiting if there's nothing left to throttle).
+  - **Code review of the cron pipeline (compliance with structure).** The DB-driven design was already in place from 7.15. Confirmed during this step:
+    - **DB-driven:** `prisma.competition.findMany({ where: { externalSource: "football-data" } })` — no env var lists the competitions.
+    - **Per-row linkage:** every `Competition` row stores `externalSource`, `externalLeagueId` (the football-data code), `externalSeason` (the year). Populated by `onboard-competition.ts` lines that map the catalogue `code` to `externalLeagueId` and the season start year to `externalSeason`.
+    - **Provider query:** `syncFootballDataCompetition` uses `externalLeagueId` + `externalSeason` to call `getCompetitionMatches(code, { season })`.
+    - **Auto-settle is transition-aware:** `applyFootballDataMatches` only fires the auto-settle when `prevStatus !== "FINISHED" && newStatus === "FINISHED"`. Re-syncing an already-FINISHED match is a no-op for its markets.
+    - **`lastSyncedAt` stamped on success only:** stamped AFTER `applyFootballDataMatches` returns; a thrown apply leaves the timestamp untouched.
+    - **Per-competition error isolation:** the sequential loop wraps each `syncFootballDataCompetition(c.id)` call in its own try/catch; the cron never throws.
+    - **Bearer-token auth in production:** the handler returns 500 if `CRON_SECRET` is unset in production, 401 if the Bearer token doesn't match.
+    - **Idempotent apply:** matches upsert on `apiMatchId`; markets upsert on `(matchId, type, title)`.
+    - **No new env vars on Vercel:** the existing `CRON_SECRET` is reused.
+  - **DEPLOY.md updated.** The "Cron configuration" section is replaced with a new "Cron configuration via GitHub Actions" section that documents: (1) the architecture (action is a one-line `curl`, all work on Vercel, DB is the source of truth); (2) the two GitHub Secrets (`VERCEL_APP_URL`, `CRON_SECRET`); (3) how to commit, manually trigger, and verify the workflow; (4) the code review summary. The prereqs line and the Step 6 #9 ("Test the cron") and Step 7 ("Ongoing") entries are updated to reference the GitHub workflow. The `CRON_SECRET` row in the env-var checklist is UNCHANGED — the value is the same on Vercel and as a GitHub secret.
+  - **Layer scope.** Touched: `.github/workflows/football-data-sync.yml` (new), `app/api/v1/cron/sync/route.ts` (loop shape + JSDoc), `vercel.json` (crons removed), `DEPLOY.md` (new section + cross-references), `steps.md` (this entry). NOT touched: `lib/services/football-data.ts`, `lib/services/sync-football-data-competition.ts`, `lib/services/apply-football-data-matches.ts`, `lib/services/onboard-competition.ts`, `prisma/schema.prisma`, `prisma/migrations/*`, the seed, the wipe scripts, the api-football pipeline, any UI.
+  - **Verification.** `npx next build` ✓ · `cat .github/workflows/football-data-sync.yml` shows the workflow ✓ · `cat vercel.json` shows `{}` ✓ · `cat app/api/v1/cron/sync/route.ts` shows the `for...of` loop ✓ · `grep "GitHub Actions" DEPLOY.md` shows the new section ✓ · `grep "10.7" steps.md` shows this entry ✓. The workflow itself is exercised manually by the user via the Actions tab.
+  - **Handoff note:** the Vercel cron (`*/7 * * * *`) is superseded by the GitHub workflow (`0 * * * *` — every hour, not every 7 minutes). New fixtures now appear within an hour instead of within 7 minutes. If the user wants minute-level granularity, they can change the cron expression in the workflow file. The Vercel endpoint is still reachable for manual `curl` testing; the GitHub Action's `curl` is identical to what a developer would type by hand.
 
 ---
 
