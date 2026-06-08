@@ -55,6 +55,15 @@ model Match {
   // the auto-settle pass to populate correctAnswer on EXACT_SCORE.
   homeScore       Int?
   awayScore       Int?
+  // Half-time goals. NULL until the match has reached HT in the
+  // external provider. Drives the HT/FT bet market.
+  homeHtGoals     Int?
+  awayHtGoals     Int?
+  // Penalty shootout result. NULL unless the match went to a shootout
+  // (knockout ties after extra time). Drives the Penalty Shootout
+  // bet market on knockout-stage matches.
+  homePenalties   Int?
+  awayPenalties   Int?
   // Raw status string from the provider (NS, 1H, HT, 2H, FT, AET, PEN).
   // Useful for debugging and for not-yet-implemented live states.
   externalStatus  String?

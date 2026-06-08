@@ -67,6 +67,13 @@ export function PredictionForm({
     );
   }
 
+  // HT_FT and PENALTY_SHOOTOUT are proposition-style — pick from a
+  // fixed set of options stored on the market row.
+  const isProposition =
+    market.type === "PROPOSITION_CHOICE" ||
+    market.type === "HT_FT" ||
+    market.type === "PENALTY_SHOOTOUT";
+
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
       {market.type === "EXACT_SCORE" && (
@@ -120,7 +127,7 @@ export function PredictionForm({
         </div>
       )}
 
-      {market.type === "PROPOSITION_CHOICE" && (
+      {isProposition && (
         <div className="flex items-center gap-2 flex-wrap">
           {(market.options ?? []).map((opt) => (
             <button

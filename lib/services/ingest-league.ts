@@ -188,6 +188,9 @@ async function applyFixtures(
       const stage = mapStage(f.league.round);
       const status = mapStatus(f.fixture.status.short);
 
+      const hadPenaltyShootout =
+        f.score.penalty.home !== null && f.score.penalty.away !== null;
+
       const match = await prisma.match.upsert({
         where: { apiMatchId },
         update: {
@@ -198,6 +201,10 @@ async function applyFixtures(
           status,
           homeScore: f.goals.home,
           awayScore: f.goals.away,
+          homeHtGoals: f.score.halftime.home,
+          awayHtGoals: f.score.halftime.away,
+          homePenalties: f.score.penalty.home,
+          awayPenalties: f.score.penalty.away,
           externalStatus: f.fixture.status.short,
           competitionId,
         },
@@ -210,6 +217,10 @@ async function applyFixtures(
           status,
           homeScore: f.goals.home,
           awayScore: f.goals.away,
+          homeHtGoals: f.score.halftime.home,
+          awayHtGoals: f.score.halftime.away,
+          homePenalties: f.score.penalty.home,
+          awayPenalties: f.score.penalty.away,
           externalStatus: f.fixture.status.short,
           competitionId,
         },
@@ -220,9 +231,13 @@ async function applyFixtures(
       const justFinished =
         f.fixture.status.short === "FT" && f.goals.home !== null && f.goals.away !== null;
 
-      // Default market per match: EXACT_SCORE titled "Predict the final score".
-      // Idempotent via (matchId, type, title) unique key.
-      const market = await prisma.betMarket.upsert({
+      // Default markets per match:
+      //   1. EXACT_SCORE       "Predict the final score"
+      //   2. HT_FT             "Half-time / Full-time"  (always)
+      //   3. PENALTY_SHOOTOUT  "Penalty shootout winner" (knockout only)
+      //
+      // Each is idempotent via (matchId, type, title).
+      await prisma.betMarket.upsert({
         where: {
           matchId_type_title: {
             matchId: match.id,
@@ -238,36 +253,64 @@ async function applyFixtures(
         },
       });
 
-      // Auto-settle if the fixture is FT and we have a score.
+      await prisma.betMarket.upsert({
+        where: {
+          matchId_type_title: {
+            matchId: match.id,
+            type: "HT_FT",
+            title: "Half-time / Full-time",
+          },
+        },
+        update: {},
+        create: {
+          matchId: match.id,
+          type: "HT_FT",
+          title: "Half-time / Full-time",
+          options: HT_FT_OPTIONS,
+        },
+      });
+
+      if (stage === "KNOCKOUT") {
+        await prisma.betMarket.upsert({
+          where: {
+            matchId_type_title: {
+              matchId: match.id,
+              type: "PENALTY_SHOOTOUT",
+              title: "Penalty shootout winner",
+            },
+          },
+          update: {},
+          create: {
+            matchId: match.id,
+            type: "PENALTY_SHOOTOUT",
+            title: "Penalty shootout winner",
+            options: PENALTY_OPTIONS,
+          },
+        });
+      }
+
+      // Auto-settle each market if the fixture is FT and we have the data.
       if (justFinished) {
-        try {
-          // Only settle if not already settled.
-          const fresh = await prisma.betMarket.findUnique({
-            where: { id: market.id },
-            select: { isSettled: true },
-          });
-          if (fresh && !fresh.isSettled) {
-            await settleMarket({
-              marketId: market.id,
-              correctAnswer: `${f.goals.home}-${f.goals.away}`,
-            });
-            result.settledMarkets += 1;
-          }
-        } catch (e) {
-          if (e instanceof SettleError) {
-            // ALREADY_SETTLED is fine (race with manual settlement).
-            if (e.message !== "ALREADY_SETTLED") {
-              result.errors.push({
-                apiMatchId,
-                message: `settle: ${e.message}`,
-              });
-            }
-          } else {
-            result.errors.push({
-              apiMatchId,
-              message: `settle: ${(e as Error).message}`,
-            });
-          }
+        // 1. EXACT_SCORE
+        await tryAutoSettle(match.id, "EXACT_SCORE", "Predict the final score",
+          `${f.goals.home}-${f.goals.away}`,
+          apiMatchId, result);
+
+        // 2. HT_FT — only if we have HT data
+        if (f.score.halftime.home !== null && f.score.halftime.away !== null) {
+          const ftOutcome = outcome(f.goals.home, f.goals.away);
+          const htOutcome = outcome(f.score.halftime.home, f.score.halftime.away);
+          await tryAutoSettle(match.id, "HT_FT", "Half-time / Full-time",
+            `${htOutcome}/${ftOutcome}`,
+            apiMatchId, result);
+        }
+
+        // 3. PENALTY_SHOOTOUT — only for knockout with shootout data
+        if (stage === "KNOCKOUT" && hadPenaltyShootout) {
+          const winner =
+            f.score.penalty.home! > f.score.penalty.away! ? "HOME" : "AWAY";
+          await tryAutoSettle(match.id, "PENALTY_SHOOTOUT", "Penalty shootout winner",
+            winner, apiMatchId, result);
         }
       }
     } catch (e) {
@@ -313,5 +356,70 @@ function mapStatus(short: string): "SCHEDULED" | "FINISHED" {
       return "FINISHED";
     default:
       return "SCHEDULED";
+  }
+}
+
+// ---- Market option presets -----------------------------------------------
+
+/**
+ * All 9 Half-time / Full-time combinations.
+ * Format: "<HT outcome>/<FT outcome>" where outcome is H (home win),
+ * D (draw), A (away win). E.g. "H/H" = home led at HT and won FT.
+ */
+const HT_FT_OPTIONS = [
+  "H/H", "H/D", "H/A",
+  "D/H", "D/D", "D/A",
+  "A/H", "A/D", "A/A",
+];
+
+/** Penalty shootout winner options (only relevant for knockout matches). */
+const PENALTY_OPTIONS = ["HOME", "AWAY", "NO_SHOOTOUT"];
+
+// ---- Outcome helper + auto-settle helper --------------------------------
+
+/** "H" if home score > away, "D" if equal, "A" if away score > home. */
+function outcome(home: number | null, away: number | null): "H" | "D" | "A" {
+  if (home === null || away === null) return "D";
+  if (home > away) return "H";
+  if (home < away) return "A";
+  return "D";
+}
+
+async function tryAutoSettle(
+  matchId: string,
+  marketType: string,
+  marketTitle: string,
+  correctAnswer: string,
+  apiMatchId: string,
+  result: ApplyResult,
+): Promise<void> {
+  try {
+    const market = await prisma.betMarket.findUnique({
+      where: {
+        matchId_type_title: {
+          matchId,
+          type: marketType,
+          title: marketTitle,
+        },
+      },
+      select: { id: true, isSettled: true },
+    });
+    if (!market || market.isSettled) return;
+    await settleMarket({
+      marketId: market.id,
+      correctAnswer,
+    });
+    result.settledMarkets += 1;
+  } catch (e) {
+    if (e instanceof SettleError) {
+      if (e.message !== "ALREADY_SETTLED") {
+        result.errors.push({ apiMatchId, message: `settle ${marketType}: ${e.message}` });
+      }
+    } else {
+      result.errors.push({
+        apiMatchId,
+        message: `settle ${marketType}: ${(e as Error).message}`,
+      });
+    }
   }
 }

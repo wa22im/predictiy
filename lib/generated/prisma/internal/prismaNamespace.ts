@@ -1003,6 +1003,10 @@ export const MatchScalarFieldEnum = {
   status: 'status',
   homeScore: 'homeScore',
   awayScore: 'awayScore',
+  homeHtGoals: 'homeHtGoals',
+  awayHtGoals: 'awayHtGoals',
+  homePenalties: 'homePenalties',
+  awayPenalties: 'awayPenalties',
   externalStatus: 'externalStatus'
 } as const
 

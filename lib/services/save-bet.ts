@@ -100,6 +100,23 @@ function validatePrediction(
         "predictedValue",
       );
     }
+  } else if (type === "HT_FT") {
+    // One of 9 combos: H/H, H/D, H/A, D/H, D/D, D/A, A/H, A/D, A/A
+    if (!/^[HDA]\/[HDA]$/.test(trimmed)) {
+      throw new SaveBetError(
+        400,
+        "Half-time / Full-time must be one of H/H, H/D, H/A, D/H, D/D, D/A, A/H, A/D, A/A",
+        "predictedValue",
+      );
+    }
+  } else if (type === "PENALTY_SHOOTOUT") {
+    if (!["HOME", "AWAY", "NO_SHOOTOUT"].includes(trimmed)) {
+      throw new SaveBetError(
+        400,
+        "Penalty shootout pick must be HOME, AWAY, or NO_SHOOTOUT",
+        "predictedValue",
+      );
+    }
   } else if (type === "PROPOSITION_CHOICE") {
     const opts = (options as string[] | null) ?? [];
     if (opts.length > 0 && !opts.includes(trimmed)) {

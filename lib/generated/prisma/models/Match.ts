@@ -29,11 +29,19 @@ export type AggregateMatch = {
 export type MatchAvgAggregateOutputType = {
   homeScore: number | null
   awayScore: number | null
+  homeHtGoals: number | null
+  awayHtGoals: number | null
+  homePenalties: number | null
+  awayPenalties: number | null
 }
 
 export type MatchSumAggregateOutputType = {
   homeScore: number | null
   awayScore: number | null
+  homeHtGoals: number | null
+  awayHtGoals: number | null
+  homePenalties: number | null
+  awayPenalties: number | null
 }
 
 export type MatchMinAggregateOutputType = {
@@ -47,6 +55,10 @@ export type MatchMinAggregateOutputType = {
   status: $Enums.MatchStatus | null
   homeScore: number | null
   awayScore: number | null
+  homeHtGoals: number | null
+  awayHtGoals: number | null
+  homePenalties: number | null
+  awayPenalties: number | null
   externalStatus: string | null
 }
 
@@ -61,6 +73,10 @@ export type MatchMaxAggregateOutputType = {
   status: $Enums.MatchStatus | null
   homeScore: number | null
   awayScore: number | null
+  homeHtGoals: number | null
+  awayHtGoals: number | null
+  homePenalties: number | null
+  awayPenalties: number | null
   externalStatus: string | null
 }
 
@@ -75,6 +91,10 @@ export type MatchCountAggregateOutputType = {
   status: number
   homeScore: number
   awayScore: number
+  homeHtGoals: number
+  awayHtGoals: number
+  homePenalties: number
+  awayPenalties: number
   externalStatus: number
   _all: number
 }
@@ -83,11 +103,19 @@ export type MatchCountAggregateOutputType = {
 export type MatchAvgAggregateInputType = {
   homeScore?: true
   awayScore?: true
+  homeHtGoals?: true
+  awayHtGoals?: true
+  homePenalties?: true
+  awayPenalties?: true
 }
 
 export type MatchSumAggregateInputType = {
   homeScore?: true
   awayScore?: true
+  homeHtGoals?: true
+  awayHtGoals?: true
+  homePenalties?: true
+  awayPenalties?: true
 }
 
 export type MatchMinAggregateInputType = {
@@ -101,6 +129,10 @@ export type MatchMinAggregateInputType = {
   status?: true
   homeScore?: true
   awayScore?: true
+  homeHtGoals?: true
+  awayHtGoals?: true
+  homePenalties?: true
+  awayPenalties?: true
   externalStatus?: true
 }
 
@@ -115,6 +147,10 @@ export type MatchMaxAggregateInputType = {
   status?: true
   homeScore?: true
   awayScore?: true
+  homeHtGoals?: true
+  awayHtGoals?: true
+  homePenalties?: true
+  awayPenalties?: true
   externalStatus?: true
 }
 
@@ -129,6 +165,10 @@ export type MatchCountAggregateInputType = {
   status?: true
   homeScore?: true
   awayScore?: true
+  homeHtGoals?: true
+  awayHtGoals?: true
+  homePenalties?: true
+  awayPenalties?: true
   externalStatus?: true
   _all?: true
 }
@@ -230,6 +270,10 @@ export type MatchGroupByOutputType = {
   status: $Enums.MatchStatus
   homeScore: number | null
   awayScore: number | null
+  homeHtGoals: number | null
+  awayHtGoals: number | null
+  homePenalties: number | null
+  awayPenalties: number | null
   externalStatus: string | null
   _count: MatchCountAggregateOutputType | null
   _avg: MatchAvgAggregateOutputType | null
@@ -267,6 +311,10 @@ export type MatchWhereInput = {
   status?: Prisma.EnumMatchStatusFilter<"Match"> | $Enums.MatchStatus
   homeScore?: Prisma.IntNullableFilter<"Match"> | number | null
   awayScore?: Prisma.IntNullableFilter<"Match"> | number | null
+  homeHtGoals?: Prisma.IntNullableFilter<"Match"> | number | null
+  awayHtGoals?: Prisma.IntNullableFilter<"Match"> | number | null
+  homePenalties?: Prisma.IntNullableFilter<"Match"> | number | null
+  awayPenalties?: Prisma.IntNullableFilter<"Match"> | number | null
   externalStatus?: Prisma.StringNullableFilter<"Match"> | string | null
   competition?: Prisma.XOR<Prisma.CompetitionScalarRelationFilter, Prisma.CompetitionWhereInput>
   markets?: Prisma.BetMarketListRelationFilter
@@ -283,6 +331,10 @@ export type MatchOrderByWithRelationInput = {
   status?: Prisma.SortOrder
   homeScore?: Prisma.SortOrderInput | Prisma.SortOrder
   awayScore?: Prisma.SortOrderInput | Prisma.SortOrder
+  homeHtGoals?: Prisma.SortOrderInput | Prisma.SortOrder
+  awayHtGoals?: Prisma.SortOrderInput | Prisma.SortOrder
+  homePenalties?: Prisma.SortOrderInput | Prisma.SortOrder
+  awayPenalties?: Prisma.SortOrderInput | Prisma.SortOrder
   externalStatus?: Prisma.SortOrderInput | Prisma.SortOrder
   competition?: Prisma.CompetitionOrderByWithRelationInput
   markets?: Prisma.BetMarketOrderByRelationAggregateInput
@@ -302,6 +354,10 @@ export type MatchWhereUniqueInput = Prisma.AtLeast<{
   status?: Prisma.EnumMatchStatusFilter<"Match"> | $Enums.MatchStatus
   homeScore?: Prisma.IntNullableFilter<"Match"> | number | null
   awayScore?: Prisma.IntNullableFilter<"Match"> | number | null
+  homeHtGoals?: Prisma.IntNullableFilter<"Match"> | number | null
+  awayHtGoals?: Prisma.IntNullableFilter<"Match"> | number | null
+  homePenalties?: Prisma.IntNullableFilter<"Match"> | number | null
+  awayPenalties?: Prisma.IntNullableFilter<"Match"> | number | null
   externalStatus?: Prisma.StringNullableFilter<"Match"> | string | null
   competition?: Prisma.XOR<Prisma.CompetitionScalarRelationFilter, Prisma.CompetitionWhereInput>
   markets?: Prisma.BetMarketListRelationFilter
@@ -318,6 +374,10 @@ export type MatchOrderByWithAggregationInput = {
   status?: Prisma.SortOrder
   homeScore?: Prisma.SortOrderInput | Prisma.SortOrder
   awayScore?: Prisma.SortOrderInput | Prisma.SortOrder
+  homeHtGoals?: Prisma.SortOrderInput | Prisma.SortOrder
+  awayHtGoals?: Prisma.SortOrderInput | Prisma.SortOrder
+  homePenalties?: Prisma.SortOrderInput | Prisma.SortOrder
+  awayPenalties?: Prisma.SortOrderInput | Prisma.SortOrder
   externalStatus?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.MatchCountOrderByAggregateInput
   _avg?: Prisma.MatchAvgOrderByAggregateInput
@@ -340,6 +400,10 @@ export type MatchScalarWhereWithAggregatesInput = {
   status?: Prisma.EnumMatchStatusWithAggregatesFilter<"Match"> | $Enums.MatchStatus
   homeScore?: Prisma.IntNullableWithAggregatesFilter<"Match"> | number | null
   awayScore?: Prisma.IntNullableWithAggregatesFilter<"Match"> | number | null
+  homeHtGoals?: Prisma.IntNullableWithAggregatesFilter<"Match"> | number | null
+  awayHtGoals?: Prisma.IntNullableWithAggregatesFilter<"Match"> | number | null
+  homePenalties?: Prisma.IntNullableWithAggregatesFilter<"Match"> | number | null
+  awayPenalties?: Prisma.IntNullableWithAggregatesFilter<"Match"> | number | null
   externalStatus?: Prisma.StringNullableWithAggregatesFilter<"Match"> | string | null
 }
 
@@ -353,6 +417,10 @@ export type MatchCreateInput = {
   status?: $Enums.MatchStatus
   homeScore?: number | null
   awayScore?: number | null
+  homeHtGoals?: number | null
+  awayHtGoals?: number | null
+  homePenalties?: number | null
+  awayPenalties?: number | null
   externalStatus?: string | null
   competition: Prisma.CompetitionCreateNestedOneWithoutMatchesInput
   markets?: Prisma.BetMarketCreateNestedManyWithoutMatchInput
@@ -369,6 +437,10 @@ export type MatchUncheckedCreateInput = {
   status?: $Enums.MatchStatus
   homeScore?: number | null
   awayScore?: number | null
+  homeHtGoals?: number | null
+  awayHtGoals?: number | null
+  homePenalties?: number | null
+  awayPenalties?: number | null
   externalStatus?: string | null
   markets?: Prisma.BetMarketUncheckedCreateNestedManyWithoutMatchInput
 }
@@ -383,6 +455,10 @@ export type MatchUpdateInput = {
   status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   homeScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   awayScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homeHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homePenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayPenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   externalStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   competition?: Prisma.CompetitionUpdateOneRequiredWithoutMatchesNestedInput
   markets?: Prisma.BetMarketUpdateManyWithoutMatchNestedInput
@@ -399,6 +475,10 @@ export type MatchUncheckedUpdateInput = {
   status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   homeScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   awayScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homeHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homePenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayPenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   externalStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   markets?: Prisma.BetMarketUncheckedUpdateManyWithoutMatchNestedInput
 }
@@ -414,6 +494,10 @@ export type MatchCreateManyInput = {
   status?: $Enums.MatchStatus
   homeScore?: number | null
   awayScore?: number | null
+  homeHtGoals?: number | null
+  awayHtGoals?: number | null
+  homePenalties?: number | null
+  awayPenalties?: number | null
   externalStatus?: string | null
 }
 
@@ -427,6 +511,10 @@ export type MatchUpdateManyMutationInput = {
   status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   homeScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   awayScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homeHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homePenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayPenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   externalStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
@@ -441,6 +529,10 @@ export type MatchUncheckedUpdateManyInput = {
   status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   homeScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   awayScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homeHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homePenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayPenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   externalStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
@@ -465,12 +557,20 @@ export type MatchCountOrderByAggregateInput = {
   status?: Prisma.SortOrder
   homeScore?: Prisma.SortOrder
   awayScore?: Prisma.SortOrder
+  homeHtGoals?: Prisma.SortOrder
+  awayHtGoals?: Prisma.SortOrder
+  homePenalties?: Prisma.SortOrder
+  awayPenalties?: Prisma.SortOrder
   externalStatus?: Prisma.SortOrder
 }
 
 export type MatchAvgOrderByAggregateInput = {
   homeScore?: Prisma.SortOrder
   awayScore?: Prisma.SortOrder
+  homeHtGoals?: Prisma.SortOrder
+  awayHtGoals?: Prisma.SortOrder
+  homePenalties?: Prisma.SortOrder
+  awayPenalties?: Prisma.SortOrder
 }
 
 export type MatchMaxOrderByAggregateInput = {
@@ -484,6 +584,10 @@ export type MatchMaxOrderByAggregateInput = {
   status?: Prisma.SortOrder
   homeScore?: Prisma.SortOrder
   awayScore?: Prisma.SortOrder
+  homeHtGoals?: Prisma.SortOrder
+  awayHtGoals?: Prisma.SortOrder
+  homePenalties?: Prisma.SortOrder
+  awayPenalties?: Prisma.SortOrder
   externalStatus?: Prisma.SortOrder
 }
 
@@ -498,12 +602,20 @@ export type MatchMinOrderByAggregateInput = {
   status?: Prisma.SortOrder
   homeScore?: Prisma.SortOrder
   awayScore?: Prisma.SortOrder
+  homeHtGoals?: Prisma.SortOrder
+  awayHtGoals?: Prisma.SortOrder
+  homePenalties?: Prisma.SortOrder
+  awayPenalties?: Prisma.SortOrder
   externalStatus?: Prisma.SortOrder
 }
 
 export type MatchSumOrderByAggregateInput = {
   homeScore?: Prisma.SortOrder
   awayScore?: Prisma.SortOrder
+  homeHtGoals?: Prisma.SortOrder
+  awayHtGoals?: Prisma.SortOrder
+  homePenalties?: Prisma.SortOrder
+  awayPenalties?: Prisma.SortOrder
 }
 
 export type MatchNullableScalarRelationFilter = {
@@ -583,6 +695,10 @@ export type MatchCreateWithoutCompetitionInput = {
   status?: $Enums.MatchStatus
   homeScore?: number | null
   awayScore?: number | null
+  homeHtGoals?: number | null
+  awayHtGoals?: number | null
+  homePenalties?: number | null
+  awayPenalties?: number | null
   externalStatus?: string | null
   markets?: Prisma.BetMarketCreateNestedManyWithoutMatchInput
 }
@@ -597,6 +713,10 @@ export type MatchUncheckedCreateWithoutCompetitionInput = {
   status?: $Enums.MatchStatus
   homeScore?: number | null
   awayScore?: number | null
+  homeHtGoals?: number | null
+  awayHtGoals?: number | null
+  homePenalties?: number | null
+  awayPenalties?: number | null
   externalStatus?: string | null
   markets?: Prisma.BetMarketUncheckedCreateNestedManyWithoutMatchInput
 }
@@ -641,6 +761,10 @@ export type MatchScalarWhereInput = {
   status?: Prisma.EnumMatchStatusFilter<"Match"> | $Enums.MatchStatus
   homeScore?: Prisma.IntNullableFilter<"Match"> | number | null
   awayScore?: Prisma.IntNullableFilter<"Match"> | number | null
+  homeHtGoals?: Prisma.IntNullableFilter<"Match"> | number | null
+  awayHtGoals?: Prisma.IntNullableFilter<"Match"> | number | null
+  homePenalties?: Prisma.IntNullableFilter<"Match"> | number | null
+  awayPenalties?: Prisma.IntNullableFilter<"Match"> | number | null
   externalStatus?: Prisma.StringNullableFilter<"Match"> | string | null
 }
 
@@ -654,6 +778,10 @@ export type MatchCreateWithoutMarketsInput = {
   status?: $Enums.MatchStatus
   homeScore?: number | null
   awayScore?: number | null
+  homeHtGoals?: number | null
+  awayHtGoals?: number | null
+  homePenalties?: number | null
+  awayPenalties?: number | null
   externalStatus?: string | null
   competition: Prisma.CompetitionCreateNestedOneWithoutMatchesInput
 }
@@ -669,6 +797,10 @@ export type MatchUncheckedCreateWithoutMarketsInput = {
   status?: $Enums.MatchStatus
   homeScore?: number | null
   awayScore?: number | null
+  homeHtGoals?: number | null
+  awayHtGoals?: number | null
+  homePenalties?: number | null
+  awayPenalties?: number | null
   externalStatus?: string | null
 }
 
@@ -698,6 +830,10 @@ export type MatchUpdateWithoutMarketsInput = {
   status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   homeScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   awayScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homeHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homePenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayPenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   externalStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   competition?: Prisma.CompetitionUpdateOneRequiredWithoutMatchesNestedInput
 }
@@ -713,6 +849,10 @@ export type MatchUncheckedUpdateWithoutMarketsInput = {
   status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   homeScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   awayScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homeHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homePenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayPenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   externalStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
@@ -726,6 +866,10 @@ export type MatchCreateManyCompetitionInput = {
   status?: $Enums.MatchStatus
   homeScore?: number | null
   awayScore?: number | null
+  homeHtGoals?: number | null
+  awayHtGoals?: number | null
+  homePenalties?: number | null
+  awayPenalties?: number | null
   externalStatus?: string | null
 }
 
@@ -739,6 +883,10 @@ export type MatchUpdateWithoutCompetitionInput = {
   status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   homeScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   awayScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homeHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homePenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayPenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   externalStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   markets?: Prisma.BetMarketUpdateManyWithoutMatchNestedInput
 }
@@ -753,6 +901,10 @@ export type MatchUncheckedUpdateWithoutCompetitionInput = {
   status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   homeScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   awayScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homeHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homePenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayPenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   externalStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   markets?: Prisma.BetMarketUncheckedUpdateManyWithoutMatchNestedInput
 }
@@ -767,6 +919,10 @@ export type MatchUncheckedUpdateManyWithoutCompetitionInput = {
   status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
   homeScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   awayScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homeHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homePenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayPenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   externalStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
@@ -812,6 +968,10 @@ export type MatchSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   status?: boolean
   homeScore?: boolean
   awayScore?: boolean
+  homeHtGoals?: boolean
+  awayHtGoals?: boolean
+  homePenalties?: boolean
+  awayPenalties?: boolean
   externalStatus?: boolean
   competition?: boolean | Prisma.CompetitionDefaultArgs<ExtArgs>
   markets?: boolean | Prisma.Match$marketsArgs<ExtArgs>
@@ -829,6 +989,10 @@ export type MatchSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   status?: boolean
   homeScore?: boolean
   awayScore?: boolean
+  homeHtGoals?: boolean
+  awayHtGoals?: boolean
+  homePenalties?: boolean
+  awayPenalties?: boolean
   externalStatus?: boolean
   competition?: boolean | Prisma.CompetitionDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["match"]>
@@ -844,6 +1008,10 @@ export type MatchSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   status?: boolean
   homeScore?: boolean
   awayScore?: boolean
+  homeHtGoals?: boolean
+  awayHtGoals?: boolean
+  homePenalties?: boolean
+  awayPenalties?: boolean
   externalStatus?: boolean
   competition?: boolean | Prisma.CompetitionDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["match"]>
@@ -859,10 +1027,14 @@ export type MatchSelectScalar = {
   status?: boolean
   homeScore?: boolean
   awayScore?: boolean
+  homeHtGoals?: boolean
+  awayHtGoals?: boolean
+  homePenalties?: boolean
+  awayPenalties?: boolean
   externalStatus?: boolean
 }
 
-export type MatchOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "competitionId" | "apiMatchId" | "homeTeam" | "awayTeam" | "kickoffTime" | "stage" | "status" | "homeScore" | "awayScore" | "externalStatus", ExtArgs["result"]["match"]>
+export type MatchOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "competitionId" | "apiMatchId" | "homeTeam" | "awayTeam" | "kickoffTime" | "stage" | "status" | "homeScore" | "awayScore" | "homeHtGoals" | "awayHtGoals" | "homePenalties" | "awayPenalties" | "externalStatus", ExtArgs["result"]["match"]>
 export type MatchInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   competition?: boolean | Prisma.CompetitionDefaultArgs<ExtArgs>
   markets?: boolean | Prisma.Match$marketsArgs<ExtArgs>
@@ -892,6 +1064,10 @@ export type $MatchPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     status: $Enums.MatchStatus
     homeScore: number | null
     awayScore: number | null
+    homeHtGoals: number | null
+    awayHtGoals: number | null
+    homePenalties: number | null
+    awayPenalties: number | null
     externalStatus: string | null
   }, ExtArgs["result"]["match"]>
   composites: {}
@@ -1328,6 +1504,10 @@ export interface MatchFieldRefs {
   readonly status: Prisma.FieldRef<"Match", 'MatchStatus'>
   readonly homeScore: Prisma.FieldRef<"Match", 'Int'>
   readonly awayScore: Prisma.FieldRef<"Match", 'Int'>
+  readonly homeHtGoals: Prisma.FieldRef<"Match", 'Int'>
+  readonly awayHtGoals: Prisma.FieldRef<"Match", 'Int'>
+  readonly homePenalties: Prisma.FieldRef<"Match", 'Int'>
+  readonly awayPenalties: Prisma.FieldRef<"Match", 'Int'>
   readonly externalStatus: Prisma.FieldRef<"Match", 'String'>
 }
     
