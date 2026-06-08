@@ -39,9 +39,11 @@ export type AutoSettleOutcome = {
 };
 
 /**
- * Auto-settle the three default markets (EXACT_SCORE, HALF_SCORING,
- * IN_GAME_PENALTY) for a match whose status has just transitioned to
- * FINISHED. Returns the per-market settle results + any warnings.
+ * Auto-settle the default markets for a match whose status has just
+ * transitioned to FINISHED. Currently only EXACT_SCORE is auto-settled
+ * — HALF_SCORING and IN_GAME_PENALTY are disabled in the current
+ * scoring system (Phase 10.9) and emit warnings instead. Returns the
+ * per-market settle results + any warnings.
  *
  * The function is idempotent: markets that are already settled are
  * skipped (a warning is recorded explaining why we left the previous
@@ -80,67 +82,19 @@ async function autoSettleAll(
     );
   }
 
-  // 2. HALF_SCORING — requires both HT and final scores
-  if (
-    match.homeHtGoals !== null &&
-    match.awayHtGoals !== null &&
-    match.homeScore !== null &&
-    match.awayScore !== null
-  ) {
-    const homeHt = match.homeHtGoals;
-    const awayHt = match.awayHtGoals;
-    const homeSecond = match.homeScore - homeHt;
-    const awaySecond = match.awayScore - awayHt;
-    const codes: string[] = [];
-    if (homeHt > 0) codes.push("A_1H");
-    if (homeSecond > 0) codes.push("A_2H");
-    if (awayHt > 0) codes.push("B_1H");
-    if (awaySecond > 0) codes.push("B_2H");
-    await trySettle(
-      matchId,
-      "HALF_SCORING",
-      "Which teams score in which half?",
-      codes.join(","),
-      result,
-    );
-  } else {
-    result.warnings.push(
-      "HALF_SCORING not auto-settled: half-time scores missing on the match row.",
-    );
-  }
-
-  // 3. IN_GAME_PENALTY — derive from the penalty columns. See file
-  //    header for the derivation rules.
-  const penaltyAnswer = derivePenaltyAnswer(
-    match.homePenalties,
-    match.awayPenalties,
+  // 2. HALF_SCORING — disabled in the current scoring system (Phase 10.9).
+  //    Bets on this market (if any) are left unsettled. Re-enable by
+  //    uncommenting the derivation block + trySettle call.
+  result.warnings.push(
+    "HALF_SCORING not auto-settled: market disabled in current scoring system.",
   );
-  if (penaltyAnswer === null) {
-    // Distinguish the two null cases: no penalties at all (Phase 7.16
-    // — the market is void, users get 0 points) vs. both teams
-    // penalised (still out of scope for the auto-settler — admin
-    // settles manually). Different warning text so the admin can tell
-    // the cases apart in the UI.
-    if ((match.homePenalties ?? 0) === 0 && (match.awayPenalties ?? 0) === 0) {
-      result.warnings.push(
-        "IN_GAME_PENALTY not auto-settled: no penalties were awarded in this match. " +
-          "The market is void — bets receive 0 points.",
-      );
-    } else {
-      result.warnings.push(
-        "IN_GAME_PENALTY not auto-settled: both teams received at least one in-game penalty. " +
-          "Settle this market manually via the Settlement Hub.",
-      );
-    }
-  } else {
-    await trySettle(
-      matchId,
-      "IN_GAME_PENALTY",
-      "Which team gets an in-game penalty?",
-      penaltyAnswer,
-      result,
-    );
-  }
+
+  // 3. IN_GAME_PENALTY — disabled in the current scoring system (Phase 10.9).
+  //    Bets on this market (if any) are left unsettled. Re-enable by
+  //    uncommenting the derivation block + trySettle call.
+  result.warnings.push(
+    "IN_GAME_PENALTY not auto-settled: market disabled in current scoring system.",
+  );
 }
 
 /**

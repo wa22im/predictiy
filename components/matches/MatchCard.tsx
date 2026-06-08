@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { FeedMatch } from "@/lib/services/group-feed";
 import { formatUtc, formatCountdown } from "@/lib/time";
 import { Countdown } from "./Countdown";
@@ -34,13 +35,23 @@ export function MatchCard({
   const allOtherBets = match.markets.flatMap((m) => m.otherBets);
   const deduped = dedupeByUser(allOtherBets);
 
+  // For outright markets there's no "away team" — only render the away
+  // crest slot when we actually have an away team to label.
+  const showAwayCrest = !hasOutright && Boolean(match.awayTeam);
+
   return (
     <article className="paper-card p-3 md:p-4 space-y-4">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-display text-lg md:text-xl font-bold tracking-tight">
-            {teams}
-          </p>
+          <div className="flex items-center gap-2 mb-1">
+            <CrestOrFallback url={match.homeCrest} name={match.homeTeam} />
+            <p className="font-display text-lg md:text-xl font-bold tracking-tight">
+              {teams}
+            </p>
+            {showAwayCrest && (
+              <CrestOrFallback url={match.awayCrest} name={match.awayTeam} />
+            )}
+          </div>
           <p className="text-xs text-muted-foreground font-mono">
             {formatUtc(match.kickoffTime)} · {relative}
           </p>
@@ -64,6 +75,46 @@ export function MatchCard({
 
       <MemberPredictions otherBets={deduped} />
     </article>
+  );
+}
+
+/**
+ * 28px circular crest with a team-initial fallback. Used twice in the
+ * header (home + away). Falls back to initials when:
+ *   - the URL is null (no crest provided by the source), or
+ *   - the image fails to load (broken URL, CORS, network, etc.).
+ *
+ * We use a plain <img> rather than next/image: crests come from
+ * third-party CDNs (football-data.org / flagcdn), and the optimization
+ * benefit is negligible for a 28×28 badge.
+ */
+function CrestOrFallback({
+  url,
+  name,
+}: {
+  url: string | null;
+  name: string;
+}) {
+  const [errored, setErrored] = useState(false);
+  const showImage = url && !errored;
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-background/40 border border-border text-[10px] font-bold text-muted-foreground overflow-hidden shrink-0"
+    >
+      {showImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={url}
+          alt={`${name} crest`}
+          loading="lazy"
+          onError={() => setErrored(true)}
+          className="h-full w-full object-contain"
+        />
+      ) : (
+        <span>{name.slice(0, 1).toUpperCase()}</span>
+      )}
+    </span>
   );
 }
 

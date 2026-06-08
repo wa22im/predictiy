@@ -59,9 +59,24 @@ export function ScoringExplainedPopover({
               </button>
             </div>
             <p className="text-[11px] text-muted-foreground mb-3">
-              9 examples — group stage uses +3 / +1 weights, knockout uses +5 / +2. Every bet is
-              floored at -1, so a single bad pick can never cost you more than -1. Half-scoring
-              accepts 1 or 2 codes; a 1-pick ranges from -1 to +1, a 2-pick from -1 to +2.
+              Stage-dependent scoring: the more decisive the match, the more you
+              can win. In the{" "}
+              <span className="font-bold text-foreground">group stage</span> an
+              exact score is worth <span className="font-bold text-foreground">+5</span>{" "}
+              (non-draw) or <span className="font-bold text-foreground">+5</span>{" "}
+              (draw), with +2 for any draw score on a draw game, +2 for the right
+              winner + right goal difference, +1 for the right winner only, and 0
+              for a miss. In the{" "}
+              <span className="font-bold text-foreground">knockout rounds</span>{" "}
+              (R16, QF, SF, 3rd, F) every tier is bumped up:{" "}
+              <span className="font-bold text-foreground">+7</span> exact
+              non-draw, <span className="font-bold text-foreground">+6</span>{" "}
+              exact draw, <span className="font-bold text-foreground">+3</span>{" "}
+              for any draw score on a draw game,{" "}
+              <span className="font-bold text-foreground">+3</span> for the
+              right winner + right goal difference,{" "}
+              <span className="font-bold text-foreground">+2</span> for the
+              right winner only, and 0 for a miss.
             </p>
             <div className="space-y-3 pr-1">
               {SCORING_EXAMPLES.map((ex, i) => (
@@ -88,14 +103,10 @@ function ExampleBlock({ example, index }: { example: ScoringExample; index: numb
         <dt className="text-muted-foreground">Match</dt>
         <dd className="text-foreground">{example.match}</dd>
         <dt className="text-muted-foreground">Your bet</dt>
-        <dd className="text-foreground">
-          EXACT {example.userBet.exactScore} · HALF {example.userBet.halfScoring || "—"} · PEN{" "}
-          {example.userBet.inGamePenalty || "—"}
-        </dd>
+        <dd className="text-foreground">EXACT {example.userBet.exactScore}</dd>
         <dt className="text-muted-foreground">Result</dt>
         <dd className="text-foreground">
-          {example.result.finalScore} ({example.result.winner}) · HALF{" "}
-          {example.result.halfScoring} · PEN {example.result.inGamePenalty}
+          {example.result.finalScore} ({example.result.winner})
         </dd>
       </dl>
       <ul className="space-y-0.5">

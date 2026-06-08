@@ -177,6 +177,8 @@ export async function applyFootballDataMatches(
           // homePenalties / awayPenalties: intentionally null on
           // ingest — see file header. The settlement hub sets these.
           externalStatus: m.status,
+          homeCrest: m.homeTeam.crest,
+          awayCrest: m.awayTeam.crest,
           competitionId,
         },
         update: {
@@ -190,6 +192,8 @@ export async function applyFootballDataMatches(
           homeHtGoals: m.score.halfTime.home,
           awayHtGoals: m.score.halfTime.away,
           externalStatus: m.status,
+          homeCrest: m.homeTeam.crest,
+          awayCrest: m.awayTeam.crest,
           competitionId,
         },
       });

@@ -189,36 +189,6 @@ export function MatchBettingForm({
             awayTeam={match.awayTeam}
           />
         )}
-        {halfScoring && (
-          <LockedMarketRow
-            title="Which teams score in which half?"
-            type="HALF_SCORING"
-            marketId={halfScoring.id}
-            savedValue={halfScoring.viewerBet?.predictedValue ?? null}
-            pointsAwarded={
-              halfScoring.isSettled
-                ? halfScoring.viewerBet?.pointsAwarded ?? null
-                : null
-            }
-            homeTeam={match.homeTeam}
-            awayTeam={match.awayTeam}
-          />
-        )}
-        {inGamePenalty && (
-          <LockedMarketRow
-            title="Which team gets an in-game penalty?"
-            type="IN_GAME_PENALTY"
-            marketId={inGamePenalty.id}
-            savedValue={inGamePenalty.viewerBet?.predictedValue ?? null}
-            pointsAwarded={
-              inGamePenalty.isSettled
-                ? inGamePenalty.viewerBet?.pointsAwarded ?? null
-                : null
-            }
-            homeTeam={match.homeTeam}
-            awayTeam={match.awayTeam}
-          />
-        )}
         {outrightMarkets.map((m) => (
           <LockedMarketRow
             key={m.id}
@@ -248,29 +218,6 @@ export function MatchBettingForm({
         />
       )}
 
-      {halfScoring && (
-        <HalfScoringRow
-          marketId={halfScoring.id}
-          options={halfScoring.options ?? []}
-          value={picks[halfScoring.id] ?? ""}
-          onToggle={(code) => toggleHalfScoring(halfScoring.id, code)}
-          homeTeam={match.homeTeam}
-          awayTeam={match.awayTeam}
-        />
-      )}
-
-      {inGamePenalty && (
-        <InGamePenaltyRow
-          marketId={inGamePenalty.id}
-          options={inGamePenalty.options ?? []}
-          value={picks[inGamePenalty.id] ?? ""}
-          onChange={(v) => setPick(inGamePenalty.id, v)}
-          onClear={() => clearPick(inGamePenalty.id)}
-          homeTeam={match.homeTeam}
-          awayTeam={match.awayTeam}
-        />
-      )}
-
       {outrightMarkets.map((m) => (
         <PropositionalRow
           key={m.id}
@@ -284,9 +231,7 @@ export function MatchBettingForm({
       ))}
 
       <div className="flex items-center justify-between gap-3 pt-2">
-        <p className="text-xs text-muted-foreground">
-          Optional: skip the chips you don&apos;t want to bet on.
-        </p>
+      
         <button
           type="submit"
           disabled={isPending || !canSave}
@@ -315,9 +260,7 @@ function ExactScoreRow({
   return (
     <div>
       <p className="text-sm font-medium">Predict the final score</p>
-      <p className="text-xs text-muted-foreground mb-2">
-        Required — +3 for exact, +1 for correct winner (group); +5 / +2 (knockout). 0 if wrong.
-      </p>
+
       <div className="flex items-center gap-2">
         <input
           type="number"

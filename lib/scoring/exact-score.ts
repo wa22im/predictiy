@@ -5,57 +5,101 @@ import { stageConfigFor } from "./types";
  * Exact-score — "Predict the final score."
  *
  * Predicted and correct values are both "X-Y" where X and Y are
- * non-negative integers (e.g. "2-1"). The winner is *derived* from
- * the score (HOME if home>away, DRAW if equal, AWAY if away>home) —
- * the user's predicted score "3-1" implies they think HOME wins,
- * so the winner partial credit can be folded in here without a
- * separate market.
+ * non-negative integers (e.g. "2-1"). The winner is *derived* from the
+ * score (HOME if home>away, DRAW if equal, AWAY if away>home).
  *
- * Scoring (per-stage, from `StageScoring.{exactScorePoints, winTeamPoints}`):
- *   - exact match (predicted home === correct home AND predicted away
- *     === correct away):     exactScorePoints + winTeamPoints
- *   - winner match only (the derived winner matches across predicted
- *     and correct):          winTeamPoints
- *   - miss:                   0
+ * Scoring matrix (Phase 10.10b — stage-dependent, injectable):
  *
- * Per-stage weights:
- *   - group stage:    +3 + 1 = 4 on exact, +1 on winner-only, 0 on miss
- *   - knockout stage: +5 + 2 = 7 on exact, +2 on winner-only, 0 on miss
+ *   | Actual   | User bet                | Group | Knockout |
+ *   | -------- | ----------------------- | ----- | -------- |
+ *   | DRAW     | exact draw              | 5     | 6        |
+ *   | DRAW     | wrong draw score        | 2     | 3        |
+ *   | DRAW     | bet on a winner         | 0     | 0        |
+ *   | NON-DRAW | exact                   | 5     | 7        |
+ *   | NON-DRAW | right winner + right    | 2     | 3        |
+ *   |          | signed goal diff        |       |          |
+ *   | NON-DRAW | right winner + wrong    | 1     | 2        |
+ *   |          | signed goal diff        |       |          |
+ *   | NON-DRAW | wrong winner            | 0     | 0        |
  *
- * Draw handling: 1-1 vs 2-2 are both draws (DRAW === DRAW → winner
- * correct). 1-1 vs 1-0 → DRAW vs HOME → wrong. 0-0 vs 1-1 → DRAW vs
- * DRAW → correct.
+ * All values come from `StageScoring` config (see
+ * `lib/scoring/default-config.ts`). The strategy has no hardcoded
+ * point values — changing a stage's config changes the scoring for
+ * every group whose `scoringConfig` is set to `DEFAULT_SCORING_CONFIG`.
  *
- * No negative points. The per-bet floor (-1) is applied centrally in
- * `lib/services/settle-market.ts`; since this strategy only returns 0
- * or a positive value, the clamp is a no-op for EXACT_SCORE.
+ * Legacy groups (with old `scoringConfig` JSON that lacks the new
+ * fields) get a sensible per-field fallback. The fallback values match
+ * the group-stage values, which matches Phase 10.10 behavior.
+ *
+ * The signed goal diff is (home - away) for the actual, and
+ * (predictedHome - predictedAway) for the user. The winner MUST be
+ * the team the user predicted to win for the diff bonus to apply.
+ * Absolute diff doesn't count: a 3-1 prediction and a 1-3 actual
+ * both have absolute diff 2 but different signed diffs (+2 vs -2).
  */
+const FALLBACK = {
+  exactScorePoints: 5,
+  drawExactScorePoints: 5,
+  drawWrongScorePoints: 2,
+  rightWinnerRightDiffPoints: 2,
+  rightWinnerOnlyPoints: 1,
+  missPoints: 0,
+} as const;
+
 export const ExactScoreStrategy: ScoringStrategy = {
   score(input: StrategyInput): StrategyResult {
     const stage = stageConfigFor(input.scoringConfig, input.matchStage);
+    const pts = {
+      exactScorePoints: stage.exactScorePoints ?? FALLBACK.exactScorePoints,
+      drawExactScorePoints: stage.drawExactScorePoints ?? FALLBACK.drawExactScorePoints,
+      drawWrongScorePoints: stage.drawWrongScorePoints ?? FALLBACK.drawWrongScorePoints,
+      rightWinnerRightDiffPoints:
+        stage.rightWinnerRightDiffPoints ?? FALLBACK.rightWinnerRightDiffPoints,
+      rightWinnerOnlyPoints: stage.rightWinnerOnlyPoints ?? FALLBACK.rightWinnerOnlyPoints,
+      missPoints: stage.missPoints ?? FALLBACK.missPoints,
+    };
 
     const pParts = input.predictedValue.split("-").map((s) => Number(s.trim()));
     const cParts = input.correctAnswer.split("-").map((s) => Number(s.trim()));
 
     if (pParts.length !== 2 || cParts.length !== 2) {
-      return { points: 0, breakdown: "Invalid score" };
+      return { points: pts.missPoints, breakdown: "Invalid score" };
     }
     const [pH, pA] = pParts;
     const [cH, cA] = cParts;
     if ([pH, pA, cH, cA].some((n) => !Number.isFinite(n))) {
-      return { points: 0, breakdown: "Invalid score" };
+      return { points: pts.missPoints, breakdown: "Invalid score" };
     }
 
+    const pWinner = winner(pH, pA);
+    const cWinner = winner(cH, cA);
+    const pDiff = pH - pA;
+    const cDiff = cH - cA;
+
     if (pH === cH && pA === cA) {
-      return {
-        points: stage.exactScorePoints + stage.winTeamPoints,
-        breakdown: "Exact score",
-      };
+      const exactPts = cWinner === "DRAW" ? pts.drawExactScorePoints : pts.exactScorePoints;
+      return { points: exactPts, breakdown: "Exact score" };
     }
-    if (winner(pH, pA) === winner(cH, cA)) {
-      return { points: stage.winTeamPoints, breakdown: "Correct winner" };
+
+    if (cWinner === "DRAW") {
+      if (pWinner === "DRAW") {
+        return { points: pts.drawWrongScorePoints, breakdown: "Draw (any draw score)" };
+      }
+      return { points: pts.missPoints, breakdown: "Miss" };
     }
-    return { points: 0, breakdown: "Miss" };
+
+    if (pWinner === "DRAW") {
+      return { points: pts.missPoints, breakdown: "Miss" };
+    }
+
+    if (pWinner === cWinner) {
+      if (pDiff === cDiff) {
+        return { points: pts.rightWinnerRightDiffPoints, breakdown: "Right winner + right goal diff" };
+      }
+      return { points: pts.rightWinnerOnlyPoints, breakdown: "Right winner only" };
+    }
+
+    return { points: pts.missPoints, breakdown: "Miss" };
   },
 };
 

@@ -42,6 +42,8 @@ type MatchInput = {
   apiMatchId: string;
   homeTeam: string;
   awayTeam: string;
+  homeCrest?: string;
+  awayCrest?: string;
   kickoffTime: string;
   stage: string;
   markets: MarketInput[];
@@ -79,6 +81,8 @@ async function main() {
         awayTeam: m.awayTeam,
         kickoffTime: new Date(m.kickoffTime),
         stage: m.stage,
+        homeCrest: m.homeCrest ?? null,
+        awayCrest: m.awayCrest ?? null,
         competitionId: competition.id,
       },
       create: {
@@ -88,6 +92,8 @@ async function main() {
         awayTeam: m.awayTeam,
         kickoffTime: new Date(m.kickoffTime),
         stage: m.stage,
+        homeCrest: m.homeCrest ?? null,
+        awayCrest: m.awayCrest ?? null,
       },
     });
     matchCount += 1;

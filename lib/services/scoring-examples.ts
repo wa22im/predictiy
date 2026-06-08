@@ -2,8 +2,6 @@ export type ScoringExampleStage = "GROUP" | "KNOCKOUT";
 
 export type ScoringExampleWinner = "HOME" | "AWAY" | "DRAW";
 
-export type ScoringExamplePenaltyResult = "HOME" | "AWAY" | "NONE" | "BOTH";
-
 export type ScoringExampleBreakdown = {
   market: string;
   pick: string;
@@ -11,21 +9,35 @@ export type ScoringExampleBreakdown = {
   note: string;
 };
 
+/**
+ * Stage-dependent scoring matrix (Phase 10.10b — values come from
+ * `StageScoring` in `lib/scoring/default-config.ts`):
+ *
+ *   | Actual   | User bet                | Group | Knockout |
+ *   | -------- | ----------------------- | ----- | -------- |
+ *   | DRAW     | exact draw              | 5     | 6        |
+ *   | DRAW     | wrong draw score        | 2     | 3        |
+ *   | DRAW     | bet on a winner         | 0     | 0        |
+ *   | NON-DRAW | exact                   | 5     | 7        |
+ *   | NON-DRAW | right winner + right    | 2     | 3        |
+ *   |          | signed goal diff        |       |          |
+ *   | NON-DRAW | right winner + wrong    | 1     | 2        |
+ *   |          | signed goal diff        |       |          |
+ *   | NON-DRAW | wrong winner            | 0     | 0        |
+ *
+ * The signed goal diff is (home - away); absolute diff doesn't count.
+ * The per-bet floor (-1) is applied centrally in
+ * `lib/services/settle-market.ts` — since EXACT_SCORE only ever
+ * returns 0 or a positive value, the floor is a no-op for this
+ * strategy. HALF_SCORING and IN_GAME_PENALTY are no longer scored
+ * (markets are hidden in the UI and skipped by the auto-settler).
+ */
 export type ScoringExample = {
   title: string;
   match: string;
   stage: ScoringExampleStage;
-  userBet: {
-    exactScore: string;
-    halfScoring: string;
-    inGamePenalty: "HOME" | "AWAY" | "";
-  };
-  result: {
-    finalScore: string;
-    winner: ScoringExampleWinner;
-    halfScoring: string;
-    inGamePenalty: ScoringExamplePenaltyResult;
-  };
+  userBet: { exactScore: string };
+  result: { finalScore: string; winner: ScoringExampleWinner };
   breakdown: ScoringExampleBreakdown[];
   total: number;
   explanation: string;
@@ -33,342 +45,183 @@ export type ScoringExample = {
 
 export const SCORING_EXAMPLES: ScoringExample[] = [
   {
-    title: "Tunisia vs Canada — your example",
+    title: "Tunisia vs Canada — exact draw (group)",
     match: "Tunisia vs Canada",
     stage: "GROUP",
-    userBet: {
-      exactScore: "3-2",
-      halfScoring: "A_1H",
-      inGamePenalty: "AWAY",
-    },
-    result: {
-      finalScore: "2-1",
-      winner: "HOME",
-      halfScoring: "A_2H",
-      inGamePenalty: "AWAY",
-    },
+    userBet: { exactScore: "1-1" },
+    result: { finalScore: "1-1", winner: "DRAW" },
     breakdown: [
       {
         market: "EXACT_SCORE",
-        pick: "3-2",
-        points: 1,
-        note: "Score wrong, but Tunisia won → winner partial credit +1",
-      },
-      {
-        market: "HALF_SCORING",
-        pick: "A_1H (Tunisia 1H)",
-        points: -1,
-        note: "Tunisia actually scored in 2H, not 1H → -1 (per-bet floor)",
-      },
-      {
-        market: "IN_GAME_PENALTY",
-        pick: "AWAY (Canada)",
-        points: 3,
-        note: "Correct — Canada got the penalty → +3",
+        pick: "1-1",
+        points: 5,
+        note: "Exact draw score (group stage) → +5",
       },
     ],
-    total: 3,
+    total: 5,
     explanation:
-      "Note: without the per-bet floor (which was added later), the HALF_SCORING pick would have been -2, giving a total of +2. The floor protects you from catastrophic losses on a single bet.",
+      "Predicted the exact draw score (1-1 = 1-1). Group-stage draws pay +5; the same draw in a knockout would pay +6.",
   },
   {
-    title: "Brazil vs Argentina — perfect bet",
-    match: "Brazil vs Argentina",
+    title: "Mexico vs South Africa — wrong draw score (group)",
+    match: "Mexico vs South Africa",
     stage: "GROUP",
-    userBet: {
-      exactScore: "2-1",
-      halfScoring: "A_1H,B_2H",
-      inGamePenalty: "HOME",
-    },
-    result: {
-      finalScore: "2-1",
-      winner: "HOME",
-      halfScoring: "A_1H,B_2H",
-      inGamePenalty: "HOME",
-    },
+    userBet: { exactScore: "0-0" },
+    result: { finalScore: "1-1", winner: "DRAW" },
+    breakdown: [
+      {
+        market: "EXACT_SCORE",
+        pick: "0-0",
+        points: 2,
+        note: "DRAW actual, user bet DRAW (wrong score, group) → +2",
+      },
+    ],
+    total: 2,
+    explanation:
+      "You called the draw but missed the exact score. Any wrong draw prediction on a draw game scores +2 in the group stage (or +3 in a knockout).",
+  },
+  {
+    title: "Brazil vs Cameroon — exact score (group)",
+    match: "Brazil vs Cameroon",
+    stage: "GROUP",
+    userBet: { exactScore: "2-1" },
+    result: { finalScore: "2-1", winner: "HOME" },
     breakdown: [
       {
         market: "EXACT_SCORE",
         pick: "2-1",
-        points: 4,
-        note: "Exact match (+3) + winner (+1) = +4",
-      },
-      {
-        market: "HALF_SCORING",
-        pick: "A_1H,B_2H",
-        points: 2,
-        note: "Both correct → +2",
-      },
-      {
-        market: "IN_GAME_PENALTY",
-        pick: "HOME (Brazil)",
-        points: 3,
-        note: "Correct → +3",
+        points: 5,
+        note: "Exact non-draw score (group) → +5",
       },
     ],
-    total: 9,
+    total: 5,
     explanation:
-      "Big win — you nailed the score, the half-by-half breakdown, AND the penalty.",
+      "An exact non-draw score is worth +5 in the group stage — same as an exact draw. In a knockout the same exact score pays +7.",
   },
   {
-    title: "Mexico vs South Africa — all wrong",
-    match: "Mexico vs South Africa",
+    title: "Germany vs Portugal — right winner + right goal diff (group)",
+    match: "Germany vs Portugal",
     stage: "GROUP",
-    userBet: {
-      exactScore: "2-0",
-      halfScoring: "A_1H,B_1H",
-      inGamePenalty: "HOME",
-    },
-    result: {
-      finalScore: "1-1",
-      winner: "DRAW",
-      halfScoring: "A_1H,B_2H",
-      inGamePenalty: "NONE",
-    },
+    userBet: { exactScore: "2-0" },
+    result: { finalScore: "3-1", winner: "HOME" },
     breakdown: [
       {
         market: "EXACT_SCORE",
         pick: "2-0",
-        points: 0,
-        note: "Wrong score, no winner credit (it's a draw)",
-      },
-      {
-        market: "HALF_SCORING",
-        pick: "A_1H,B_1H",
-        points: 0,
-        note: "Mexico 1H correct, SA 1H wrong → 1 right, 1 wrong → 0",
-      },
-      {
-        market: "IN_GAME_PENALTY",
-        pick: "HOME (Mexico)",
-        points: -1,
-        note: "Wrong (no penalties awarded) → -1 (per-bet floor)",
+        points: 2,
+        note: "Right winner (HOME) + right signed diff (+2, group) → +2",
       },
     ],
-    total: -1,
+    total: 2,
     explanation:
-      "This is the worst case: -1 point total. The per-bet floor protects you from losing more than -1 on any single bet.",
+      "Both teams you picked to win did — and the signed goal difference matches (2-0 = +2, 3-1 = +2). +2 in the group stage; +3 in a knockout.",
   },
   {
-    title: "France vs Spain — no penalties awarded",
+    title: "France vs Spain — right winner only (group)",
     match: "France vs Spain",
     stage: "GROUP",
-    userBet: {
-      exactScore: "2-1",
-      halfScoring: "A_1H,B_1H",
-      inGamePenalty: "HOME",
-    },
-    result: {
-      finalScore: "2-1",
-      winner: "HOME",
-      halfScoring: "A_1H,B_2H",
-      inGamePenalty: "NONE",
-    },
-    breakdown: [
-      {
-        market: "EXACT_SCORE",
-        pick: "2-1",
-        points: 4,
-        note: "Exact match + winner = +4",
-      },
-      {
-        market: "HALF_SCORING",
-        pick: "A_1H,B_1H",
-        points: 0,
-        note: "France 1H correct, Spain 1H wrong → 0",
-      },
-      {
-        market: "IN_GAME_PENALTY",
-        pick: "HOME (France)",
-        points: -1,
-        note: "Wrong (no penalties = void for this market) → -1 (floor)",
-      },
-    ],
-    total: 3,
-    explanation:
-      "When no penalties are awarded, the IN_GAME_PENALTY market is void — even though your pick was 'wrong', the floor limits the loss to -1.",
-  },
-  {
-    title: "Germany vs Portugal — both teams penalised",
-    match: "Germany vs Portugal",
-    stage: "GROUP",
-    userBet: {
-      exactScore: "1-0",
-      halfScoring: "A_1H,B_1H",
-      inGamePenalty: "HOME",
-    },
-    result: {
-      finalScore: "1-0",
-      winner: "HOME",
-      halfScoring: "A_1H,B_2H",
-      inGamePenalty: "BOTH",
-    },
+    userBet: { exactScore: "1-0" },
+    result: { finalScore: "3-0", winner: "HOME" },
     breakdown: [
       {
         market: "EXACT_SCORE",
         pick: "1-0",
-        points: 4,
-        note: "Exact + winner = +4",
-      },
-      {
-        market: "HALF_SCORING",
-        pick: "A_1H,B_1H",
-        points: 0,
-        note: "Germany 1H correct, Portugal 1H wrong → 0",
-      },
-      {
-        market: "IN_GAME_PENALTY",
-        pick: "HOME (Germany)",
-        points: -1,
-        note: "Wrong (both teams got penalties — auto-settle skips this market) → -1 (floor)",
+        points: 1,
+        note: "Right winner (HOME) but wrong signed diff (+1 vs +3, group) → +1",
       },
     ],
-    total: 3,
+    total: 1,
     explanation:
-      "When BOTH teams get penalties, the market can't be auto-settled — it's skipped with a warning. The floor still applies.",
+      "Nailed the winner (HOME) but the signed goal difference is off (+1 vs +3). +1 in the group stage; +2 in a knockout.",
   },
   {
-    title: "USA vs England — knockout stage, different weights",
+    title: "USA vs England — wrong winner (group)",
     match: "USA vs England",
+    stage: "GROUP",
+    userBet: { exactScore: "3-1" },
+    result: { finalScore: "1-3", winner: "AWAY" },
+    breakdown: [
+      {
+        market: "EXACT_SCORE",
+        pick: "3-1",
+        points: 0,
+        note: "Wrong winner (predicted HOME, got AWAY) → 0",
+      },
+    ],
+    total: 0,
+    explanation:
+      "Absolute diff is 2 in both (3-1 and 1-3) but the signed diff differs (+2 vs -2). Wrong winner → 0 points in every stage.",
+  },
+  {
+    title: "France vs Argentina — exact score (knockout R16)",
+    match: "France vs Argentina",
     stage: "KNOCKOUT",
-    userBet: {
-      exactScore: "2-1",
-      halfScoring: "A_1H,B_2H",
-      inGamePenalty: "HOME",
-    },
-    result: {
-      finalScore: "2-1",
-      winner: "HOME",
-      halfScoring: "A_1H,B_2H",
-      inGamePenalty: "HOME",
-    },
+    userBet: { exactScore: "2-1" },
+    result: { finalScore: "2-1", winner: "HOME" },
     breakdown: [
       {
         market: "EXACT_SCORE",
         pick: "2-1",
         points: 7,
-        note: "Knockout scoring: +5 exact + +2 winner = +7",
+        note: "Exact non-draw score (knockout) → +7",
       },
+    ],
+    total: 7,
+    explanation:
+      "An exact non-draw score in a knockout pays +7 (vs +5 in the group stage) — knockout games are rarer and worth more.",
+  },
+  {
+    title: "Brazil vs Croatia — exact draw (knockout R16)",
+    match: "Brazil vs Croatia",
+    stage: "KNOCKOUT",
+    userBet: { exactScore: "1-1" },
+    result: { finalScore: "1-1", winner: "DRAW" },
+    breakdown: [
       {
-        market: "HALF_SCORING",
-        pick: "A_1H,B_2H",
-        points: 2,
-        note: "Both correct → +2",
+        market: "EXACT_SCORE",
+        pick: "1-1",
+        points: 6,
+        note: "Exact draw score (knockout) → +6",
       },
+    ],
+    total: 6,
+    explanation:
+      "Predicted the exact draw score in a knockout. Draw-exact pays +6 in knockout (vs +5 in the group stage).",
+  },
+  {
+    title: "Croatia vs Brazil — right winner + right goal diff (knockout QF)",
+    match: "Croatia vs Brazil",
+    stage: "KNOCKOUT",
+    userBet: { exactScore: "2-0" },
+    result: { finalScore: "3-1", winner: "HOME" },
+    breakdown: [
       {
-        market: "IN_GAME_PENALTY",
-        pick: "HOME (USA)",
+        market: "EXACT_SCORE",
+        pick: "2-0",
         points: 3,
-        note: "Correct → +3",
-      },
-    ],
-    total: 12,
-    explanation:
-      "Knockout stage rewards more — exact score is +5 (vs +3 in group) and winner credit is +2 (vs +1).",
-  },
-  {
-    title: "Morocco vs Croatia — big miss with partial credit",
-    match: "Morocco vs Croatia",
-    stage: "GROUP",
-    userBet: {
-      exactScore: "3-0",
-      halfScoring: "A_1H,B_2H",
-      inGamePenalty: "HOME",
-    },
-    result: {
-      finalScore: "0-2",
-      winner: "AWAY",
-      halfScoring: "A_2H,B_1H",
-      inGamePenalty: "NONE",
-    },
-    breakdown: [
-      {
-        market: "EXACT_SCORE",
-        pick: "3-0",
-        points: 0,
-        note: "Wrong, Croatia won → 0",
-      },
-      {
-        market: "HALF_SCORING",
-        pick: "A_1H,B_2H",
-        points: -1,
-        note: "Both picks wrong (-1 + -1 = -2, clamped to -1)",
-      },
-      {
-        market: "IN_GAME_PENALTY",
-        pick: "HOME (Morocco)",
-        points: -1,
-        note: "Wrong (no penalties) → -1 (floor)",
-      },
-    ],
-    total: -2,
-    explanation:
-      "The per-bet floor keeps this at -2 instead of -4. The HALF_SCORING market floors at -1 even though both picks were wrong.",
-  },
-  {
-    title: "Japan vs Germany — half-scoring 1-pick (correct)",
-    match: "Japan vs Germany",
-    stage: "GROUP",
-    userBet: {
-      exactScore: "2-1",
-      halfScoring: "A_1H",
-      inGamePenalty: "",
-    },
-    result: {
-      finalScore: "2-1",
-      winner: "HOME",
-      halfScoring: "A_1H",
-      inGamePenalty: "NONE",
-    },
-    breakdown: [
-      {
-        market: "EXACT_SCORE",
-        pick: "2-1",
-        points: 4,
-        note: "Exact match (+3) + winner (+1) = +4",
-      },
-      {
-        market: "HALF_SCORING",
-        pick: "A_1H",
-        points: 1,
-        note: "1-pick: Japan 1H correct → +1 (range -1 to +1 for a 1-pick)",
-      },
-    ],
-    total: 5,
-    explanation:
-      "HALF_SCORING accepts 1 or 2 codes. A single correct pick scores +1; a single wrong pick scores -1 (the per-bet floor still applies).",
-  },
-  {
-    title: "Spain vs Costa Rica — half-scoring 1-pick (wrong)",
-    match: "Spain vs Costa Rica",
-    stage: "GROUP",
-    userBet: {
-      exactScore: "3-0",
-      halfScoring: "B_1H",
-      inGamePenalty: "",
-    },
-    result: {
-      finalScore: "3-0",
-      winner: "HOME",
-      halfScoring: "A_1H",
-      inGamePenalty: "NONE",
-    },
-    breakdown: [
-      {
-        market: "EXACT_SCORE",
-        pick: "3-0",
-        points: 4,
-        note: "Exact match (+3) + winner (+1) = +4",
-      },
-      {
-        market: "HALF_SCORING",
-        pick: "B_1H",
-        points: -1,
-        note: "1-pick: Costa Rica 1H wrong → -1 (per-bet floor)",
+        note: "Right winner (HOME) + right signed diff (+2, knockout) → +3",
       },
     ],
     total: 3,
     explanation:
-      "A 1-pick HALF_SCORING bet has a range of -1 to +1. The per-bet floor caps a wrong 1-pick at -1, same as a wrong 2-pick.",
+      "Same right-winner + right-diff as a group game, but worth +3 in a knockout instead of +2.",
+  },
+  {
+    title: "Morocco vs Portugal — right winner only (knockout QF)",
+    match: "Morocco vs Portugal",
+    stage: "KNOCKOUT",
+    userBet: { exactScore: "1-0" },
+    result: { finalScore: "3-0", winner: "HOME" },
+    breakdown: [
+      {
+        market: "EXACT_SCORE",
+        pick: "1-0",
+        points: 2,
+        note: "Right winner (HOME) but wrong signed diff (+1 vs +3, knockout) → +2",
+      },
+    ],
+    total: 2,
+    explanation:
+      "Right winner, wrong signed diff — pays +2 in a knockout (vs +1 in the group stage).",
   },
 ];

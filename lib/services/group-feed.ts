@@ -25,6 +25,8 @@ export type FeedMatch = {
   id: string;
   homeTeam: string;
   awayTeam: string;
+  homeCrest: string | null;
+  awayCrest: string | null;
   kickoffTime: string; // ISO
   stage: string;
   status: string;
@@ -60,6 +62,9 @@ export async function getGroupFeed(
   const [matches, members, allBets] = await Promise.all([
     prisma.match.findMany({
       where: { competitionId: group.competitionId },
+      // `include: { markets: true }` selects every column on Match by
+      // default — so the new homeCrest / awayCrest columns are returned
+      // for free, no explicit `select` needed.
       include: { markets: true },
       orderBy: { kickoffTime: "asc" },
     }),
@@ -143,6 +148,8 @@ export async function getGroupFeed(
       id: match.id,
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
+      homeCrest: match.homeCrest,
+      awayCrest: match.awayCrest,
       kickoffTime: match.kickoffTime.toISOString(),
       stage: match.stage,
       status: match.status,

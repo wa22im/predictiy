@@ -44,6 +44,8 @@ export async function syncCompetition(
           awayTeam: m.awayTeam,
           kickoffTime: new Date(m.kickoffTime),
           stage: m.stage,
+          homeCrest: m.homeCrest ?? null,
+          awayCrest: m.awayCrest ?? null,
           competitionId: competition.id,
         },
         create: {
@@ -53,6 +55,8 @@ export async function syncCompetition(
           awayTeam: m.awayTeam,
           kickoffTime: new Date(m.kickoffTime),
           stage: m.stage,
+          homeCrest: m.homeCrest ?? null,
+          awayCrest: m.awayCrest ?? null,
         },
       });
 

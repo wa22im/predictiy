@@ -116,7 +116,9 @@ export const MatchScalarFieldEnum = {
   awayHtGoals: 'awayHtGoals',
   homePenalties: 'homePenalties',
   awayPenalties: 'awayPenalties',
-  externalStatus: 'externalStatus'
+  externalStatus: 'externalStatus',
+  homeCrest: 'homeCrest',
+  awayCrest: 'awayCrest'
 } as const
 
 export type MatchScalarFieldEnum = (typeof MatchScalarFieldEnum)[keyof typeof MatchScalarFieldEnum]

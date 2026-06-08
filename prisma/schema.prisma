@@ -68,6 +68,12 @@ model Match {
   // Raw status string from the provider (NS, 1H, HT, 2H, FT, AET, PEN).
   // Useful for debugging and for not-yet-implemented live states.
   externalStatus  String?
+  // Team crest URLs. Populated by the football-data.org ingest pipeline
+  // (from `homeTeam.crest` / `awayTeam.crest`) and by the manual JSON
+  // hydration terminal. NULL when the provider has no crest or the JSON
+  // omitted one — the UI falls back to a team-initial circle in that case.
+  homeCrest       String?
+  awayCrest       String?
 
   @@index([competitionId])
   @@index([kickoffTime])

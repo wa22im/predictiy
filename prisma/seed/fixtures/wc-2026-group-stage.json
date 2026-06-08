@@ -7,6 +7,8 @@
       "apiMatchId": "wc26-group-a-1",
       "homeTeam": "Brazil",
       "awayTeam": "Croatia",
+      "homeCrest": "https://crests.football-data.org/764.svg",
+      "awayCrest": "https://crests.football-data.org/5607.svg",
       "kickoffTime": "2026-06-11T20:00:00.000Z",
       "stage": "GROUP_STAGE",
       "markets": [
@@ -30,6 +32,8 @@
       "apiMatchId": "wc26-group-a-2",
       "homeTeam": "Morocco",
       "awayTeam": "Canada",
+      "homeCrest": "https://crests.football-data.org/3900.svg",
+      "awayCrest": "https://crests.football-data.org/4490.svg",
       "kickoffTime": "2026-06-11T23:00:00.000Z",
       "stage": "GROUP_STAGE",
       "markets": [
@@ -53,6 +57,8 @@
       "apiMatchId": "wc26-group-b-1",
       "homeTeam": "Argentina",
       "awayTeam": "Iceland",
+      "homeCrest": "https://crests.football-data.org/6350.svg",
+      "awayCrest": "https://crests.football-data.org/6300.svg",
       "kickoffTime": "2026-06-12T20:00:00.000Z",
       "stage": "GROUP_STAGE",
       "markets": [
@@ -76,6 +82,8 @@
       "apiMatchId": "wc26-group-b-2",
       "homeTeam": "France",
       "awayTeam": "Senegal",
+      "homeCrest": "https://crests.football-data.org/7568.svg",
+      "awayCrest": "https://crests.football-data.org/6301.svg",
       "kickoffTime": "2026-06-12T23:00:00.000Z",
       "stage": "GROUP_STAGE",
       "markets": [
@@ -99,6 +107,8 @@
       "apiMatchId": "wc26-group-c-1",
       "homeTeam": "England",
       "awayTeam": "USA",
+      "homeCrest": "https://crests.football-data.org/7702.svg",
+      "awayCrest": "https://crests.football-data.org/7615.svg",
       "kickoffTime": "2026-06-13T20:00:00.000Z",
       "stage": "GROUP_STAGE",
       "markets": [

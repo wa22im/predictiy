@@ -16,6 +16,8 @@ const MatchInput = z.object({
   apiMatchId: z.string().min(1),
   homeTeam: z.string().min(1),
   awayTeam: z.string().default(""),
+  homeCrest: z.string().url().optional(),
+  awayCrest: z.string().url().optional(),
   kickoffTime: z
     .string()
     .datetime({ message: "kickoffTime must be ISO 8601 UTC" }),
