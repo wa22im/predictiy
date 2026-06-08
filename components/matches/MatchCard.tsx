@@ -52,6 +52,7 @@ export function MatchCard({
               <CrestOrFallback url={match.awayCrest} name={match.awayTeam} />
             )}
           </div>
+          <ResultLine match={match} />
           <p className="text-xs text-muted-foreground font-mono">
             {formatUtc(match.kickoffTime)} · {relative}
           </p>
@@ -75,6 +76,37 @@ export function MatchCard({
 
       <MemberPredictions otherBets={deduped} />
     </article>
+  );
+}
+
+/**
+ * Final-score line rendered between the team names and the kickoff time
+ * when a match is FINISHED. Returns null for in-progress / scheduled
+ * matches, and defensively null when scores are missing. HT and
+ * penalties are appended as comma-separated extras in parentheses.
+ */
+function ResultLine({ match }: { match: FeedMatch }) {
+  if (match.status !== "FINISHED") return null;
+  if (match.homeScore === null || match.awayScore === null) return null;
+  const extras: string[] = [];
+  if (match.homeHtGoals !== null && match.awayHtGoals !== null) {
+    extras.push(`HT ${match.homeHtGoals}-${match.awayHtGoals}`);
+  }
+  if (match.homePenalties !== null && match.awayPenalties !== null) {
+    extras.push(`${match.homePenalties}-${match.awayPenalties} pens`);
+  }
+  return (
+    <p className="text-sm font-mono mb-1">
+      <span className="micro-label mr-2">Final</span>
+      <span className="font-bold text-foreground">
+        {match.homeScore}-{match.awayScore}
+      </span>
+      {extras.length > 0 && (
+        <span className="text-muted-foreground ml-2 text-xs">
+          ({extras.join(", ")})
+        </span>
+      )}
+    </p>
   );
 }
 

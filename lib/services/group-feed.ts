@@ -32,6 +32,12 @@ export type FeedMatch = {
   status: string;
   isLocked: boolean;
   timeUntilLockMs: number;
+  homeScore: number | null;
+  awayScore: number | null;
+  homeHtGoals: number | null;
+  awayHtGoals: number | null;
+  homePenalties: number | null;
+  awayPenalties: number | null;
   markets: FeedMarket[];
 };
 
@@ -155,6 +161,12 @@ export async function getGroupFeed(
       status: match.status,
       isLocked: saveLocked,
       timeUntilLockMs,
+      homeScore: match.homeScore,
+      awayScore: match.awayScore,
+      homeHtGoals: match.homeHtGoals,
+      awayHtGoals: match.awayHtGoals,
+      homePenalties: match.homePenalties,
+      awayPenalties: match.awayPenalties,
       markets: feedMarkets,
     };
   });
