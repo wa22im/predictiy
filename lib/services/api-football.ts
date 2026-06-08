@@ -6,7 +6,7 @@
  * the full URL+params, and surface a single shared helper.
  *
  * API: https://v3.football.api-sports.io
- * Auth header: x-apisports-key: {API_FOOTBALL_KEY}
+ * Auth header: x-apisports-key: {FOOTBALL_API_KEY}
  * Docs: https://www.api-football.com/documentation-v3
  */
 
@@ -52,16 +52,30 @@ export type FixtureTeam = {
 };
 
 export type Fixture = {
-  id: number;
-  referee: string | null;
-  timezone: string;
-  date: string; // ISO
-  timestamp: number; // unix seconds
-  status: FixtureStatus;
-  league: { id: number; name: string; country: string; logo: string | null; season: number; round: string | null };
+  fixture: {
+    id: number;
+    referee: string | null;
+    timezone: string;
+    date: string; // ISO
+    timestamp: number; // unix seconds
+    status: FixtureStatus;
+  };
+  league: {
+    id: number;
+    name: string;
+    country: string;
+    logo: string | null;
+    season: number;
+    round: string | null;
+  };
   teams: { home: FixtureTeam; away: FixtureTeam };
   goals: { home: number | null; away: number | null };
-  score: { halftime: { home: number | null; away: number | null }; fulltime: { home: number | null; away: number | null }; extratime: { home: number | null; away: number | null }; penalty: { home: number | null; away: number | null } };
+  score: {
+    halftime: { home: number | null; away: number | null };
+    fulltime: { home: number | null; away: number | null };
+    extratime: { home: number | null; away: number | null };
+    penalty: { home: number | null; away: number | null };
+  };
 };
 
 type ApiResponse<T> = {
@@ -90,10 +104,10 @@ function cacheKey(path: string, params: Record<string, string | number>): string
 // ---- Public client --------------------------------------------------------
 
 function getApiKey(): string {
-  const key = process.env.API_FOOTBALL_KEY;
+  const key = process.env.FOOTBALL_API_KEY;
   if (!key) {
     throw new ApiFootballError(
-      "API_FOOTBALL_KEY not set in environment. Add it to .env.local — free tier at api-football.com.",
+      "FOOTBALL_API_KEY not set in environment. Add it to .env.local — free tier at api-football.com.",
       500,
     );
   }

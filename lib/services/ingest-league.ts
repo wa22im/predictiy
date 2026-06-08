@@ -184,33 +184,33 @@ async function applyFixtures(
 
   for (const f of fixtures) {
     try {
-      const apiMatchId = String(f.id);
+      const apiMatchId = String(f.fixture.id);
       const stage = mapStage(f.league.round);
-      const status = mapStatus(f.status.short);
+      const status = mapStatus(f.fixture.status.short);
 
       const match = await prisma.match.upsert({
         where: { apiMatchId },
         update: {
           homeTeam: f.teams.home.name,
           awayTeam: f.teams.away.name,
-          kickoffTime: new Date(f.date),
+          kickoffTime: new Date(f.fixture.date),
           stage,
           status,
           homeScore: f.goals.home,
           awayScore: f.goals.away,
-          externalStatus: f.status.short,
+          externalStatus: f.fixture.status.short,
           competitionId,
         },
         create: {
           apiMatchId,
           homeTeam: f.teams.home.name,
           awayTeam: f.teams.away.name,
-          kickoffTime: new Date(f.date),
+          kickoffTime: new Date(f.fixture.date),
           stage,
           status,
           homeScore: f.goals.home,
           awayScore: f.goals.away,
-          externalStatus: f.status.short,
+          externalStatus: f.fixture.status.short,
           competitionId,
         },
       });
@@ -218,7 +218,7 @@ async function applyFixtures(
       // Track whether the match just transitioned to FINISHED so we
       // can auto-settle the default market below.
       const justFinished =
-        f.status.short === "FT" && f.goals.home !== null && f.goals.away !== null;
+        f.fixture.status.short === "FT" && f.goals.home !== null && f.goals.away !== null;
 
       // Default market per match: EXACT_SCORE titled "Predict the final score".
       // Idempotent via (matchId, type, title) unique key.
@@ -237,18 +237,6 @@ async function applyFixtures(
           title: "Predict the final score",
         },
       });
-
-      // Cheap heuristic: if the row was just created, count as created.
-      // We can't tell exactly with upsert, but the first call ever for
-      // a given apiMatchId will create both, and the rest are updates.
-      // For admin UX we just need a rough number.
-      if (f.status.short === "FT") {
-        // match existed before if we got here without throwing
-        // (no reliable way to know, so we don't increment created/updated
-        // for matches — return raw counts on first call)
-        // Note: we could query a "was this row created in this txn"
-        // but it's not worth the round-trip.
-      }
 
       // Auto-settle if the fixture is FT and we have a score.
       if (justFinished) {
@@ -284,7 +272,7 @@ async function applyFixtures(
       }
     } catch (e) {
       result.errors.push({
-        apiMatchId: String(f.id),
+        apiMatchId: String(f.fixture.id),
         message: (e as Error).message,
       });
     }

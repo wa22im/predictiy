@@ -41,25 +41,25 @@ async function cliSyncOne(competitionId: string): Promise<void> {
   let updated = 0;
   for (const f of fixtures) {
     await prisma.match.upsert({
-      where: { apiMatchId: String(f.id) },
+      where: { apiMatchId: String(f.fixture.id) },
       update: {
         homeTeam: f.teams.home.name,
         awayTeam: f.teams.away.name,
-        kickoffTime: new Date(f.date),
+        kickoffTime: new Date(f.fixture.date),
         homeScore: f.goals.home,
         awayScore: f.goals.away,
-        externalStatus: f.status.short,
-        status: ["FT", "AET", "PEN"].includes(f.status.short) ? "FINISHED" : "SCHEDULED",
+        externalStatus: f.fixture.status.short,
+        status: ["FT", "AET", "PEN"].includes(f.fixture.status.short) ? "FINISHED" : "SCHEDULED",
       },
       create: {
-        apiMatchId: String(f.id),
+        apiMatchId: String(f.fixture.id),
         competitionId: competition.id,
         homeTeam: f.teams.home.name,
         awayTeam: f.teams.away.name,
-        kickoffTime: new Date(f.date),
+        kickoffTime: new Date(f.fixture.date),
         homeScore: f.goals.home,
         awayScore: f.goals.away,
-        externalStatus: f.status.short,
+        externalStatus: f.fixture.status.short,
         stage: "UNKNOWN",
       },
     });

@@ -24,7 +24,7 @@ export default async function NewLeaguePage() {
       .map((e) => `${e.externalLeagueId}:${e.externalSeason}`),
   );
 
-  const hasApiKey = !!process.env.API_FOOTBALL_KEY;
+  const hasApiKey = !!process.env.FOOTBALL_API_KEY;
 
   return (
     <main className="planner-bg min-h-screen flex-1 px-4 py-12">
@@ -49,7 +49,7 @@ export default async function NewLeaguePage() {
           <div className="paper-card p-4 mb-6 border-destructive/40">
             <p className="text-sm">
               <span className="font-medium text-destructive">
-                API_FOOTBALL_KEY not set.
+                FOOTBALL_API_KEY not set.
               </span>{" "}
               Add it to <code className="font-mono">.env.local</code> and
               restart the dev server. Get a free key at{" "}
