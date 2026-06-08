@@ -50,8 +50,9 @@ export default async function DiscoverCompetitionsPage() {
           Discover Competitions
         </h1>
         <p className="text-muted-foreground leading-7 mb-8">
-          Browse the football-data.org catalogue. The full "click to onboard"
-          workflow lands in a future step — for now this view is read-only.
+          Browse the football-data.org catalogue and onboard a competition
+          with a single click. The provider's match ids are preserved so
+          future syncs can update existing rows in place.
         </p>
 
         {!hasToken && (

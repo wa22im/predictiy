@@ -1,14 +1,33 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { Competition } from "@/lib/services/football-data";
 
 type AreaOption = { id: number; name: string; code: string | null };
+
+type OnboardResult = {
+  competitionId: string;
+  competitionName: string;
+  finishedAtIngest: number;
+  createdMatches: number;
+  updatedMatches: number;
+  createdMarkets: number;
+  updatedMarkets: number;
+  totalMatches: number;
+  errors: { apiMatchId?: string; message: string }[];
+};
 
 /**
  * Client-side filterable list of competitions. The page already fetched
  * the full catalogue on the server (the API key never reaches the
  * client); this component only does a local filter.
+ *
+ * The Onboard button hits POST /api/v1/admin/competitions/onboard,
+ * which proxies to lib/services/onboard-competition.ts. We pass the
+ * competition's code (e.g. "PL", "WC") and the display name. On
+ * success we redirect to /admin/leagues where the new competition
+ * appears in the roster.
  */
 export function DiscoverCompetitionsList({
   competitions,
@@ -97,6 +116,60 @@ export function DiscoverCompetitionsList({
 }
 
 function CompetitionRow({ competition: c }: { competition: Competition }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [status, setStatus] = useState<
+    | { kind: "idle" }
+    | { kind: "loading" }
+    | { kind: "success"; result: OnboardResult }
+    | { kind: "error"; message: string }
+  >({ kind: "idle" });
+
+  // A competition is only onboardable if it has a stable code (the
+  // code is the lookup key for the football-data.org v4 API). Some
+  // catalogue entries have `code: null` — we surface that as a
+  // disabled button with a tooltip.
+  const hasCode = !!c.code;
+  const displayName = c.name;
+
+  function handleOnboard() {
+    if (!hasCode || !c.code) return;
+    setStatus({ kind: "loading" });
+    startTransition(async () => {
+      try {
+        const res = await fetch("/api/v1/admin/competitions/onboard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: c.code, displayName }),
+        });
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+            message?: string;
+          };
+          setStatus({
+            kind: "error",
+            message: body.error || body.message || `HTTP ${res.status}`,
+          });
+          return;
+        }
+        const result = (await res.json()) as OnboardResult;
+        setStatus({ kind: "success", result });
+        // Brief delay so the admin can read the result panel, then
+        // bounce to the league roster where the new competition now
+        // appears.
+        setTimeout(() => {
+          router.push("/admin/leagues");
+        }, 1500);
+      } catch (e) {
+        setStatus({ kind: "error", message: (e as Error).message });
+      }
+    });
+  }
+
+  const isLoading = isPending || status.kind === "loading";
+  const isSuccess = status.kind === "success";
+
   return (
     <li className="paper-card p-4">
       <div className="flex items-start gap-3">
@@ -129,11 +202,22 @@ function CompetitionRow({ competition: c }: { competition: Competition }) {
             </div>
             <button
               type="button"
-              disabled
-              title="Coming soon — the full onboarding flow lands in a future step"
-              className="command-strip px-3 py-1 text-xs font-bold opacity-50 cursor-not-allowed shrink-0"
+              onClick={handleOnboard}
+              disabled={!hasCode || isLoading || isSuccess}
+              title={
+                hasCode
+                  ? isSuccess
+                    ? "Onboarded — redirecting to /admin/leagues"
+                    : "Fetch matches from football-data.org and save to the database"
+                  : "Cannot onboard: this competition has no code in the football-data.org catalogue"
+              }
+              className="command-strip px-3 py-1 text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             >
-              Onboard
+              {isLoading
+                ? "Onboarding…"
+                : isSuccess
+                  ? "Onboarded ✓"
+                  : "Onboard"}
             </button>
           </div>
           {c.currentSeason && (
@@ -142,6 +226,36 @@ function CompetitionRow({ competition: c }: { competition: Competition }) {
               {c.currentSeason.currentMatchday != null &&
                 ` · matchday ${c.currentSeason.currentMatchday}`}
             </p>
+          )}
+
+          {status.kind === "success" && (
+            <div className="mt-3 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-xs">
+              <p className="font-medium text-emerald-600 dark:text-emerald-400">
+                Onboarded: {status.result.createdMatches} new +{" "}
+                {status.result.updatedMatches} updated matches,{" "}
+                {status.result.createdMarkets + status.result.updatedMarkets}{" "}
+                markets.
+                {status.result.finishedAtIngest > 0 && (
+                  <>
+                    {" "}
+                    {status.result.finishedAtIngest} match
+                    {status.result.finishedAtIngest === 1 ? "" : "es"} already
+                    finished — settle them via the Settlement Hub.
+                  </>
+                )}
+              </p>
+              <p className="text-muted-foreground mt-1">
+                Redirecting to league roster…
+              </p>
+            </div>
+          )}
+
+          {status.kind === "error" && (
+            <div className="mt-3 p-2 rounded-md bg-destructive/10 border border-destructive/30 text-xs">
+              <p className="font-medium text-destructive">
+                Onboard failed: {status.message}
+              </p>
+            </div>
           )}
         </div>
       </div>

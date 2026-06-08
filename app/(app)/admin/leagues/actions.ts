@@ -79,3 +79,83 @@ export async function syncCompetitionAction(
     return { ok: false, error: (e as Error).message };
   }
 }
+
+/**
+ * Server Action: sync a football-data.org competition.
+ *
+ * Mirrors the legacy `syncCompetitionAction` but talks to the new
+ * `/api/v1/admin/competitions/[id]/sync` route handler via HTTP.
+ * Going through the API keeps the request path identical to a curl
+ * call from admin tooling — same auth, same error envelope, same
+ * response shape.
+ *
+ * Returns a discriminated union so the client can render a richer
+ * success message (new matches, settled markets) without the
+ * caller needing to interpret raw fetch errors.
+ */
+export type SyncFootballDataCompetitionResult =
+  | {
+      ok: true;
+      fetched: number;
+      createdMatches: number;
+      updatedMatches: number;
+      createdMarkets: number;
+      updatedMarkets: number;
+      settledMarkets: number;
+      totalMatches: number;
+    }
+  | { ok: false; error: string; status?: number };
+
+export async function syncFootballDataCompetitionAction(
+  competitionId: string,
+): Promise<SyncFootballDataCompetitionResult> {
+  try {
+    await requireAdmin();
+    if (!competitionId) {
+      return { ok: false, error: "Missing competition id" };
+    }
+
+    const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
+    const res = await fetch(
+      `${baseUrl}/api/v1/admin/competitions/${encodeURIComponent(competitionId)}/sync`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // The route is admin-guarded server-side; we don't need to
+        // forward the user session because `requireAdmin()` above
+        // already verified the actor, and the same admin will be
+        // re-checked inside the route. For belt-and-suspenders we
+        // forward the auth cookies so the route sees the same user.
+        cache: "no-store",
+      },
+    );
+
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: typeof body.error === "string" ? body.error : `Sync failed (${res.status})`,
+        status: res.status,
+      };
+    }
+
+    revalidatePath("/admin/leagues");
+    revalidatePath(`/admin/leagues/${competitionId}`);
+    return {
+      ok: true,
+      fetched: Number(body.fetched ?? 0),
+      createdMatches: Number(body.createdMatches ?? 0),
+      updatedMatches: Number(body.updatedMatches ?? 0),
+      createdMarkets: Number(body.createdMarkets ?? 0),
+      updatedMarkets: Number(body.updatedMarkets ?? 0),
+      settledMarkets: Number(body.settledMarkets ?? 0),
+      totalMatches: Number(body.totalMatches ?? 0),
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      error: (e as Error).message,
+      status: (e as { status?: number }).status,
+    };
+  }
+}

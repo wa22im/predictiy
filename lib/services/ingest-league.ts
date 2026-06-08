@@ -33,6 +33,14 @@
  *   - EXACT_SCORE   ← "X-Y" from final score
  *   - HALF_SCORING  ← derived from HT + final scores (when HT data exists)
  *   - IN_GAME_PENALTY  ← manual settlement only (API doesn't expose data)
+ *
+ * Penalty columns:
+ *   The api-football feed exposes `score.penalty.{home,away}` which is
+ *   the *shootout* result, not in-game penalties. The IN_GAME_PENALTY
+ *   market tracks in-game penalties awarded during regular/extra time,
+ *   so we explicitly clear `homePenalties` / `awayPenalties` to null
+ *   on every re-ingest. The admin sets those columns via the
+ *   match-update API when the settlement hub UI lands.
  */
 
 import { prisma } from "@/lib/prisma";
@@ -255,8 +263,15 @@ async function applyFixtures(
           awayScore: f.goals.away,
           homeHtGoals: f.score.halftime.home,
           awayHtGoals: f.score.halftime.away,
-          homePenalties: f.score.penalty.home,
-          awayPenalties: f.score.penalty.away,
+          // homePenalties / awayPenalties: explicitly cleared to null
+          // on every re-ingest. The api-football feed's `score.penalty`
+          // is the shootout result, which the IN_GAME_PENALTY market
+          // does not track — these columns are reserved for in-game
+          // penalties, set by the admin via the match-update API.
+          // Clearing on each upsert prevents stale shootout values
+          // from leaking into the settlement hub.
+          homePenalties: null,
+          awayPenalties: null,
           externalStatus: f.fixture.status.short,
           competitionId,
         },
@@ -271,8 +286,8 @@ async function applyFixtures(
           awayScore: f.goals.away,
           homeHtGoals: f.score.halftime.home,
           awayHtGoals: f.score.halftime.away,
-          homePenalties: f.score.penalty.home,
-          awayPenalties: f.score.penalty.away,
+          // homePenalties / awayPenalties: intentionally null at
+          // create time — see note in `update` above.
           externalStatus: f.fixture.status.short,
           competitionId,
         },
@@ -406,7 +421,7 @@ function mapStage(round: string | null): string {
   return "UNKNOWN";
 }
 
-function mapStatus(short: string): "SCHEDULED" | "FINISHED" {
+function mapStatus(short: string): "SCHEDULED" | "GOING" | "FINISHED" {
   switch (short) {
     case "FT":
     case "AET":
@@ -414,6 +429,14 @@ function mapStatus(short: string): "SCHEDULED" | "FINISHED" {
     case "AWD":
     case "WO":
       return "FINISHED";
+    case "1H":
+    case "2H":
+    case "HT":
+    case "ET":
+    case "P":
+    case "BT":
+    case "LIVE":
+      return "GOING";
     default:
       return "SCHEDULED";
   }

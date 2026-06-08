@@ -1,47 +1,18 @@
 "use server";
 
-import { z } from "zod";
+/**
+ * Settlement Hub Server Actions.
+ *
+ * As of the 7.13 rewrite the per-match form posts directly to
+ * `/api/v1/admin/matches/update` (see `app/api/v1/admin/matches/update/route.ts`)
+ * via a `fetch` call from `components/admin/SettlementMatchForm.tsx`.
+ * No server-side action is invoked from the UI any more.
+ *
+ * This file is intentionally kept as the per-route actions module
+ * (the directory convention is "every app/ route has an adjacent
+ * `actions.ts` when server actions are in scope"). If a future
+ * Settlement Hub feature needs a server action (e.g. bulk settle
+ * across a tournament), add it here.
+ */
 
-const Input = z.object({
-  marketId: z.string().uuid(),
-  correctAnswer: z.string().min(1).max(64),
-});
-
-export type SettleActionResult = {
-  ok: boolean;
-  error?: string;
-  result?: unknown;
-};
-
-export async function settleMarketAction(
-  input: z.infer<typeof Input>,
-): Promise<SettleActionResult> {
-  const { requireAdmin, GuardError } = await import("@/lib/auth/guards");
-  const { settleMarket, SettleError } = await import(
-    "@/lib/services/settle-market"
-  );
-
-  try {
-    await requireAdmin();
-  } catch (e) {
-    if (e instanceof GuardError) {
-      return { ok: false, error: e.message };
-    }
-    return { ok: false, error: "AUTH_ERROR" };
-  }
-
-  const parsed = Input.safeParse(input);
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
-  }
-
-  try {
-    const result = await settleMarket(parsed.data);
-    return { ok: true, result };
-  } catch (e) {
-    if (e instanceof SettleError) {
-      return { ok: false, error: e.message };
-    }
-    return { ok: false, error: (e as Error).message };
-  }
-}
+export type SettlementActionsResult = { ok: true } | { ok: false; error: string };

@@ -78,6 +78,94 @@ type ListCompetitionsResponse = {
   competitions: Competition[];
 };
 
+// ---- Match response shapes (v4 /competitions/{code}/matches) --------------
+
+/**
+ * A match as returned by football-data.org v4. Only the fields we
+ * actually consume are typed; the rest are ignored. The full shape is
+ * documented at https://docs.football-data.org/general/v4/matches.html.
+ *
+ * The `id` is the provider's permanent match id — we preserve it on
+ * `Match.apiMatchId` so future sync calls can look the row up.
+ *
+ * `status` is the provider's status string. We map it onto our
+ * 3-value enum in the ingest layer:
+ *   FINISHED              → FINISHED
+ *   IN_PLAY | PAUSED      → GOING
+ *   anything else (TIMED, SCHEDULED, …) → SCHEDULED
+ */
+export type Match = {
+  id: number;
+  utcDate: string; // ISO 8601
+  status:
+    | "SCHEDULED"
+    | "TIMED"
+    | "IN_PLAY"
+    | "PAUSED"
+    | "FINISHED"
+    | "AWARDED"
+    | "CANCELLED"
+    | "POSTPONED";
+  matchday: number | null;
+  stage: string | null;
+  group: string | null;
+  lastUpdated: string | null;
+  homeTeam: {
+    id: number;
+    name: string;
+    shortName: string | null;
+    tla: string | null;
+    crest: string | null;
+  };
+  awayTeam: {
+    id: number;
+    name: string;
+    shortName: string | null;
+    tla: string | null;
+    crest: string | null;
+  };
+  score: {
+    winner: "HOME_TEAM" | "AWAY_TEAM" | "DRAW" | null;
+    duration: "REGULAR" | "EXTRA_TIME" | "PENALTY_SHOOTOUT" | null;
+    fullTime: { home: number | null; away: number | null };
+    halfTime: { home: number | null; away: number | null };
+    extraTime: { home: number | null; away: number | null } | null;
+    /**
+     * Shootout penalties. Not used by any market — the IN_GAME_PENALTY
+     * market tracks in-game penalties awarded during regular/extra
+     * time, not the post-match shootout. The column is still present
+     * in the API response for completeness.
+     */
+    penalties: { home: number | null; away: number | null } | null;
+  };
+  referees: { id: number; name: string; type: string | null; nationality: string | null }[];
+  /** Odds block — provider may attach one or more bookmaker entries.
+   *  We don't consume these; the type is left as `unknown`. */
+  odds?: unknown;
+};
+
+type GetMatchesResponse = {
+  filters: Record<string, unknown>;
+  resultSet: { count: number; first: string | null; last: string | null; played: number };
+  competition: Competition;
+  matches: Match[];
+};
+
+/**
+ * Response shape for GET /v4/competitions/{code} (the single-competition
+ * endpoint). Compatible with our `Competition` type PLUS a `seasons`
+ * array listing the competition's historical seasons.
+ */
+type GetCompetitionResponse = Competition & {
+  seasons: {
+    id: number;
+    startDate: string;
+    endDate: string;
+    currentMatchday: number | null;
+    winner: unknown;  // varies: null for the current season, an object for past seasons
+  }[];
+};
+
 // ---- In-memory cache -------------------------------------------------------
 
 type CacheEntry = { expiresAt: number; data: unknown };
@@ -169,4 +257,52 @@ export function clearCache(): void {
 /** Number of cached entries — useful for debugging. */
 export function cacheSize(): number {
   return cache.size;
+}
+
+// ---- Per-competition helpers ---------------------------------------------
+
+/**
+ * Look up a single competition by its football-data.org code
+ * (e.g. "PL" for Premier League, "WC" for World Cup). Returns null if
+ * the code does not resolve to a known competition.
+ *
+ * Hits GET /v4/competitions/{code}. The response is the Competition
+ * directly (not wrapped in an envelope) PLUS a `seasons` array.
+ *
+ * NOTE: The caller only uses `name` and `currentSeason` — both are
+ * present on our `Competition` type and on the actual response.
+ */
+export async function getCompetition(
+  code: string,
+): Promise<GetCompetitionResponse | null> {
+  const result = await call<GetCompetitionResponse>(
+    `/competitions/${encodeURIComponent(code)}`,
+  );
+  return result;
+}
+
+/**
+ * Fetch every match in a competition for a given season/matchday. The
+ * `code` argument is the football-data.org competition code, NOT the
+ * numeric id. Returns the inner `matches` array (not the envelope).
+ *
+ * Hits GET /v4/competitions/{code}/matches.
+ *
+ *   opts.season    Year the season started (e.g. 2026). When omitted,
+ *                  the API returns the current season by default.
+ *   opts.matchday  Restrict to a single matchday (1-based).
+ */
+export async function getCompetitionMatches(
+  code: string,
+  opts: { season?: number; matchday?: number } = {},
+): Promise<Match[]> {
+  const params: Record<string, string | number> = {};
+  if (opts.season !== undefined) params.season = opts.season;
+  if (opts.matchday !== undefined) params.matchday = opts.matchday;
+
+  const envelope = await call<GetMatchesResponse>(
+    `/competitions/${encodeURIComponent(code)}/matches`,
+    params,
+  );
+  return envelope.matches;
 }

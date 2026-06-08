@@ -1,7 +1,13 @@
 import { z } from "zod";
 
 const MarketInput = z.object({
-  type: z.enum(["EXACT_SCORE", "OUTRIGHT_TEXT", "PROPOSITION_CHOICE"]),
+  type: z.enum([
+    "EXACT_SCORE",
+    "OUTRIGHT_TEXT",
+    "PROPOSITION_CHOICE",
+    "HALF_SCORING",
+    "IN_GAME_PENALTY",
+  ]),
   title: z.string().min(1),
   options: z.array(z.string()).optional(),
 });

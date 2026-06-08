@@ -77,7 +77,10 @@ export default async function AdminLeaguesPage() {
                         {c.externalSource} · league={c.externalLeagueId} · season={c.externalSeason}
                       </p>
                     </div>
-                    <SyncCompetitionButton competitionId={c.id} />
+                    <SyncCompetitionButton
+                      competitionId={c.id}
+                      externalSource={c.externalSource ?? "unknown"}
+                    />
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>

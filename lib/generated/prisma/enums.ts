@@ -11,6 +11,7 @@
 
 export const MatchStatus = {
   SCHEDULED: 'SCHEDULED',
+  GOING: 'GOING',
   FINISHED: 'FINISHED'
 } as const
 
