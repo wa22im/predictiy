@@ -129,9 +129,11 @@ model UserBet {
   marketId       String
   predictedValue String
   pointsAwarded  Int?
-  /// When this bet becomes visible to other group members. Set to
-  /// Match.kickoffTime at save time. Query filter: availableFrom <= now.
-  availableFrom  DateTime
+  /// Anti-snooping flag. False until the underlying match becomes
+  /// locked (5 min before kickoff) or finishes. Flipped lazily by
+  /// getGroupFeed via revealBetsForLockedMatches(). Query filter:
+  /// isRevealed = true to show non-owner viewers.
+  isRevealed     Boolean   @default(false)
   updatedAt      DateTime  @updatedAt
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   group          Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -141,6 +143,6 @@ model UserBet {
   @@index([groupId])
   @@index([marketId])
   @@index([pointsAwarded])
-  @@index([availableFrom])
+  @@index([isRevealed])
 }
 

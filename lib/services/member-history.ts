@@ -80,10 +80,13 @@ export async function getMemberHistory(
         breakdown = "Strategy not found";
       }
     }
-    // Anti-snoop: hide foreign bets until availableFrom <= now.
-    // availableFrom is set to match.kickoffTime at save time. Owner
-    // can always see their own picks regardless of availableFrom.
-    const masked = !isSelf && bet.availableFrom > new Date();
+    // Anti-snoop: hide foreign bets until isRevealed = true. The
+    // isRevealed flag is flipped lazily by getGroupFeed when the
+    // underlying match becomes locked or finishes. Owner can always
+    // see their own picks regardless. Outright bets (no matchId) are
+    // always visible.
+    const isOutright = !m?.matchId;
+    const masked = !isSelf && !bet.isRevealed && !isOutright;
     return {
       marketId: bet.marketId,
       marketTitle: m?.title ?? "—",

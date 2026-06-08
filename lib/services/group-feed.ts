@@ -48,10 +48,43 @@ export type FeedPayload = {
 };
 
 /**
+ * Lazy flip: reveal bets whose underlying match has become locked
+ * (5 min before kickoff) or has finished. Called at the start of
+ * getGroupFeed so the visibility flag is fresh by the time we
+ * build the feed.
+ *
+ * A single batched UPDATE statement scoped to the matches the
+ * viewer is about to read — no global scan, no N+1. The WHERE
+ * filter on isRevealed = false makes this idempotent.
+ *
+ * Outright markets (no matchId) are NOT touched here; the read
+ * mask in the feed treats them as always revealed.
+ */
+async function revealBetsForLockedMatches(
+  matches: { id: string; kickoffTime: Date; status: string }[],
+  now: Date,
+): Promise<void> {
+  const lockedOrFinishedIds = matches
+    .filter((m) => m.status === "FINISHED" || isLocked(m, now))
+    .map((m) => m.id);
+  if (lockedOrFinishedIds.length === 0) return;
+  await prisma.$executeRaw`
+    UPDATE "UserBet" ub
+    SET "isRevealed" = true
+    FROM "BetMarket" bm
+    WHERE ub."marketId" = bm.id
+      AND bm."matchId" = ANY(${lockedOrFinishedIds}::text[])
+      AND ub."isRevealed" = false
+  `;
+}
+
+/**
  * Group feed for a viewer. Applies the anti-snooping mask: any
  * UserBet whose owner is not the viewer is replaced with "🔒" if
- * the match is in the lockdown window. Once the match is settled
- * (status = FINISHED), all bets become visible.
+ * the bet has not yet been revealed. The isRevealed flag is flipped
+ * lazily (see revealBetsForLockedMatches) when the underlying match
+ * becomes locked or finishes. Owner can always see their own picks.
+ * Outright markets (no matchId) are always revealed.
  */
 export async function getGroupFeed(
   groupId: string,
@@ -65,6 +98,7 @@ export async function getGroupFeed(
     throw new Error("GROUP_NOT_FOUND");
   }
 
+  const now = new Date();
   const [matches, members, allBets] = await Promise.all([
     prisma.match.findMany({
       where: { competitionId: group.competitionId },
@@ -84,8 +118,13 @@ export async function getGroupFeed(
     prisma.userBet.findMany({ where: { groupId } }),
   ]);
 
-  const now = new Date();
+  // NEW: lazy flip — reveal bets for matches that are locked or finished.
+  // The flip is idempotent (only flips isRevealed: false → true).
+  await revealBetsForLockedMatches(matches, now);
+
   const marketIds = matches.flatMap((m) => m.markets.map((mk) => mk.id));
+  const allMarkets = matches.flatMap((m) => m.markets);
+  const marketById = new Map(allMarkets.map((mk) => [mk.id, mk] as const));
 
   const feedMatches: FeedMatch[] = matches.map((match) => {
     const settled = match.status === "FINISHED";
@@ -111,11 +150,15 @@ export async function getGroupFeed(
               isMasked: false,
             };
           }
-          // Anti-snoop: foreign bets are masked until availableFrom <= now.
-          // availableFrom is set to match.kickoffTime at first save, so
-          // this is equivalent to "hide until kickoff". Stored on the
-          // row, queried directly — no lazy update needed.
-          if (bet.availableFrom > now) {
+          // Anti-snoop: foreign bets are masked until isRevealed = true.
+          // isRevealed is flipped lazily by revealBetsForLockedMatches
+          // when the underlying match becomes locked or finishes. Owner
+          // can always see their own picks (handled by viewerBet above,
+          // not here in otherBets). Outright markets (no matchId) are
+          // always revealed.
+          const market = marketById.get(bet.marketId);
+          const isOutright = !market?.matchId;
+          if (!bet.isRevealed && !isOutright) {
             return {
               userId: m.userId,
               nickname: m.user.nickname,

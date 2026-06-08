@@ -40,8 +40,9 @@ const REQUIRED_MARKET_TYPES = new Set(["EXACT_SCORE"]);
  *     passes per-type validation
  *   - the required market (EXACT_SCORE) is present
  *
- * Upserts one UserBet row per pick. Preserves `availableFrom` on
- * update (= match.kickoffTime, set on first save).
+ * Upserts one UserBet row per pick. New bets inherit isRevealed:
+ * false (the column default). The lazy flip in getGroupFeed
+ * reveals them once the match becomes locked or finishes.
  *
  * Delete behavior: if the user had a UserBet for an optional market
  * previously and that market is NOT in the new `picks` map, the
@@ -121,13 +122,13 @@ export async function saveBetsBatch(
     normalized.push({ marketId, marketType: market.type, value: normalizedValue });
   }
 
-  // 5. Upsert each normalized pick. availableFrom is preserved on
-  //    update (set to match.kickoffTime on first save).
+  // 5. Upsert each normalized pick. New bets inherit isRevealed: false
+  //    (the column default). The lazy flip in getGroupFeed reveals them
+  //    once the match becomes locked or finishes.
   //
   //    Skip empty normalized values — an empty HALF_SCORING value
   //    means "I skipped this market". The step-6 delete behavior
   //    below will clear any prior row for the same market.
-  const availableFrom = match.kickoffTime;
   const results = [];
   for (const pick of normalized) {
     if (!pick.value) continue;
@@ -145,7 +146,6 @@ export async function saveBetsBatch(
         groupId: input.groupId,
         marketId: pick.marketId,
         predictedValue: pick.value,
-        availableFrom,
       },
     });
     results.push(bet);
