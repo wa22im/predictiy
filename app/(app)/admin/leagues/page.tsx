@@ -41,7 +41,13 @@ export default async function AdminLeaguesPage() {
           syncs every 5 minutes and auto-settles finished matches.
         </p>
 
-        <div className="mb-6 flex justify-end">
+        <div className="mb-6 flex justify-end gap-2">
+          <a
+            href="/admin/leagues/discover"
+            className="command-strip px-4 py-2 text-sm font-bold"
+          >
+            Discover new competitions
+          </a>
           <a
             href="/admin/leagues/new"
             className="command-strip px-4 py-2 text-sm font-bold"
