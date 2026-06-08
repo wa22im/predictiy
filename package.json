@@ -16,7 +16,8 @@
     "setadmin": "tsx scripts/promote-admin.ts",
     "admin:demote": "tsx scripts/demote-admin.ts",
     "dev:shift": "tsx scripts/dev-shift-times.ts",
-    "dev:reset-times": "tsx scripts/dev-shift-times.ts reset"
+    "dev:reset-times": "tsx scripts/dev-shift-times.ts reset",
+    "sync:fixtures": "tsx scripts/sync-fixtures.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

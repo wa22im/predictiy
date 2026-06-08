@@ -416,10 +416,6 @@ export type BetMarketUncheckedUpdateManyWithoutMatchNestedInput = {
   deleteMany?: Prisma.BetMarketScalarWhereInput | Prisma.BetMarketScalarWhereInput[]
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
 export type BetMarketCreateNestedOneWithoutUserBetsInput = {
   create?: Prisma.XOR<Prisma.BetMarketCreateWithoutUserBetsInput, Prisma.BetMarketUncheckedCreateWithoutUserBetsInput>
   connectOrCreate?: Prisma.BetMarketCreateOrConnectWithoutUserBetsInput

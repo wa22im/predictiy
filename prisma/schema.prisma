@@ -25,24 +25,39 @@ model User {
 }
 
 model Competition {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  matches   Match[]
-  groups    Group[]
+  id                String    @id @default(uuid())
+  name              String    @unique
+  createdAt         DateTime  @default(now())
+  matches           Match[]
+  groups            Group[]
+  // External provider linkage. NULL for competitions seeded by hand
+  // (e.g., the JSON-paste hydration terminal). Non-NULL means the
+  // cron will auto-sync this competition from the provider.
+  externalSource    String?
+  externalLeagueId  String?
+  externalSeason    Int?
+  lastSyncedAt      DateTime?
 }
 
 model Match {
-  id            String      @id @default(uuid())
-  competitionId String
-  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-  apiMatchId    String      @unique
-  homeTeam      String
-  awayTeam      String
-  kickoffTime   DateTime
-  stage         String
-  status        MatchStatus @default(SCHEDULED)
-  markets       BetMarket[]
+  id              String      @id @default(uuid())
+  competitionId   String
+  competition     Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  apiMatchId      String      @unique
+  homeTeam        String
+  awayTeam        String
+  kickoffTime     DateTime
+  stage           String
+  status          MatchStatus @default(SCHEDULED)
+  markets         BetMarket[]
+  // Final score, set when the external provider reports the fixture as
+  // finished. NULL while the match is still pending or live. Read by
+  // the auto-settle pass to populate correctAnswer on EXACT_SCORE.
+  homeScore       Int?
+  awayScore       Int?
+  // Raw status string from the provider (NS, 1H, HT, 2H, FT, AET, PEN).
+  // Useful for debugging and for not-yet-implemented live states.
+  externalStatus  String?
 
   @@index([competitionId])
   @@index([kickoffTime])

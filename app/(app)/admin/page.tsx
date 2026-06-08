@@ -3,6 +3,13 @@ import Link from "next/link";
 export default function AdminIndexPage() {
   const cards = [
     {
+      href: "/admin/leagues",
+      label: "External Sources",
+      title: "League Roster",
+      blurb:
+        "Onboard tournaments from api-football.com. New games auto-appear in every group; cron syncs every 5 min.",
+    },
+    {
       href: "/admin/hydration",
       label: "Data Hydration",
       title: "Hydration Terminal",

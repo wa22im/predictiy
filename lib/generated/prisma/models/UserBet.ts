@@ -564,14 +564,6 @@ export type UserBetUncheckedUpdateManyWithoutMarketNestedInput = {
   deleteMany?: Prisma.UserBetScalarWhereInput | Prisma.UserBetScalarWhereInput[]
 }
 
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type UserBetCreateWithoutUserInput = {
   id?: string
   predictedValue: string
