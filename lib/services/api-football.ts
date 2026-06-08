@@ -166,6 +166,17 @@ export async function searchLeagues(query: string): Promise<LeagueSearchResult[]
   return call<LeagueSearchResult>("/leagues", { search: query.trim() });
 }
 
+/**
+ * Look up a specific league by its api-football id. The /leagues
+ * endpoint accepts `id` as a filter. Returns null if the id doesn't
+ * exist. Used by the ingestion policy guard to verify the requested
+ * season is the current one.
+ */
+export async function getLeagueById(leagueId: number): Promise<LeagueSearchResult | null> {
+  const results = await call<LeagueSearchResult>("/leagues", { id: leagueId });
+  return results[0] ?? null;
+}
+
 /** Fetch all fixtures for a league in a season. */
 export async function getLeagueFixtures(leagueId: number, season: number): Promise<Fixture[]> {
   return call<Fixture>("/fixtures", { league: leagueId, season });

@@ -37,6 +37,8 @@ export type IngestLeagueActionResult =
       competitionId: string;
       created: { competition: boolean; matches: number; markets: number };
       updated: { matches: number; markets: number };
+      fetched: number;
+      warning: string | null;
       errors: { apiMatchId?: string; message: string }[];
     }
   | { ok: false; error: string };

@@ -22,6 +22,7 @@ export function LeagueSearchForm({
   const [isSearching, startSearch] = useTransition();
   const [isIngesting, startIngest] = useTransition();
   const [ingestError, setIngestError] = useState<string | null>(null);
+  const [ingestWarning, setIngestWarning] = useState<string | null>(null);
 
   const search = () => {
     if (!query.trim()) return;
@@ -48,6 +49,7 @@ export function LeagueSearchForm({
 
   const ingest = (leagueId: number, season: number, displayName: string) => {
     setIngestError(null);
+    setIngestWarning(null);
     const name = `${displayName} ${season}`;
     startIngest(async () => {
       const result = await ingestLeagueAction({
@@ -56,6 +58,11 @@ export function LeagueSearchForm({
         externalSeason: season,
       });
       if (result.ok) {
+        if (result.warning) {
+          // 0 fixtures — show the warning but don't navigate yet
+          setIngestWarning(result.warning);
+          return;
+        }
         router.push("/admin/leagues");
         router.refresh();
       } else {
@@ -109,6 +116,26 @@ export function LeagueSearchForm({
 
       {ingestError && <p className="text-destructive text-xs">{ingestError}</p>}
 
+      {ingestWarning && (
+        <div className="paper-card p-4 border-amber-500/40 space-y-3">
+          <p className="text-sm text-amber-600 dark:text-amber-400">
+            {ingestWarning}
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIngestWarning(null);
+                router.push("/admin/leagues");
+              }}
+              className="text-xs font-medium underline-offset-2 hover:underline"
+            >
+              Go to league list anyway
+            </button>
+          </div>
+        </div>
+      )}
+
       {!isSearching && results.length === 0 && query && (
         <p className="text-xs text-muted-foreground">No results. Try a different query.</p>
       )}
@@ -140,28 +167,38 @@ function LeagueRow({
           </p>
         </div>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {seasons.map((s) => {
-          const key = `${league.id}:${s.year}`;
-          const taken = takenKeys.includes(key);
-          return (
-            <button
-              key={s.year}
-              type="button"
-              disabled={taken || isIngesting}
-              onClick={() => onIngest(league.id, s.year, displayName)}
-              className={`text-xs font-mono rounded-full px-3 py-1 border transition-colors ${
-                taken
-                  ? "border-border text-muted-foreground cursor-not-allowed"
-                  : "border-primary/40 hover:border-primary text-foreground"
-              }`}
-            >
-              {s.year}
-              {s.current && " · current"}
-              {taken && " · onboarded"}
-            </button>
-          );
-        })}
+      <div className="mt-3 flex flex-wrap gap-2 items-center">
+        {seasons
+          // Policy: only ingest the current season. Past seasons are
+          // hidden entirely so an admin can't accidentally (or
+          // deliberately) waste API budget on old data.
+          .filter((s) => s.current)
+          .map((s) => {
+            const key = `${league.id}:${s.year}`;
+            const taken = takenKeys.includes(key);
+            return (
+              <button
+                key={s.year}
+                type="button"
+                disabled={taken || isIngesting}
+                onClick={() => onIngest(league.id, s.year, displayName)}
+                className={`text-xs font-mono rounded-full px-3 py-1 border transition-colors ${
+                  taken
+                    ? "border-border text-muted-foreground cursor-not-allowed"
+                    : "border-primary/40 hover:border-primary text-foreground"
+                }`}
+              >
+                {s.year}
+                {taken ? " · onboarded" : " · current"}
+              </button>
+            );
+          })}
+        {seasons.filter((s) => !s.current).length > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {seasons.filter((s) => !s.current).length} past season
+            {seasons.filter((s) => !s.current).length === 1 ? "" : "s"} hidden
+          </span>
+        )}
       </div>
     </li>
   );

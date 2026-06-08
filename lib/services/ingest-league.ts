@@ -24,6 +24,7 @@ import { prisma } from "@/lib/prisma";
 import {
   type Fixture,
   getLeagueFixtures,
+  getLeagueById,
   ApiFootballError,
 } from "@/lib/services/api-football";
 import { settleMarket, SettleError } from "@/lib/services/settle-market";
@@ -39,6 +40,11 @@ export type IngestLeagueResult = {
   competitionId: string;
   created: { competition: boolean; matches: number; markets: number };
   updated: { matches: number; markets: number };
+  /** Total fixtures returned by the API (even if all errors). */
+  fetched: number;
+  /** Set when fetched === 0 — the league/season exists but the API
+   *  has no fixtures yet (common for upcoming tournaments). */
+  warning: string | null;
   errors: { apiMatchId?: string; message: string }[];
 };
 
@@ -54,6 +60,35 @@ export type SyncResult = {
 export async function ingestLeague(
   input: IngestLeagueInput,
 ): Promise<IngestLeagueResult> {
+  // Policy guard: only ingest the CURRENT season per league. The
+  // searchLeagues response includes `current: boolean` on each
+  // season — we re-check it server-side because the UI could lie.
+  // Cost: 1 API call. Cheaper than ingesting a wrong season by
+  // mistake (which can be hundreds of fixtures).
+  const leagueInfo = await getLeagueById(input.externalLeagueId);
+  const season = leagueInfo?.seasons.find((s) => s.year === input.externalSeason);
+  if (!season) {
+    throw new ApiFootballError(
+      `Season ${input.externalSeason} not found for league ${input.externalLeagueId}.`,
+      404,
+    );
+  }
+  if (!season.current) {
+    throw new ApiFootballError(
+      `Season ${input.externalSeason} is not the current season for this league. predicty only ingests current/upcoming seasons to avoid wasting API budget on historical data.`,
+      400,
+    );
+  }
+  // Belt-and-suspenders: even if api-football's `current` flag is
+  // wrong, refuse any season more than 1 year in the past.
+  const currentYear = new Date().getUTCFullYear();
+  if (input.externalSeason < currentYear - 1) {
+    throw new ApiFootballError(
+      `Season ${input.externalSeason} is too old (more than 1 year before ${currentYear}). predicty only ingests current/upcoming seasons.`,
+      400,
+    );
+  }
+
   // Upsert the competition row first so we have a stable id to attach
   // matches to, even if the fixture fetch partially fails.
   const existing = await prisma.competition.findUnique({
@@ -89,6 +124,11 @@ export async function ingestLeague(
       matches: result.updatedMatches,
       markets: result.updatedMarkets,
     },
+    fetched: fixtures.length,
+    warning:
+      fixtures.length === 0
+        ? "API returned 0 fixtures. The league/season exists but the schedule hasn't been published yet. Try again later, or pick a different season."
+        : null,
     errors: result.errors,
   };
 }
