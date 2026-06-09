@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
-import { InviteBanner } from "@/components/groups/InviteBanner";
+import { ShareInvite } from "@/components/groups/ShareInvite";
 import { PitchBg, CrestSlot } from "@/components/football";
 
 export const dynamic = "force-dynamic";
@@ -75,7 +75,7 @@ export default async function GroupPage({ params }: { params: Params }) {
       
 
           <div className="mb-8">
-            <InviteBanner inviteCode={group.inviteCode} />
+            <ShareInvite inviteCode={group.inviteCode} />
           </div>
 
           <div className="grid gap-6 md:grid-cols-3">
