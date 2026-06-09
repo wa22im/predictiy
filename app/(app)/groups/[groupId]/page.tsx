@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { InviteBanner } from "@/components/groups/InviteBanner";
@@ -46,17 +47,25 @@ export default async function GroupPage({ params }: { params: Params }) {
     <PitchBg variant="canvas">
       <main className="min-h-screen flex-1 px-4 py-12">
         <div className="max-w-5xl mx-auto">
-          <Link
-            href="/dashboard"
-            className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block"
-          >
-            ← Back to pools
-          </Link>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+            <div className="inline-flex items-center gap-2 text-sm">
+              <Link
+                href="/dashboard"
+                className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
+              >
+                <ChevronLeft aria-hidden="true" className="h-4 w-4" />
+                Back to pools
+              </Link>
+              <span aria-hidden="true" className="text-border">/</span>
+              <span className="text-foreground font-display tracking-tight">
+                {group.competition.name}
+              </span>
+            </div>
+            <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-right">
+              {group.name}
+            </h1>
+          </div>
 
-          <p className="micro-tag mb-2">{group.competition.name}</p>
-          <h1 className="font-display text-4xl md:text-5xl tracking-tight mb-2">
-            {group.name}
-          </h1>
           <p className="text-muted-foreground text-sm mb-8">
             {group.members.length}{" "}
             {group.members.length === 1 ? "member" : "members"}
@@ -95,9 +104,6 @@ export default async function GroupPage({ params }: { params: Params }) {
 
             <div className="pitch-card p-6">
               <p className="micro-tag mb-2">Members</p>
-              <h2 className="font-display text-2xl font-bold tracking-tight mb-3">
-                Roster
-              </h2>
               <ul className="space-y-1 text-sm">
                 {group.members.map((m) => (
                   <li key={m.id} className="flex items-center gap-2">

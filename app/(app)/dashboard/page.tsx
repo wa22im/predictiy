@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { CreatePoolButton } from "@/components/groups/CreatePoolButton";
@@ -36,9 +37,12 @@ export default async function DashboardPage() {
       <main className="min-h-screen flex-1 px-4 py-12">
         <div className="max-w-4xl mx-auto">
           <p className="micro-tag mb-3">Your Cockpit</p>
-          <h1 className="font-display text-5xl md:text-6xl tracking-tight mb-4">
-            Pools
-          </h1>
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-4">
+            <h1 className="font-display text-5xl md:text-6xl tracking-tight">
+              Predictyy
+            </h1>
+            <CreatePoolButton competitions={competitions} />
+          </div>
           <p className="text-muted-foreground leading-7 mb-12">
             The groups you&apos;re in. Predict, compete, win.
           </p>
@@ -61,7 +65,10 @@ export default async function DashboardPage() {
                   href={`/groups/${group.id}`}
                   className="pitch-card-fut p-6 hover:-translate-y-0.5 transition-transform"
                 >
-                  <p className="micro-tag mb-2">{group.competition.name}</p>
+                  <p className="micro-tag mb-2 inline-flex items-center gap-2">
+                    <Trophy aria-hidden="true" className="h-3.5 w-3.5 text-accent" />
+                    {group.competition.name}
+                  </p>
                   <h2 className="font-display text-2xl font-bold tracking-tight mb-2">
                     {group.name}
                   </h2>
@@ -71,7 +78,6 @@ export default async function DashboardPage() {
                   </p>
                 </Link>
               ))}
-              <CreatePoolButton variant="card" competitions={competitions} />
             </div>
           )}
         </div>

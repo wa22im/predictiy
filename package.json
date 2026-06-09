@@ -52,6 +52,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.19",
     "jsdom": "^25.0.1",
+    "lucide-react": "^1.17.0",
     "prisma": "^7.8.0",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",

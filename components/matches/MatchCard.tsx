@@ -28,6 +28,17 @@ export function MatchCard({
     ? match.homeTeam
     : `${match.homeTeam} vs ${match.awayTeam}`;
 
+  // matchState drives the outer card border:
+  // - "locked": match.isLocked (server-computed via lib/time.ts LOCKDOWN_MS)
+  // - "has-bet": at least one market has a viewerBet (current user's own)
+  // - "not-yet": !isLocked && no viewerBet on any market
+  const hasAnyBet = match.markets.some((m) => m.viewerBet !== null);
+  const matchState: "has-bet" | "not-yet" | "locked" = match.isLocked
+    ? "locked"
+    : hasAnyBet
+    ? "has-bet"
+    : "not-yet";
+
   // Other members' predictions (aggregated across all markets) — show
   // once per match rather than per market. The feed still exposes
   // per-market otherBets; we pull all of them and dedupe by user.
@@ -43,8 +54,18 @@ export function MatchCard({
       ? "live"
       : "scheduled";
 
+  // Outer card border per state. pitch-card supplies a default 1px
+  // border via its own CSS; the per-state !border-2 + colored shadow
+  // overrides the 1px without losing the pitch-card box-shadow.
+  const stateClass =
+    matchState === "has-bet"
+      ? "pitch-card p-3 md:p-4 space-y-4 !border-2 !border-primary shadow-[0_0_18px_-2px_var(--primary)]"
+      : matchState === "locked"
+      ? "pitch-card p-3 md:p-4 space-y-4 !border-2 !border-locked shadow-[0_0_12px_-4px_var(--locked)]"
+      : "pitch-card p-3 md:p-4 space-y-4";
+
   return (
-    <article className="pitch-card p-3 md:p-4 space-y-4">
+    <article className={stateClass}>
       {!hasOutright ? (
         <ScoreBug
           home={match.homeTeam}

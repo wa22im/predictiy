@@ -1,6 +1,6 @@
 # Design System
 
-EA FC / FIFA Ultimate Team visual system for predicty. Dark, neon, tiered. The interface borrows the broadcast language of football trading cards: deep ink canvas, electric pitch-green primary, cyan accent, magenta and gold highlights, and a rating-tier system (bronze → silver → gold → IF → TOTW) that maps rarity to color and treatment.
+EA FC / FIFA Ultimate Team visual system for predicty. Dark, neon, tiered. The interface borrows the broadcast language of football trading cards: deep ink canvas, fiery red primary, hot gold/yellow accent, magenta and gold highlights, and a rating-tier system (bronze → silver → gold → IF → TOTW) that maps rarity to color and treatment. A cool blue `--locked` token marks frozen / no-action states, sitting chromatically between muted-foreground and destructive.
 
 ---
 
@@ -22,8 +22,10 @@ EA FC / FIFA Ultimate Team visual system for predicty. Dark, neon, tiered. The i
 The app is a football broadcast, not a generic SaaS dashboard.
 
 - **Canvas:** near-black with a cool tint (`--background`); warm-white text (`--foreground`) for paper-like readability.
-- **Primary:** neon pitch-green (`--primary`) — the EA FC accent green, used for CTAs, win states, and live indicators.
-- **Accent:** cyan (`--accent`) — used for focus rings, info highlights, and the gradient pivot in `neon-button`.
+- **Primary:** fiery neon red (`--primary`) — used for CTAs, win states, and live indicators. The dominant brand hue.
+- **Accent:** hot gold/yellow (`--accent`) — used for focus rings, info highlights, and the gradient pivot in `neon-button`. Trophy-on-pitch.
+- **Success:** warm pale yellow (`--success`) — intentionally one shade lighter and warmer than `--accent` so the trophy semantic reads distinct from primary action. Both read as "gold" to the eye, but accent is "press this" and success is "you won."
+- **Locked:** cool gray-blue (`--locked`) — chromatically between `--muted-foreground` and `--destructive`, used for frozen / no-action states (e.g. a match that's past kickoff but not yet settled).
 - **Highlights:** magenta (`--magenta`) for inform / TOTW moments; gold (`--gold`) for rating tiers and rewards.
 - **Motifs:** angular / diagonal cuts for hero moments, rounded-2xl corners on cards, mono eyebrows for technical metadata.
 - **Type:** tight, condensed, sporty display (Barlow Condensed) for headings; clean sans (Inter) for everything else; mono (IBM Plex Mono) for labels, codes, and timestamps.
@@ -43,24 +45,39 @@ All semantic tokens live in `app/globals.css` and are bridged to Tailwind with `
 | `foreground` | `oklch(0.18 0.02 250)` | `oklch(0.96 0.02 90)` | Primary text |
 | `card` | `oklch(0.99 0.005 90 / 92%)` | `oklch(0.18 0.025 250 / 80%)` | Card surface |
 | `popover` | `oklch(0.99 0.005 90 / 96%)` | `oklch(0.20 0.025 250 / 90%)` | Popover/menu surface |
-| `primary` | `oklch(0.72 0.20 145)` | `oklch(0.78 0.22 145)` | Pitch-green primary CTA, success |
-| `primary-foreground` | `oklch(0.15 0.02 145)` | `oklch(0.15 0.02 145)` | Text on primary |
-| `accent` | `oklch(0.78 0.18 200)` | `oklch(0.78 0.18 200)` | Cyan accent, focus ring |
-| `accent-foreground` | `oklch(0.15 0.02 200)` | `oklch(0.15 0.02 200)` | Text on accent |
+| `primary` | `oklch(0.62 0.24 25)` | `oklch(0.65 0.24 25)` | Fiery red primary CTA |
+| `primary-foreground` | `oklch(0.15 0.02 25)` | `oklch(0.15 0.02 25)` | Text on primary |
+| `accent` | `oklch(0.82 0.18 90)` | `oklch(0.85 0.18 90)` | Hot gold accent, focus ring |
+| `accent-foreground` | `oklch(0.15 0.02 90)` | `oklch(0.15 0.02 90)` | Text on accent |
 | `secondary` | `oklch(0.92 0.01 90 / 86%)` | `oklch(0.22 0.03 250 / 80%)` | Secondary surfaces |
 | `secondary-foreground` | `oklch(0.18 0.02 250)` | `oklch(0.96 0.02 90)` | Text on secondary |
 | `muted` | `oklch(0.90 0.01 90 / 70%)` | `oklch(0.24 0.025 250 / 60%)` | Subtle surfaces |
 | `muted-foreground` | `oklch(0.48 0.02 250)` | `oklch(0.72 0.02 90)` | Supporting copy |
 | `border` | `oklch(0.20 0.02 250 / 14%)` | `oklch(0.98 0.01 90 / 12%)` | Borders, input borders |
 | `input` | `oklch(0.20 0.02 250 / 14%)` | `oklch(0.98 0.01 90 / 12%)` | Input borders |
-| `ring` | `oklch(0.78 0.18 200)` | `oklch(0.78 0.18 200)` | Focus ring |
+| `ring` | `oklch(0.82 0.18 90)` | `oklch(0.85 0.18 90)` | Focus ring |
 | `destructive` | `oklch(0.60 0.22 28)` | `oklch(0.65 0.22 28)` | Destructive actions |
 | `destructive-foreground` | `oklch(0.15 0.02 28)` | `oklch(0.15 0.02 28)` | Text on destructive |
-| `success` | `oklch(0.72 0.20 145)` | `oklch(0.78 0.22 145)` | Positive/winning state |
+| `success` | `oklch(0.88 0.16 95)` | `oklch(0.88 0.16 95)` | Won / trophy state (warm pale yellow) |
 | `warning` | `oklch(0.78 0.18 80)` | `oklch(0.78 0.18 80)` | Warning state |
+| `locked` | `oklch(0.55 0.10 250)` | `oklch(0.55 0.10 250)` | Frozen / no-action state (cool gray-blue). Bridged as `--color-locked` in `@theme inline`. |
 | `overlay` | `oklch(0 0 0 / 0.55)` | `oklch(0 0 0 / 0.6)` | Modal backdrop |
 | `gold` | `oklch(0.82 0.16 85)` | `oklch(0.82 0.16 85)` | Rating-tier gold, rewards |
 | `magenta` | `oklch(0.68 0.24 340)` | `oklch(0.68 0.24 340)` | Inform / TOTW highlight |
+
+### State colors
+
+State tokens are semantically distinct. A state never borrows from another state's role:
+
+| State | Token | Visual | Meaning |
+| --- | --- | --- | --- |
+| Action | `--primary` | Fiery red | "Press this." Primary CTAs, live indicators, has-bet state borders. |
+| Won / Trophy | `--success` | Warm pale yellow | "You won." Settlement wins, completed milestones. Intentionally one shade lighter and warmer than `--accent` so the trophy semantic reads distinct from primary action. |
+| Caution | `--warning` | Amber | Something needs attention but is not destructive. |
+| Frozen | `--locked` | Cool gray-blue | The system is in a non-actionable state (kickoff passed, league locked, etc.). Sits chromatically between `--muted-foreground` and `--destructive`. |
+| Error / Delete | `--destructive` | Red-orange | Destructive actions, validation errors. |
+
+The success-vs-accent near-collision is intentional. Both read as "gold" to the eye, but accent is the "press this" CTA hue and success is the "you won" trophy hue. They are not the same token and they should never be used interchangeably: accent drives a button or a focus ring, success drives a settlement label or a winning-state border.
 
 ### Rating tiers
 
@@ -74,7 +91,7 @@ All semantic tokens live in `app/globals.css` and are bridged to Tailwind with `
 
 ### Charts
 
-`chart-1` through `chart-5` use the accent palette in order: primary green, cyan, magenta, gold, coral.
+`chart-1` through `chart-5` use the accent palette in order: primary red, gold, magenta, gold, coral.
 
 ---
 
@@ -104,10 +121,10 @@ Display headings default to `font-display tracking-tight uppercase` for scorebug
 
 Defined in `app/globals.css`. Every utility consumes semantic tokens — no hex, no raw oklch inside the utility bodies.
 
-- **`.pitch-card`** — translucent dark card with a thin neon top-border accent (green → cyan → magenta gradient), rounded-2xl, subtle inner highlight. The default card treatment.
-- **`.pitch-card-hero`** — high-impact variant of `pitch-card` with stronger glow, a thicker neon top-border, and a deeper drop shadow. Use for hero surfaces, page headers, and the public landing hero panel.
-- **`.neon-button`** — pill-shaped CTA with a neon-green → cyan → magenta gradient, dark text, hover lift, focus ring. The default primary button.
-- **`.neon-button-flat`** — single-color flat neon button (solid `--primary`), pill-shaped, with hover brighten and focus ring. Use for secondary green actions that need to read as "still primary" without the gradient.
+- **`.pitch-card`** — translucent dark card with a thin neon top-border accent (red → gold → magenta gradient), rounded-2xl, subtle inner highlight. The default card treatment.
+- **`.pitch-card-hero`** — high-impact variant of `pitch-card` with stronger red glow, a thicker neon top-border, and a deeper drop shadow. Use for hero surfaces, page headers, and the public landing hero panel.
+- **`.neon-button`** — pill-shaped CTA with a red → gold → magenta gradient, dark text, hover lift, focus ring. The default primary button.
+- **`.neon-button-flat`** — single-color flat neon button (solid `--primary` red), pill-shaped, with hover brighten and focus ring. Use for secondary red actions that need to read as "still primary" without the gradient.
 - **`.micro-tag`** — uppercase mono label with a neon outline. The eyebrow / badge / system-state style. Replaces ad-hoc uppercase mono spans.
 - **`.heading-display`** — `font-display uppercase tracking-tight font-extrabold` with a tight `line-height: 0.95`. The hero-heading pattern.
 
@@ -229,7 +246,7 @@ Mobile remains single-column with no sticky behavior. Hero sections stack vertic
 
 ## Accessibility
 
-- Visible focus rings on every interactive control (the `neon-button` utilities include a cyan focus ring; inputs use `focus-visible:ring-ring/50`).
+- Visible focus rings on every interactive control (the `neon-button` utilities include a gold focus ring following `--ring`; inputs use `focus-visible:ring-ring/50`).
 - Maintain a 4.5:1 text contrast on translucent panels. `--card-foreground` on `--card` is verified for AA in both modes.
 - Provide text representations for any purely visual indicator (live, TOTW, gold tier) — never color alone.
 - Respect `prefers-reduced-motion`: gate hover-lift and pulse animations behind a media query when shipping motion.

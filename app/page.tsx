@@ -1,3 +1,4 @@
+import { Trophy } from "lucide-react";
 import { PitchBg, ScoreBug } from "@/components/football";
 
 export default function Home() {
@@ -21,9 +22,14 @@ export default function Home() {
           />
 
           <h1 className="heading-display text-5xl md:text-7xl lg:text-8xl text-foreground">
-            Predict the game.
-            <br />
-            Own the pool.
+            <span className="inline-flex items-center gap-3 sm:gap-4 justify-center">
+              <Trophy aria-hidden="true" className="h-10 w-10 sm:h-12 sm:w-12 text-accent shrink-0" />
+              <span>
+                Predict the game.
+                <br />
+                Own the pool.
+              </span>
+            </span>
           </h1>
           <p className="mt-6 text-lg text-muted-foreground leading-7 max-w-xl mx-auto">
             Create private leagues, compete with friends, and prove you know

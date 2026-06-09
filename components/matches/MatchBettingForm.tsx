@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Loader, Save } from "lucide-react";
 import { saveBetsBatchAction } from "@/app/(app)/groups/[groupId]/matches/actions";
 import type { FeedMatch } from "@/lib/services/group-feed";
 
@@ -231,13 +232,19 @@ export function MatchBettingForm({
       ))}
 
       <div className="flex items-center justify-between gap-3 pt-2">
-      
+
         <button
           type="submit"
           disabled={isPending || !canSave}
-          className="neon-button-flat px-5 py-2 text-sm disabled:opacity-50 disabled:pointer-events-none"
+          aria-label="Save predictions"
+          className="neon-button-flat px-5 py-2 text-sm disabled:opacity-50 disabled:pointer-events-none inline-flex items-center justify-center gap-2"
         >
-          {isPending ? "Saving…" : "Save predictions"}
+          {isPending ? (
+            <Loader aria-hidden="true" className="h-4 w-4 animate-spin" />
+          ) : (
+            <Save aria-hidden="true" className="h-4 w-4" />
+          )}
+          <span className="sr-only">Save predictions</span>
         </button>
       </div>
       {error && <p className="text-destructive text-xs">{error}</p>}

@@ -28,8 +28,12 @@ export function LeaderboardList({
 
   return (
     <ol className="space-y-2">
-      {entries.map((e) => {
+      {entries.map((e, index) => {
         const tier = rankToTier(e.rank);
+        const isFirst = index === 0;
+        // Rank 1 gets a crown; last rank gets a clown. Crown takes priority
+        // if the pool has 1 member.
+        const isLast = !isFirst && index === entries.length - 1;
         return (
           <li
             key={e.userId}
@@ -48,6 +52,22 @@ export function LeaderboardList({
             >
               #{e.rank}
             </span>
+            {isFirst && (
+              <span
+                className="text-base shrink-0"
+                aria-label="First place"
+              >
+                👑
+              </span>
+            )}
+            {isLast && (
+              <span
+                className="text-base shrink-0"
+                aria-label="Last place"
+              >
+                🤡
+              </span>
+            )}
             <CrestSlot name={e.nickname} size="sm" tint={tier} />
             <div className="flex-1 min-w-0">
               <div className="inline-flex items-center gap-2 min-w-0">
