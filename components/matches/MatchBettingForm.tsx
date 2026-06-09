@@ -210,7 +210,10 @@ export function MatchBettingForm({
 
   // ---- Editable form ------------------------------------------------------
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+<form onSubmit={handleSubmit}>
+  <div className="flex items-center gap-4">
+    {/* Left side: rows */}
+    <div className="flex-1 space-y-5">
       {exactScore && (
         <ExactScoreRow
           marketId={exactScore.id}
@@ -230,26 +233,28 @@ export function MatchBettingForm({
           onChange={(v) => setPick(m.id, v)}
         />
       ))}
+    </div>
 
-      <div className="flex items-center justify-between gap-3 pt-2">
+    {/* Right side: centered button */}
+    <div className="flex items-center self-center">
+      <button
+        type="submit"
+        disabled={isPending || !canSave}
+        aria-label="Save predictions"
+        className="neon-button-flat px-5 py-2 text-sm disabled:opacity-50 disabled:pointer-events-none inline-flex items-center justify-center gap-2"
+      >
+        {isPending ? (
+          <Loader aria-hidden="true" className="h-4 w-4 animate-spin" />
+        ) : (
+          <Save aria-hidden="true" className="h-4 w-4" />
+        )}
+        <span>Save</span>
+      </button>
+    </div>
+  </div>
 
-        <button
-          type="submit"
-          disabled={isPending || !canSave}
-          aria-label="Save predictions"
-          className="neon-button-flat px-5 py-2 text-sm disabled:opacity-50 disabled:pointer-events-none inline-flex items-center justify-center gap-2"
-        >
-          {isPending ? (
-            <Loader aria-hidden="true" className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save aria-hidden="true" className="h-4 w-4" />
-          )}
-          <span className="sr-only">Save predictions</span>
-        </button>
-      </div>
-      {error && <p className="text-destructive text-xs">{error}</p>}
-    </form>
-  );
+  {error && <p className="text-destructive text-xs mt-2">{error}</p>}
+</form>  );
 }
 
 // ---- Sub-rows -------------------------------------------------------------

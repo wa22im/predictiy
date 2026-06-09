@@ -87,6 +87,7 @@ export function MatchCard({
       )}
 
       <div className="flex items-center justify-between gap-3">
+        
         <p className="text-xs text-muted-foreground font-mono">
           <span className="mr-2">
             <ResultLine match={match} />
@@ -107,7 +108,7 @@ export function MatchCard({
               />
             )}
           </div>
-          <MatchClock kickoffAt={match.kickoffTime} />
+         
         </div>
       </div>
 

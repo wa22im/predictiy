@@ -48,10 +48,10 @@ export default async function MatchesPage({ params }: { params: Params }) {
             href={`/groups/${groupId}`}
             className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block"
           >
-            ← Back to {group.name}
+            ← {group.name}
           </a>
 
-          <p className="micro-tag mb-2">{group.competition.name}</p>
+          <h3 className="font-display text-4xl tracking-tight" >{group.competition.name}</h3>
           <h1 className="font-display text-4xl md:text-5xl tracking-tight mb-2">
             Matches
           </h1>

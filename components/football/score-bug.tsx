@@ -104,10 +104,6 @@ export function ScoreBug({
         </span>
         {awayCrest ? <CrestSlot src={awayCrest} name={away} size="sm" /> : null}
       </div>
-
-      <div className="shrink-0">
-        <StatusBadge status={status} kickoffAt={kickoffAt} />
-      </div>
     </div>
   );
 }

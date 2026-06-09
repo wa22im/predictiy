@@ -59,16 +59,17 @@ export function MatchList({
               type="button"
               onClick={() => toggleDay(day)}
               aria-expanded={isOpen}
-              className="w-full flex items-center justify-between gap-2 micro-tag sticky top-0 bg-background/80 backdrop-blur-sm py-2 -mx-1 px-1 z-10 text-left"
+  className="w-[calc(100%+2rem)] -mx-4 my-2 flex items-center justify-between gap-2 micro-tag sticky top-0 bg-background/80 backdrop-blur-sm py-2 px-4 z-10 text-left"
             >
               <span>
                 {day} · {items.length} {items.length === 1 ? "match" : "matches"}
               </span>
               <span
+              
                 aria-hidden="true"
                 className={`inline-block transition-transform ${
                   isOpen ? "rotate-90" : ""
-                }`}
+                }` }
               >
                 ▶
               </span>

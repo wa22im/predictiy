@@ -12,7 +12,6 @@ type Params = Promise<{ groupId: string }>;
 
 export default async function GroupPage({ params }: { params: Params }) {
   const { groupId } = await params;
-
   const supabase = await createClient();
   const {
     data: { user },
@@ -46,7 +45,7 @@ export default async function GroupPage({ params }: { params: Params }) {
   return (
     <PitchBg variant="canvas">
       <main className="min-h-screen flex-1 px-4 py-12">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
             <div className="inline-flex items-center gap-2 text-sm">
               <Link
@@ -54,22 +53,26 @@ export default async function GroupPage({ params }: { params: Params }) {
                 className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
               >
                 <ChevronLeft aria-hidden="true" className="h-4 w-4" />
-                Back to pools
+                Back 
               </Link>
               <span aria-hidden="true" className="text-border">/</span>
-              <span className="text-foreground font-display tracking-tight">
-                {group.competition.name}
-              </span>
+           
             </div>
-            <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-right">
+          </div>
+          </div>
+          <div className=" mb-8">           
+             <h1 className="font-display  sm:text-4xl font-bold tracking-tight ">
               {group.name}
             </h1>
-          </div>
-
-          <p className="text-muted-foreground text-sm mb-8">
+               <span className="text-foreground font-display tracking-tight">
+                {group.competition.name}
+              </span>
+                <p className="text-muted-foreground text-sm mb-8">
             {group.members.length}{" "}
             {group.members.length === 1 ? "member" : "members"}
           </p>
+            <div/>
+      
 
           <div className="mb-8">
             <InviteBanner inviteCode={group.inviteCode} />

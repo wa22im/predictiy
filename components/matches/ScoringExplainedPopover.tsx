@@ -38,13 +38,14 @@ export function ScoringExplainedPopover({
       </button>
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay backdrop-blur-sm"
-          onClick={() => setOpen(false)}
+ className="fixed inset-0 z-50 overflow-y-auto bg-overlay backdrop-blur-sm"
+           onClick={() => setOpen(false)}
         >
+            <div className="min-h-full flex items-start justify-center p-4 sm:p-6">
           <div
             role="dialog"
             aria-label="Scoring examples"
-            className="pitch-card p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto"
+            className="pitch-card p-6 max-w-2xl w-full scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-2 mb-2">
@@ -58,7 +59,7 @@ export function ScoringExplainedPopover({
                 ✕
               </button>
             </div>
-            <p className="text-[11px] text-muted-foreground mb-3">
+            <div className="text-[11px] text-muted-foreground mb-3">
               Stage-dependent scoring: the more decisive the match, the more you
               can win. In the{" "}
               <span className="font-bold text-foreground">group stage</span> an
@@ -77,12 +78,13 @@ export function ScoringExplainedPopover({
               right winner + right goal difference,{" "}
               <span className="font-bold text-foreground">+2</span> for the
               right winner only, and 0 for a miss.
-            </p>
-            <div className="space-y-3 pr-1">
+            </div>
+            <div className="space-y-3"> {/* Changed from space-y-3 to match examples spacing */}
               {SCORING_EXAMPLES.map((ex, i) => (
                 <ExampleBlock key={i} example={ex} index={i + 1} />
               ))}
             </div>
+          </div>
           </div>
         </div>
       )}
@@ -92,7 +94,7 @@ export function ScoringExplainedPopover({
 
 function ExampleBlock({ example, index }: { example: ScoringExample; index: number }) {
   return (
-    <div className="rounded-lg border border-border bg-background/40 p-3 text-xs space-y-10">
+    <div className="rounded-lg border border-border bg-background/40 p-3 space-y-2"> {/* Changed from space-y-10 to space-y-2 */}
       <div className="flex items-baseline justify-between gap-2">
         <p className="font-bold text-foreground">
           {index}. {example.title}
