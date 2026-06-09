@@ -50,7 +50,7 @@ export function SettlementDayAccordion({
               type="button"
               onClick={() => toggleDay(day)}
               aria-expanded={isOpen}
-              className="w-full flex items-center justify-between gap-2 micro-label sticky top-0 bg-background/80 backdrop-blur-sm py-2 -mx-1 px-1 z-10 text-left"
+              className="w-full flex items-center justify-between gap-2 micro-tag sticky top-0 bg-background/80 backdrop-blur-sm py-2 -mx-1 px-1 z-10 text-left"
             >
               <span>
                 {day} · {items.length}{" "}

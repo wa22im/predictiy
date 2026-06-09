@@ -33,7 +33,7 @@ export function SettlementTournamentSection({
         <h2 className="font-display text-2xl md:text-3xl tracking-tight">
           {competitionName}
         </h2>
-        <span className="micro-label">
+        <span className="micro-tag">
           {matches.length} {matches.length === 1 ? "match" : "matches"}
         </span>
       </header>

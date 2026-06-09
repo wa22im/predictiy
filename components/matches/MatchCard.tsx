@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import type { FeedMatch } from "@/lib/services/group-feed";
-import { formatUtc, formatCountdown } from "@/lib/time";
+import { formatUtc } from "@/lib/time";
 import { Countdown } from "./Countdown";
 import { MemberPredictions } from "./MemberPredictions";
 import { MatchBettingForm } from "./MatchBettingForm";
+import { CrestSlot, MatchClock, ScoreBug } from "@/components/football";
 
+// Decision: CrestOrFallback was a hand-rolled 28px local helper;
+// it is replaced entirely by the CrestSlot primitive so the size,
+// initials fallback, and (where applicable) rating ring stay in one
+// place. The previous 28px round size collapses to the primitive's
+// 24px "sm" to align with the rest of the system.
 export function MatchCard({
   match,
   serverNow,
@@ -23,54 +28,67 @@ export function MatchCard({
     ? match.homeTeam
     : `${match.homeTeam} vs ${match.awayTeam}`;
 
-  // Display the time-from-now relative to the server clock so the user
-  // can sanity-check the absolute timestamp. Always positive; locked
-  // matches show "Started".
-  const msToKickoff = new Date(match.kickoffTime).getTime() - new Date(serverNow).getTime();
-  const relative = msToKickoff > 0 ? `in ${formatCountdown(msToKickoff)}` : "Started";
-
   // Other members' predictions (aggregated across all markets) — show
   // once per match rather than per market. The feed still exposes
   // per-market otherBets; we pull all of them and dedupe by user.
   const allOtherBets = match.markets.flatMap((m) => m.otherBets);
   const deduped = dedupeByUser(allOtherBets);
 
-  // For outright markets there's no "away team" — only render the away
-  // crest slot when we actually have an away team to label.
-  const showAwayCrest = !hasOutright && Boolean(match.awayTeam);
+  // Map the feed's free-form status string onto the ScoreBug's
+  // scheduled/live/ft enum. Anything unknown falls back to "scheduled".
+  const scoreBugStatus =
+    match.status === "FINISHED"
+      ? "ft"
+      : match.isLocked
+      ? "live"
+      : "scheduled";
 
   return (
-    <article className="paper-card p-3 md:p-4 space-y-4">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <CrestOrFallback url={match.homeCrest} name={match.homeTeam} />
-            <p className="font-display text-lg md:text-xl font-bold tracking-tight">
-              {teams}
-            </p>
-            {showAwayCrest && (
-              <CrestOrFallback url={match.awayCrest} name={match.awayTeam} />
+    <article className="pitch-card p-3 md:p-4 space-y-4">
+      {!hasOutright ? (
+        <ScoreBug
+          home={match.homeTeam}
+          away={match.awayTeam}
+          homeScore={match.homeScore}
+          awayScore={match.awayScore}
+          status={scoreBugStatus}
+          kickoffAt={match.kickoffTime}
+          homeCrest={match.homeCrest}
+          awayCrest={match.awayCrest}
+        />
+      ) : (
+        <header className="flex items-center gap-2">
+          <CrestSlot src={match.homeCrest} name={match.homeTeam} size="sm" />
+          <p className="font-display text-lg md:text-xl font-bold tracking-tight">
+            {teams}
+          </p>
+        </header>
+      )}
+
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground font-mono">
+          <span className="mr-2">
+            <ResultLine match={match} />
+          </span>
+          {formatUtc(match.kickoffTime)}
+        </p>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <div className="text-right">
+            {match.status === "FINISHED" ? (
+              <span className="micro-tag text-muted-foreground">Settled</span>
+            ) : match.isLocked ? (
+              <span className="micro-tag text-destructive">Locked</span>
+            ) : (
+              <Countdown
+                kickoffTime={match.kickoffTime}
+                lockdownMs={lockdownMs}
+                serverNow={serverNow}
+              />
             )}
           </div>
-          <ResultLine match={match} />
-          <p className="text-xs text-muted-foreground font-mono">
-            {formatUtc(match.kickoffTime)} · {relative}
-          </p>
+          <MatchClock kickoffAt={match.kickoffTime} />
         </div>
-        <div className="text-right shrink-0">
-          {match.status === "FINISHED" ? (
-            <span className="micro-label text-muted-foreground">Settled</span>
-          ) : match.isLocked ? (
-            <span className="micro-label text-destructive">Locked</span>
-          ) : (
-            <Countdown
-              kickoffTime={match.kickoffTime}
-              lockdownMs={lockdownMs}
-              serverNow={serverNow}
-            />
-          )}
-        </div>
-      </header>
+      </div>
 
       <MatchBettingForm match={match} groupId={groupId} />
 
@@ -80,10 +98,10 @@ export function MatchCard({
 }
 
 /**
- * Final-score line rendered between the team names and the kickoff time
- * when a match is FINISHED. Returns null for in-progress / scheduled
- * matches, and defensively null when scores are missing. HT and
- * penalties are appended as comma-separated extras in parentheses.
+ * Final-score line rendered when a match is FINISHED. Returns null for
+ * in-progress / scheduled matches, and defensively null when scores are
+ * missing. HT and penalties are appended as comma-separated extras in
+ * parentheses.
  */
 function ResultLine({ match }: { match: FeedMatch }) {
   if (match.status !== "FINISHED") return null;
@@ -96,8 +114,8 @@ function ResultLine({ match }: { match: FeedMatch }) {
     extras.push(`${match.homePenalties}-${match.awayPenalties} pens`);
   }
   return (
-    <p className="text-sm font-mono mb-1">
-      <span className="micro-label mr-2">Final</span>
+    <span className="text-sm font-mono">
+      <span className="micro-tag mr-2">Final</span>
       <span className="font-bold text-foreground">
         {match.homeScore}-{match.awayScore}
       </span>
@@ -105,46 +123,6 @@ function ResultLine({ match }: { match: FeedMatch }) {
         <span className="text-muted-foreground ml-2 text-xs">
           ({extras.join(", ")})
         </span>
-      )}
-    </p>
-  );
-}
-
-/**
- * 28px circular crest with a team-initial fallback. Used twice in the
- * header (home + away). Falls back to initials when:
- *   - the URL is null (no crest provided by the source), or
- *   - the image fails to load (broken URL, CORS, network, etc.).
- *
- * We use a plain <img> rather than next/image: crests come from
- * third-party CDNs (football-data.org / flagcdn), and the optimization
- * benefit is negligible for a 28×28 badge.
- */
-function CrestOrFallback({
-  url,
-  name,
-}: {
-  url: string | null;
-  name: string;
-}) {
-  const [errored, setErrored] = useState(false);
-  const showImage = url && !errored;
-  return (
-    <span
-      aria-hidden="true"
-      className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-background/40 border border-border text-[10px] font-bold text-muted-foreground overflow-hidden shrink-0"
-    >
-      {showImage ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={url}
-          alt={`${name} crest`}
-          loading="lazy"
-          onError={() => setErrored(true)}
-          className="h-full w-full object-contain"
-        />
-      ) : (
-        <span>{name.slice(0, 1).toUpperCase()}</span>
       )}
     </span>
   );

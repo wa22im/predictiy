@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getInviteCookie } from "@/lib/invite-cookie";
 import { SignupForm } from "@/components/auth/SignupForm";
+import { PitchBg } from "@/components/football";
 
 export default async function SignupPage({
   searchParams,
@@ -21,9 +22,11 @@ export default async function SignupPage({
   }
 
   return (
-    <main className="planner-bg min-h-screen flex-1 flex flex-col items-center justify-center px-4 py-12">
-      <div className="glass-panel p-8 md:p-10 max-w-md w-full">
-        <p className="micro-label mb-3">Create Account</p>
+    // PitchBg canvas variant: ambient pitch background behind a single auth card.
+    <PitchBg variant="canvas" className="min-h-screen flex-1">
+      <main className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
+        <div className="pitch-card-hero p-8 md:p-10 max-w-md w-full">
+          <p className="micro-tag mb-3">Create Account</p>
         <h1 className="font-display text-4xl tracking-tight mb-2">
           Sign Up
         </h1>
@@ -53,7 +56,8 @@ export default async function SignupPage({
             Log in
           </Link>
         </p>
-      </div>
-    </main>
+        </div>
+      </main>
+    </PitchBg>
   );
 }

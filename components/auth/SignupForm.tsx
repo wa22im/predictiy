@@ -48,7 +48,7 @@ export function SignupForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="email" className="micro-label block mb-2">
+        <label htmlFor="email" className="micro-tag block mb-2">
           Email
         </label>
         <input
@@ -66,7 +66,7 @@ export function SignupForm() {
       </div>
 
       <div>
-        <label htmlFor="password" className="micro-label block mb-2">
+        <label htmlFor="password" className="micro-tag block mb-2">
           Password
         </label>
         <input
@@ -84,7 +84,7 @@ export function SignupForm() {
       </div>
 
       <div>
-        <label htmlFor="confirmPassword" className="micro-label block mb-2">
+        <label htmlFor="confirmPassword" className="micro-tag block mb-2">
           Confirm password
         </label>
         <input
@@ -119,7 +119,7 @@ export function SignupForm() {
           password.length < 8 ||
           passwordsMismatch
         }
-        className="command-strip w-full inline-flex items-center justify-center px-6 py-3 text-base font-bold disabled:opacity-50 disabled:pointer-events-none"
+        className="neon-button w-full inline-flex items-center justify-center px-6 py-3 text-base font-bold disabled:opacity-50 disabled:pointer-events-none"
       >
         {state.kind === "submitting" ? "Creating account…" : "Create Account"}
       </button>

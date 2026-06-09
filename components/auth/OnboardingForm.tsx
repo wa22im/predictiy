@@ -40,7 +40,7 @@ export function OnboardingForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label htmlFor="nickname" className="micro-label block mb-2">
+        <label htmlFor="nickname" className="micro-tag block mb-2">
           Nickname
         </label>
         <input
@@ -62,7 +62,7 @@ export function OnboardingForm({
       </div>
 
       <div>
-        <label className="micro-label block mb-2">Emoji</label>
+        <label className="micro-tag block mb-2">Emoji</label>
         <div className="grid grid-cols-5 gap-2">
           {emojis.map((e) => (
             <button
@@ -90,7 +90,7 @@ export function OnboardingForm({
       <button
         type="submit"
         disabled={isPending || nickname.length < 2}
-        className="command-strip w-full inline-flex items-center justify-center px-6 py-3 text-base font-bold disabled:opacity-50 disabled:pointer-events-none"
+        className="neon-button w-full inline-flex items-center justify-center px-6 py-3 text-base font-bold disabled:opacity-50 disabled:pointer-events-none"
       >
         {isPending ? "Saving…" : "Save Profile"}
       </button>

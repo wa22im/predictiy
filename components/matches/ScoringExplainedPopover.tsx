@@ -31,24 +31,24 @@ export function ScoringExplainedPopover({
         className={
           label === "!"
             ? "inline-flex h-4 w-4 items-center justify-center rounded-full border border-border bg-background/40 text-[10px] font-bold text-muted-foreground hover:bg-background/60 hover:text-foreground transition-colors"
-            : "command-strip-flat text-xs"
+            : "neon-button-flat text-xs"
         }
       >
         {label}
       </button>
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay backdrop-blur-sm"
           onClick={() => setOpen(false)}
         >
           <div
             role="dialog"
             aria-label="Scoring examples"
-            className="paper-card p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto"
+            className="pitch-card p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-2 mb-2">
-              <p className="micro-label">How scoring works</p>
+              <p className="micro-tag">How scoring works</p>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -97,7 +97,7 @@ function ExampleBlock({ example, index }: { example: ScoringExample; index: numb
         <p className="font-bold text-foreground">
           {index}. {example.title}
         </p>
-        <span className="micro-label text-[10px]">{example.stage}</span>
+        <span className="micro-tag text-[10px]">{example.stage}</span>
       </div>
       <dl className="grid grid-cols-[5rem_1fr] gap-x-2 gap-y-0.5 font-mono text-[11px]">
         <dt className="text-muted-foreground">Match</dt>
@@ -115,7 +115,7 @@ function ExampleBlock({ example, index }: { example: ScoringExample; index: numb
             <span
               className={
                 row.points > 0
-                  ? "text-emerald-400 font-mono font-bold w-8 text-right shrink-0"
+                  ? "text-success font-mono font-bold w-8 text-right shrink-0"
                   : row.points < 0
                   ? "text-destructive font-mono font-bold w-8 text-right shrink-0"
                   : "text-muted-foreground font-mono font-bold w-8 text-right shrink-0"

@@ -32,7 +32,7 @@ export function AdminUserRow({
   };
 
   return (
-    <li className="paper-card p-4 space-y-2">
+    <li className="pitch-card p-4 space-y-2">
       <div className="flex items-center gap-3">
         <span className="text-2xl shrink-0">{user.emoji}</span>
         <div className="flex-1 min-w-0">

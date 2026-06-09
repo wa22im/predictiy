@@ -49,7 +49,7 @@ export function DiscoverCompetitionsList({
 
   return (
     <div className="space-y-4">
-      <div className="paper-card p-4 flex flex-wrap gap-3 items-end">
+      <div className="pitch-card p-4 flex flex-wrap gap-3 items-end">
         <div className="flex-1 min-w-[180px]">
           <label
             htmlFor="area"
@@ -99,7 +99,7 @@ export function DiscoverCompetitionsList({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="glass-panel p-8 text-center">
+        <div className="pitch-card-hero p-8 text-center">
           <p className="text-muted-foreground text-sm">
             No competitions match the current filter.
           </p>
@@ -171,7 +171,7 @@ function CompetitionRow({ competition: c }: { competition: Competition }) {
   const isSuccess = status.kind === "success";
 
   return (
-    <li className="paper-card p-4">
+    <li className="pitch-card p-4">
       <div className="flex items-start gap-3">
         {c.emblem && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -211,7 +211,7 @@ function CompetitionRow({ competition: c }: { competition: Competition }) {
                     : "Fetch matches from football-data.org and save to the database"
                   : "Cannot onboard: this competition has no code in the football-data.org catalogue"
               }
-              className="command-strip px-3 py-1 text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+              className="neon-button px-3 py-1 text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             >
               {isLoading
                 ? "Onboarding…"
@@ -222,15 +222,16 @@ function CompetitionRow({ competition: c }: { competition: Competition }) {
           </div>
           {c.currentSeason && (
             <p className="text-xs text-muted-foreground mt-2 font-mono">
-              Current season: {c.currentSeason.startDate} → {c.currentSeason.endDate}
+              Current season: {c.currentSeason.startDate} →{" "}
+              {c.currentSeason.endDate}
               {c.currentSeason.currentMatchday != null &&
                 ` · matchday ${c.currentSeason.currentMatchday}`}
             </p>
           )}
 
           {status.kind === "success" && (
-            <div className="mt-3 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-xs">
-              <p className="font-medium text-emerald-600 dark:text-emerald-400">
+            <div className="mt-3 p-2 rounded-md bg-success/10 border border-success/30 text-xs">
+              <p className="font-medium text-success">
                 Onboarded: {status.result.createdMatches} new +{" "}
                 {status.result.updatedMatches} updated matches,{" "}
                 {status.result.createdMarkets + status.result.updatedMarkets}{" "}

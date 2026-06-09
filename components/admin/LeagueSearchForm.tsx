@@ -91,7 +91,7 @@ export function LeagueSearchForm({
             type="button"
             onClick={search}
             disabled={isSearching || !query.trim()}
-            className="command-strip px-4 py-2 text-sm font-bold disabled:opacity-50 disabled:pointer-events-none"
+            className="neon-button px-4 py-2 text-sm font-bold disabled:opacity-50 disabled:pointer-events-none"
           >
             {isSearching ? "Searching…" : "Search"}
           </button>
@@ -117,10 +117,8 @@ export function LeagueSearchForm({
       {ingestError && <p className="text-destructive text-xs">{ingestError}</p>}
 
       {ingestWarning && (
-        <div className="paper-card p-4 border-amber-500/40 space-y-3">
-          <p className="text-sm text-amber-600 dark:text-amber-400">
-            {ingestWarning}
-          </p>
+        <div className="pitch-card p-4 border-warning/40 space-y-3">
+          <p className="text-sm text-warning">{ingestWarning}</p>
           <div className="flex gap-2">
             <button
               type="button"
@@ -158,7 +156,7 @@ function LeagueRow({
 }) {
   const displayName = [league.country?.name, league.name].filter(Boolean).join(" · ");
   return (
-    <li className="paper-card p-4">
+    <li className="pitch-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-medium truncate">{displayName}</p>

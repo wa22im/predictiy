@@ -149,7 +149,7 @@ export function SettlementMatchForm({
   }
 
   return (
-    <article className="paper-card p-3 md:p-4 space-y-3">
+    <article className="pitch-card p-3 md:p-4 space-y-3">
       <header className="flex items-start justify-between gap-2">
         <div>
           <p className="font-display text-base md:text-lg font-bold tracking-tight">
@@ -160,7 +160,7 @@ export function SettlementMatchForm({
           </p>
         </div>
         {isLocked && (
-          <span className="micro-label text-muted-foreground shrink-0">
+          <span className="micro-tag text-muted-foreground shrink-0">
             Locked — auto-settled
           </span>
         )}
@@ -232,7 +232,7 @@ export function SettlementMatchForm({
           <button
             type="submit"
             disabled={saving}
-            className="command-strip px-4 py-2 text-sm font-bold disabled:opacity-50 disabled:pointer-events-none"
+            className="neon-button px-4 py-2 text-sm font-bold disabled:opacity-50 disabled:pointer-events-none"
           >
             {saving ? "Saving…" : "Save"}
           </button>
@@ -317,7 +317,7 @@ function SaveResultPanel({
       {data.warnings.length > 0 && (
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">Warnings:</p>
-          <ul className="text-xs space-y-1 text-amber-600 dark:text-amber-400">
+          <ul className="text-xs space-y-1 text-warning">
             {data.warnings.map((w, i) => (
               <li key={i}>· {w}</li>
             ))}

@@ -235,7 +235,7 @@ export function MatchBettingForm({
         <button
           type="submit"
           disabled={isPending || !canSave}
-          className="command-strip-flat px-5 py-2 text-sm disabled:opacity-50 disabled:pointer-events-none"
+          className="neon-button-flat px-5 py-2 text-sm disabled:opacity-50 disabled:pointer-events-none"
         >
           {isPending ? "Saving…" : "Save predictions"}
         </button>
@@ -498,7 +498,7 @@ function LockedMarketRow({
             <span
               className={
                 pointsAwarded > 0
-                  ? "text-emerald-400 font-bold"
+                  ? "text-success font-bold"
                   : pointsAwarded < 0
                   ? "text-destructive font-bold"
                   : "text-muted-foreground"

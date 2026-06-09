@@ -43,14 +43,14 @@ export function CreatePoolButton({
       {variant === "button" ? (
         <button
           onClick={() => setOpen(true)}
-          className="command-strip inline-flex items-center justify-center px-6 py-3 text-base font-bold"
+          className="neon-button inline-flex items-center justify-center px-6 py-3 text-base font-bold"
         >
           ➕ Create a Tournament Pool
         </button>
       ) : (
         <button
           onClick={() => setOpen(true)}
-          className="paper-card p-6 hover:-translate-y-0.5 transition-transform text-left"
+          className="pitch-card-fut p-6 hover:-translate-y-0.5 transition-transform text-left"
         >
           <p className="font-display text-2xl font-bold tracking-tight mb-2">
             ➕ Create a Pool
@@ -63,21 +63,21 @@ export function CreatePoolButton({
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay backdrop-blur-sm"
           onClick={() => !isPending && setOpen(false)}
         >
           <div
-            className="glass-panel p-6 md:p-8 max-w-md w-full"
+            className="pitch-card-hero p-6 md:p-8 max-w-md w-full"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="micro-label mb-2">New Pool</p>
+            <p className="micro-tag mb-2">New Pool</p>
             <h2 className="font-display text-3xl tracking-tight mb-6">
               Create a Tournament Pool
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="name" className="micro-label block mb-2">
+                <label htmlFor="name" className="micro-tag block mb-2">
                   Pool name
                 </label>
                 <input
@@ -94,7 +94,7 @@ export function CreatePoolButton({
               </div>
 
               <div>
-                <label htmlFor="competitionId" className="micro-label block mb-2">
+                <label htmlFor="competitionId" className="micro-tag block mb-2">
                   Tournament
                 </label>
                 <select
@@ -134,7 +134,7 @@ export function CreatePoolButton({
                   type="submit"
                   disabled={isPending}
                   className={cn(
-                    "command-strip px-5 py-2 text-sm font-bold",
+                    "neon-button px-5 py-2 text-sm font-bold",
                     isPending && "opacity-50 pointer-events-none",
                   )}
                 >

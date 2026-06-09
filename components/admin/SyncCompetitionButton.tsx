@@ -67,7 +67,7 @@ export function SyncCompetitionButton({
         disabled={isPending || !enabled}
         title={tooltip}
         aria-disabled={!enabled}
-        className="command-strip px-3 py-1 text-xs font-bold disabled:opacity-50 disabled:pointer-events-none"
+        className="neon-button px-3 py-1 text-xs font-bold disabled:opacity-50 disabled:pointer-events-none"
       >
         {isPending ? "Syncing…" : "Sync now"}
       </button>

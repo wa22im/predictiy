@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getGroupFeed } from "@/lib/services/group-feed";
 import { MatchList } from "@/components/matches/MatchList";
 import { ScoringExplainedPopover } from "@/components/matches/ScoringExplainedPopover";
+import { PitchBg } from "@/components/football";
 
 // Force dynamic rendering — the page reads cookies() via Supabase AND
 // computes per-request time-dependent state (isLocked, timeUntilLockMs).
@@ -40,36 +41,38 @@ export default async function MatchesPage({ params }: { params: Params }) {
   const feed = await getGroupFeed(groupId, user.id);
 
   return (
-    <main className="planner-bg min-h-screen flex-1 px-4 py-12">
-      <div className="max-w-3xl mx-auto">
-        <a
-          href={`/groups/${groupId}`}
-          className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block"
-        >
-          ← Back to {group.name}
-        </a>
+    <PitchBg variant="canvas">
+      <main className="min-h-screen flex-1 px-4 py-12">
+        <div className="max-w-3xl mx-auto">
+          <a
+            href={`/groups/${groupId}`}
+            className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block"
+          >
+            ← Back to {group.name}
+          </a>
 
-        <p className="micro-label mb-2">{group.competition.name}</p>
-        <h1 className="font-display text-4xl md:text-5xl tracking-tight mb-2">
-          Matches
-        </h1>
-        <p className="text-muted-foreground text-sm leading-6 mb-4">
-          {group._count.members}{" "}
-          {group._count.members === 1 ? "member" : "members"} · predictions lock
-          5 minutes before kickoff.
-        </p>
+          <p className="micro-tag mb-2">{group.competition.name}</p>
+          <h1 className="font-display text-4xl md:text-5xl tracking-tight mb-2">
+            Matches
+          </h1>
+          <p className="text-muted-foreground text-sm leading-6 mb-4">
+            {group._count.members}{" "}
+            {group._count.members === 1 ? "member" : "members"} · predictions
+            lock 5 minutes before kickoff.
+          </p>
 
-        <div className="mb-8">
-          <ScoringExplainedPopover label="How scoring works" />
+          <div className="mb-8">
+            <ScoringExplainedPopover label="How scoring works" />
+          </div>
+
+          <MatchList
+            matches={feed.matches}
+            serverNow={feed.serverNow}
+            lockdownMs={feed.lockdownMs}
+            groupId={groupId}
+          />
         </div>
-
-        <MatchList
-          matches={feed.matches}
-          serverNow={feed.serverNow}
-          lockdownMs={feed.lockdownMs}
-          groupId={groupId}
-        />
-      </div>
-    </main>
+      </main>
+    </PitchBg>
   );
 }

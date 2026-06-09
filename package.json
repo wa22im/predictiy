@@ -20,7 +20,9 @@
     "sync:fixtures": "tsx scripts/sync-fixtures.ts",
     "ingest:fd": "tsx scripts/ingest-fixturedownload.ts",
     "cleanup:legacy": "tsx scripts/cleanup-legacy-markets.ts",
-    "wipe:db": "tsx scripts/wipe-db.ts"
+    "wipe:db": "tsx scripts/wipe-db.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
@@ -38,13 +40,18 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.1.0",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
     "@types/node": "^20.19.42",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^4.1.8",
     "eslint": "^9",
     "eslint-config-next": "15.5.19",
+    "jsdom": "^25.0.1",
     "prisma": "^7.8.0",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",

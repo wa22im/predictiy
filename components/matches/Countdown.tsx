@@ -27,12 +27,12 @@ export function Countdown({
   }, [kickoffTime, lockdownMs, serverNow]);
 
   if (ms <= 0) {
-    return <span className="micro-label text-destructive">Locked</span>;
+    return <span className="micro-tag text-destructive">Locked</span>;
   }
 
   return (
     <div className="text-right">
-      <p className="micro-label">Locks in</p>
+      <p className="micro-tag">Locks in</p>
       <p className="font-mono text-sm">{formatCountdown(ms)}</p>
     </div>
   );

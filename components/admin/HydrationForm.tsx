@@ -33,11 +33,11 @@ export function HydrationForm() {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="paper-card p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="pitch-card p-6 space-y-4">
         <div>
           <label
             htmlFor="json-input"
-            className="micro-label block mb-2"
+            className="micro-tag block mb-2"
           >
             Competition JSON
           </label>
@@ -53,8 +53,8 @@ export function HydrationForm() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-          <label className="paper-card px-4 py-2 cursor-pointer hover:-translate-y-0.5 transition-transform text-sm">
-            <span className="micro-label mr-2">Upload</span>
+          <label className="pitch-card px-4 py-2 cursor-pointer hover:-translate-y-0.5 transition-transform text-sm">
+            <span className="micro-tag mr-2">Upload</span>
             <input
               type="file"
               accept="application/json,.json"
@@ -67,7 +67,7 @@ export function HydrationForm() {
           <button
             type="submit"
             disabled={isPending || !json.trim()}
-            className="command-strip inline-flex items-center justify-center px-6 py-2 text-sm font-bold disabled:opacity-50 disabled:pointer-events-none"
+            className="neon-button inline-flex items-center justify-center px-6 py-2 text-sm font-bold disabled:opacity-50 disabled:pointer-events-none"
           >
             {isPending ? "Syncing…" : "Sync"}
           </button>
@@ -82,8 +82,8 @@ export function HydrationForm() {
 function ResultPanel({ result }: { result: SyncActionResult }) {
   if (!result.ok) {
     return (
-      <div className="paper-card p-6 border-destructive/50">
-        <p className="micro-label text-destructive mb-2">Error</p>
+      <div className="pitch-card p-6 border-destructive/50">
+        <p className="micro-tag text-destructive mb-2">Error</p>
         <p className="font-mono text-sm">{result.error}</p>
         {result.issues != null && (
           <pre className="mt-3 text-xs bg-background/40 p-3 rounded overflow-auto max-h-64">
@@ -96,8 +96,8 @@ function ResultPanel({ result }: { result: SyncActionResult }) {
 
   const r = result.result!;
   return (
-    <div className="paper-card p-6">
-      <p className="micro-label mb-2">Result</p>
+    <div className="pitch-card p-6">
+      <p className="micro-tag mb-2">Result</p>
       <div className="grid grid-cols-2 gap-4 mt-2 text-sm">
         <div>
           <p className="text-muted-foreground">Matches created</p>
@@ -118,7 +118,9 @@ function ResultPanel({ result }: { result: SyncActionResult }) {
       </div>
       {r.errors.length > 0 && (
         <div className="mt-4">
-          <p className="text-destructive text-sm mb-2">{r.errors.length} errors:</p>
+          <p className="text-destructive text-sm mb-2">
+            {r.errors.length} errors:
+          </p>
           <pre className="text-xs bg-background/40 p-3 rounded overflow-auto max-h-48">
             {JSON.stringify(r.errors, null, 2)}
           </pre>
