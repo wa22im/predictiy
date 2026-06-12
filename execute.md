@@ -17,3 +17,20 @@ codyy completed the color palette and card refinement task. Updated app/globals.
 - Adopted new color palette with layered shadows for cards
 - Implemented hover lift effect on cards
 - Added automated tests to prevent hardcoded color regressions
+
+## Phase Boundary: Execute
+
+**Agent:** codyy  
+**Task:** Card visibility improvements  
+**Status:** Completed
+
+### Summary
+codyy improved card visibility by increasing border thickness (2px), using lighter background colors for hero/fut variants, and strengthening box-shadows. All changes were made in app/globals.css.
+
+### Files Changed
+- `app/globals.css` - Border thickness, background colors, and box-shadow improvements
+
+### Decisions Made
+- Increased card border thickness to 2px for better definition
+- Applied lighter background colors to hero and fut variants
+- Strengthened box-shadows for enhanced depth and visibility
