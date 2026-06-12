@@ -42,9 +42,7 @@ function CanvasLayer() {
         backgroundImage: [
           "linear-gradient(to right, var(--border) 1px, transparent 1px)",
           "linear-gradient(to bottom, var(--border) 1px, transparent 1px)",
-          "radial-gradient(ellipse 80% 60% at 0% 0%, var(--primary), transparent 60%)",
-          "radial-gradient(ellipse 80% 60% at 100% 100%, var(--accent), transparent 60%)",
-        ].join(", "),
+          ].join(", "),
         backgroundSize: "24px 24px, 24px 24px, 100% 100%, 100% 100%",
         backgroundPosition: "0 0, 0 0, 0 0, 0 0",
       }}
