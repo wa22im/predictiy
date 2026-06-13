@@ -30,11 +30,11 @@ export function MemberPredictions({
           >
             {isExpanded ? (
               <span className="micro-tag">
-                Show less <ChevronUp className="h-3 w-3" />
+               {MAX_VISIBLE} <p className="h-3 w-3" />
               </span>
             ) : (
               <span className="micro-tag">
-                Show all ({otherBets.length}) <ChevronDown className="h-3 w-3" />
+                 ({otherBets.length}) <p className="h-3 w-3" /> <ChevronDown className="h-3 w-3" />
               </span>
             )}
           </button>
