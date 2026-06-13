@@ -34,3 +34,23 @@ codyy improved card visibility by increasing border thickness (2px), using light
 - Increased card border thickness to 2px for better definition
 - Applied lighter background colors to hero and fut variants
 - Strengthened box-shadows for enhanced depth and visibility
+
+## Phase Boundary: Execute
+
+**Agent:** codyy  
+**Task:** UI overhaul - AppNavbar, football icons, expandable predictions, MatchCard indicator  
+**Status:** Completed
+
+### Summary
+codyy completed the UI overhaul. Added AppNavbar, implemented football-themed icons (Goal, Trophy, Users, Shield, Volleyball) across dashboard/groups/admin, refactored MemberPredictions to be expandable, and added MatchCard correct prediction indicator (CheckCircle2). All changes follow existing design language and color palette.
+
+### Files Changed
+- AppNavbar component added
+- Football-themed icons (Goal, Trophy, Users, Shield, Volleyball) implemented
+- MemberPredictions refactored to be expandable
+- MatchCard added CheckCircle2 indicator for correct predictions
+
+### Decisions Made
+- Used football-themed icons consistent with sports prediction domain
+- Made MemberPredictions expandable for better space utilization
+- Added visual indicator (CheckCircle2) on MatchCard for correct predictions

@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
+import { Trophy, Volleyball } from "lucide-react";
 import Link from "next/link";
-import { Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { CreatePoolButton } from "@/components/groups/CreatePoolButton";
@@ -12,7 +11,7 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) return null; // Handled by middleware usually
 
   const memberships = await prisma.groupMember.findMany({
     where: { userId: user.id },
@@ -38,7 +37,11 @@ export default async function DashboardPage() {
         <div className="max-w-4xl mx-auto">
           <p className="micro-tag mb-3">Your Cockpit</p>
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-4">
-            <h1 className="font-display text-5xl md:text-6xl tracking-tight">
+            <h1 className="font-display text-5xl md:text-6xl tracking-tight inline-flex items-center gap-3">
+              <Volleyball
+                aria-hidden="true"
+                className="h-10 w-10 sm:h-12 sm:w-12 text-accent shrink-0"
+              />
               Predictyy
             </h1>
             <CreatePoolButton competitions={competitions} />
@@ -49,6 +52,10 @@ export default async function DashboardPage() {
 
           {memberships.length === 0 ? (
             <div className="pitch-card-hero p-10 text-center max-w-md mx-auto">
+              <Volleyball
+                aria-hidden="true"
+                className="h-12 w-12 text-primary mx-auto mb-3"
+              />
               <p className="font-display text-2xl tracking-tight mb-2">
                 You aren&apos;t in any pools yet!
               </p>

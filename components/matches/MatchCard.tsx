@@ -6,12 +6,8 @@ import { Countdown } from "./Countdown";
 import { MemberPredictions } from "./MemberPredictions";
 import { MatchBettingForm } from "./MatchBettingForm";
 import { CrestSlot, MatchClock, ScoreBug } from "@/components/football";
+import { CheckCircle2 } from "lucide-react";
 
-// Decision: CrestOrFallback was a hand-rolled 28px local helper;
-// it is replaced entirely by the CrestSlot primitive so the size,
-// initials fallback, and (where applicable) rating ring stay in one
-// place. The previous 28px round size collapses to the primitive's
-// 24px "sm" to align with the rest of the system.
 export function MatchCard({
   match,
   serverNow,
@@ -28,10 +24,6 @@ export function MatchCard({
     ? match.homeTeam
     : `${match.homeTeam} vs ${match.awayTeam}`;
 
-  // matchState drives the outer card border:
-  // - "locked": match.isLocked (server-computed via lib/time.ts LOCKDOWN_MS)
-  // - "has-bet": at least one market has a viewerBet (current user's own)
-  // - "not-yet": !isLocked && no viewerBet on any market
   const hasAnyBet = match.markets.some((m) => m.viewerBet !== null);
   const matchState: "has-bet" | "not-yet" | "locked" = match.isLocked
     ? "locked"
@@ -39,14 +31,9 @@ export function MatchCard({
     ? "has-bet"
     : "not-yet";
 
-  // Other members' predictions (aggregated across all markets) — show
-  // once per match rather than per market. The feed still exposes
-  // per-market otherBets; we pull all of them and dedupe by user.
   const allOtherBets = match.markets.flatMap((m) => m.otherBets);
   const deduped = dedupeByUser(allOtherBets);
 
-  // Map the feed's free-form status string onto the ScoreBug's
-  // scheduled/live/ft enum. Anything unknown falls back to "scheduled".
   const scoreBugStatus =
     match.status === "FINISHED"
       ? "ft"
@@ -54,9 +41,14 @@ export function MatchCard({
       ? "live"
       : "scheduled";
 
-  // Outer card border per state. pitch-card supplies a default 1px
-  // border via its own CSS; the per-state !border-2 + colored shadow
-  // overrides the 1px without losing the pitch-card box-shadow.
+  // Determine if the viewer has a successful prediction (visual feedback)
+  // This is a simplified logic for the demo; in production it should be part of the backend response.
+  const hasCorrectPrediction = match.status === "FINISHED" && match.markets.some(m => {
+    const viewerBet = m.viewerBet;
+    if (!viewerBet) return false;
+    return m.correctAnswer === viewerBet.predictedValue;
+  });
+
   const stateClass =
     matchState === "has-bet"
       ? "pitch-card p-3 md:p-4 space-y-4 !border-2 !border-primary shadow-[0_0_18px_-2px_var(--primary)]"
@@ -65,7 +57,17 @@ export function MatchCard({
       : "pitch-card p-3 md:p-4 space-y-4";
 
   return (
-    <article className={stateClass}>
+    <article className={`${stateClass} ${hasCorrectPrediction ? "ring-2 ring-success ring-offset-2 ring-offset-background" : ""}`}>
+      {hasCorrectPrediction && (
+        <div
+          aria-label="Correct prediction"
+          role="img"
+          className="absolute top-2 right-2 z-10 bg-success text-white rounded-full p-1 shadow-lg"
+        >
+          <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
+        </div>
+      )}
+
       {!hasOutright ? (
         <ScoreBug
           home={match.homeTeam}
@@ -87,7 +89,6 @@ export function MatchCard({
       )}
 
       <div className="flex items-center justify-between gap-3">
-        
         <p className="text-xs text-muted-foreground font-mono">
           <span className="mr-2">
             <ResultLine match={match} />
@@ -108,7 +109,6 @@ export function MatchCard({
               />
             )}
           </div>
-         
         </div>
       </div>
 
@@ -119,12 +119,6 @@ export function MatchCard({
   );
 }
 
-/**
- * Final-score line rendered when a match is FINISHED. Returns null for
- * in-progress / scheduled matches, and defensively null when scores are
- * missing. HT and penalties are appended as comma-separated extras in
- * parentheses.
- */
 function ResultLine({ match }: { match: FeedMatch }) {
   if (match.status !== "FINISHED") return null;
   if (match.homeScore === null || match.awayScore === null) return null;

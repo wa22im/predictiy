@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Goal, Trophy, Users } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { InviteBanner } from "@/components/groups/InviteBanner";
@@ -45,7 +45,7 @@ export default async function GroupPage({ params }: { params: Params }) {
   return (
     <PitchBg variant="canvas">
       <main className="min-h-screen flex-1 px-4 py-12">
-        <div className="max-w mx-auto">
+        <div className="max-w-4xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
             <div className="inline-flex items-center gap-2 text-sm">
               <Link
@@ -56,34 +56,36 @@ export default async function GroupPage({ params }: { params: Params }) {
                 Back 
               </Link>
               <span aria-hidden="true" className="text-border">/</span>
-           
+              <span className="text-foreground/50 font-medium">{group.name}</span>
             </div>
           </div>
-          </div>
-          <div className=" mb-8">           
-             <h1 className="font-display  sm:text-4xl font-bold tracking-tight ">
-              {group.name}
-            </h1>
-               <span className="text-foreground font-display tracking-tight">
-                {group.competition.name}
-              </span>
-                <p className="text-muted-foreground text-sm mb-8">
-            {group.members.length}{" "}
-            {group.members.length === 1 ? "member" : "members"}
-          </p>
-            <div/>
-      
 
+          <div className="mb-8">           
+             <h1 className="font-display sm:text-4xl font-bold tracking-tight ">
+               {group.name}
+             </h1>
+             <p className="text-muted-foreground font-display tracking-tight">
+               {group.competition.name}
+             </p>
+             <p className="text-muted-foreground text-sm mt-2">
+               {group.members.length}{" "}
+               {group.members.length === 1 ? "member" : "members"}
+             </p>
+          </div>
+      
           <div className="mb-8">
             <InviteBanner inviteCode={group.inviteCode} />
           </div>
-
+ 
           <div className="grid gap-6 md:grid-cols-3">
             <Link
               href={`/groups/${groupId}/matches`}
               className="pitch-card p-6 hover:-translate-y-0.5 transition-transform"
             >
-              <p className="micro-tag mb-2">Fixtures</p>
+              <p className="micro-tag mb-2 inline-flex items-center gap-1.5">
+                <Goal aria-hidden="true" className="h-3.5 w-3.5 text-accent" />
+                Fixtures
+              </p>
               <h2 className="font-display text-2xl font-bold tracking-tight mb-1">
                 Matches
               </h2>
@@ -96,7 +98,13 @@ export default async function GroupPage({ params }: { params: Params }) {
               href={`/groups/${groupId}/leaderboard`}
               className="pitch-card p-6 hover:-translate-y-0.5 transition-transform"
             >
-              <p className="micro-tag mb-2">Standings</p>
+              <p className="micro-tag mb-2 inline-flex items-center gap-1.5">
+                <Trophy
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5 text-accent"
+                />
+                Standings
+              </p>
               <h2 className="font-display text-2xl font-bold tracking-tight mb-1">
                 Leaderboard
               </h2>
@@ -106,7 +114,10 @@ export default async function GroupPage({ params }: { params: Params }) {
             </Link>
 
             <div className="pitch-card p-6">
-              <p className="micro-tag mb-2">Members</p>
+              <p className="micro-tag mb-2 inline-flex items-center gap-1.5">
+                <Users aria-hidden="true" className="h-3.5 w-3.5 text-accent" />
+                Members
+              </p>
               <ul className="space-y-1 text-sm">
                 {group.members.map((m) => (
                   <li key={m.id} className="flex items-center gap-2">
