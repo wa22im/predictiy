@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { CreatePoolButton } from "@/components/groups/CreatePoolButton";
+import { EnterCodeForm } from "@/components/groups/EnterCodeForm";
 import { PitchBg } from "@/components/football";
 
 export default async function DashboardPage() {
@@ -46,9 +47,12 @@ export default async function DashboardPage() {
             </h1>
             <CreatePoolButton competitions={competitions} />
           </div>
-          <p className="text-muted-foreground leading-7 mb-12">
+          <p className="text-muted-foreground leading-7 mb-6">
             The groups you&apos;re in. Predict, compete, win.
           </p>
+          <div className="mb-12">
+            <EnterCodeForm />
+          </div>
 
           {memberships.length === 0 ? (
             <div className="pitch-card-hero p-10 text-center max-w-md mx-auto">
