@@ -39,6 +39,7 @@ import { prisma } from "@/lib/prisma";
 import {
   type Match as FootballDataMatch,
 } from "@/lib/services/football-data";
+import { mapStage } from "@/lib/services/stage-mapper";
 import { autoSettleMatch } from "@/lib/services/auto-settle";
 
 export type ApplyFootballDataMatchesOptions = {
@@ -64,32 +65,6 @@ export type ApplyFootballDataMatchesResult = {
 
 const HALF_SCORING_OPTIONS = ["A_1H", "A_2H", "B_1H", "B_2H"];
 const IN_GAME_PENALTY_OPTIONS = ["HOME", "AWAY"];
-
-/**
- * Map football-data.org's free-form stage string to one of the stages
- * the rest of the app recognises. Mirrors the mapping in
- * `ingest-league.ts` so the two pipelines stay coherent.
- */
-function mapStage(stage: string | null): string {
-  if (!stage) return "UNKNOWN";
-  const s = stage.toUpperCase();
-  if (s.includes("GROUP")) return "GROUP_STAGE";
-  if (s.includes("REGULAR_SEASON") || s.includes("REGULAR")) return "REGULAR_SEASON";
-  if (
-    s.includes("QUARTER") ||
-    s.includes("SEMI") ||
-    s.includes("FINAL") ||
-    s.includes("ROUND_OF_16") ||
-    s.includes("LAST_16") ||
-    s.includes("LAST_8") ||
-    s.includes("LAST_4") ||
-    s.includes("KNOCKOUT") ||
-    s.includes("PLAY_OFF")
-  ) {
-    return "KNOCKOUT";
-  }
-  return "UNKNOWN";
-}
 
 /**
  * Map football-data.org's status string to our 3-value enum:
@@ -150,6 +125,17 @@ export async function applyFootballDataMatches(
       const stage = mapStage(m.stage);
       const status = mapStatus(m.status);
 
+      // Per-match metadata stored in `Match.details`. All fields are
+      // small + fully derived from the API; no user-set fields to
+      // preserve, so a plain overwrite is correct.
+      const matchDetails = {
+        matchday: m.matchday ?? null,
+        group: m.group ?? null,
+        scoreWinner: m.score.winner ?? null,
+        scoreDuration: m.score.duration ?? null,
+        lastUpdated: m.lastUpdated ?? null,
+      };
+
       // Look up the existing match row's status BEFORE the upsert so
       // we can detect a *transition* into FINISHED (which is the
       // trigger for auto-settle). Doing this in the same call as the
@@ -180,6 +166,7 @@ export async function applyFootballDataMatches(
           homeCrest: m.homeTeam.crest,
           awayCrest: m.awayTeam.crest,
           competitionId,
+          details: matchDetails,
         },
         update: {
           homeTeam: m.homeTeam.name,
@@ -195,6 +182,7 @@ export async function applyFootballDataMatches(
           homeCrest: m.homeTeam.crest,
           awayCrest: m.awayTeam.crest,
           competitionId,
+          details: matchDetails,
         },
       });
 

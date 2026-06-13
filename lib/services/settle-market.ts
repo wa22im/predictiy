@@ -139,7 +139,13 @@ export async function settleMarket(
         async (tx) => {
           const market = await tx.betMarket.findUnique({
             where: { id: input.marketId },
-            include: { match: true },
+            include: {
+              match: {
+                include: {
+                  competition: { select: { details: true } },
+                },
+              },
+            },
           });
           if (!market) {
             throw new SettleError(404, "MARKET_NOT_FOUND");
@@ -201,6 +207,7 @@ export async function settleMarket(
             const betsWithScore = bets.map((bet) => {
               const scoringConfig = resolveConfig({
                 matchDetails: market.details,
+                competitionDetails: market.match?.competition?.details,
                 groupScoringConfig: bet.group.scoringConfig,
               });
               const result = strategy.score({

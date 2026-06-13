@@ -72,7 +72,11 @@ type MarketFixture = {
   type: string;
   isSettled: boolean;
   correctAnswer: string | null;
-  match: { id: string; stage: string } | null;
+  match: {
+    id: string;
+    stage: string;
+    competition?: { details: unknown } | null;
+  } | null;
 };
 
 function makeMarket(overrides: Partial<MarketFixture> = {}): MarketFixture {

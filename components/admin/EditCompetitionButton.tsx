@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { patchCompetitionAction } from "@/app/(app)/admin/leagues/actions";
+import { DEFAULT_SCORING_CONFIG } from "@/lib/scoring/default-config";
 
 type EditState =
   | { kind: "idle" }
@@ -17,6 +18,29 @@ type EditableCompetition = {
   externalSeason: number | null;
   details: Record<string, unknown> | null;
 };
+
+const STAGES = [
+  "GROUP_STAGE",
+  "ROUND_OF_16",
+  "QUARTER_FINAL",
+  "SEMI_FINAL",
+  "FINAL",
+  "THIRD_PLACE",
+  "OUTRIGHT",
+] as const;
+type Stage = (typeof STAGES)[number];
+
+const FIELDS = [
+  "exactScorePoints",
+  "drawExactScorePoints",
+  "drawWrongScorePoints",
+  "rightWinnerRightDiffPoints",
+  "rightWinnerOnlyPoints",
+  "missPoints",
+] as const;
+type Field = (typeof FIELDS)[number];
+
+type ScoringOverrides = Partial<Record<Stage, Partial<Record<Field, number>>>>;
 
 export function EditCompetitionButton({
   competition,
@@ -44,6 +68,12 @@ export function EditCompetitionButton({
   const [detailsRaw, setDetailsRaw] = useState(
     competition.details ? JSON.stringify(competition.details, null, 2) : "",
   );
+  // Per-stage scoring overrides. Initialized from
+  // competition.details.scoringOverridesByStage if set, else empty.
+  // Empty state means "no override" — defaults apply at resolve time.
+  const [scoringOverrides, setScoringOverrides] = useState<ScoringOverrides>(
+    () => extractScoringOverrides(competition.details),
+  );
 
   const reset = () => {
     setName(competition.name);
@@ -55,7 +85,19 @@ export function EditCompetitionButton({
     setDetailsRaw(
       competition.details ? JSON.stringify(competition.details, null, 2) : "",
     );
+    setScoringOverrides(extractScoringOverrides(competition.details));
     setState({ kind: "idle" });
+  };
+
+  const updateScoringOverride = (stage: Stage, field: Field, value: number) => {
+    setScoringOverrides((prev) => ({
+      ...prev,
+      [stage]: { ...(prev[stage] ?? {}), [field]: value },
+    }));
+  };
+
+  const resetScoringOverrides = () => {
+    setScoringOverrides({});
   };
 
   const submit = () => {
@@ -83,28 +125,34 @@ export function EditCompetitionButton({
     if (seasonNum !== competition.externalSeason) {
       input.externalSeason = seasonNum;
     }
-    let details: Record<string, unknown> | null | undefined;
-    if (detailsRaw.trim() === "") {
-      details = null;
-    } else {
+
+    // Build the new details object by merging the JSON textarea value
+    // with the scoring overrides form state. The form's value takes
+    // precedence for the `scoringOverridesByStage` key, but other keys
+    // in the JSON (like `area`, `code`, `type` set by the sync) are
+    // preserved.
+    let detailsObject: Record<string, unknown> = {};
+    if (detailsRaw.trim() !== "") {
       try {
         const parsed = JSON.parse(detailsRaw);
-        if (
-          parsed === null ||
-          typeof parsed !== "object" ||
-          Array.isArray(parsed)
-        ) {
+        if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
           setState({ kind: "error", message: "details must be a JSON object" });
           return;
         }
-        details = parsed as Record<string, unknown>;
+        detailsObject = parsed as Record<string, unknown>;
       } catch (e) {
         setState({ kind: "error", message: "details is not valid JSON" });
         return;
       }
     }
-    if (JSON.stringify(details ?? null) !== JSON.stringify(competition.details ?? null)) {
-      input.details = details;
+
+    detailsObject = {
+      ...detailsObject,
+      scoringOverridesByStage: scoringOverrides,
+    };
+
+    if (JSON.stringify(detailsObject) !== JSON.stringify(competition.details ?? null)) {
+      input.details = detailsObject;
     }
 
     if (Object.keys(input).length === 0) {
@@ -174,6 +222,56 @@ export function EditCompetitionButton({
               onChange={(e) => setExternalSeason(e.target.value)}
             />
           </label>
+          <details className="border border-border rounded p-2">
+            <summary className="text-xs font-medium cursor-pointer">
+              Scoring config (per-stage overrides)
+            </summary>
+            <p className="text-xs text-muted-foreground mt-2 mb-3">
+              Change the points awarded for each scoring outcome. New
+              values apply to FUTURE scoring only — existing settled
+              bets keep their original points. If unset, the default
+              scoring applies.
+            </p>
+
+            <div className="max-h-80 overflow-y-auto pr-1">
+              {STAGES.map((stage) => (
+                <div key={stage} className="mb-3">
+                  <h4 className="text-xs font-medium mb-1">{stage}</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {FIELDS.map((field) => (
+                      <label key={field} className="text-xs flex flex-col">
+                        <span className="text-muted-foreground">{field}</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={
+                            scoringOverrides[stage]?.[field] ??
+                            DEFAULT_SCORING_CONFIG[stage][field]
+                          }
+                          onChange={(e) =>
+                            updateScoringOverride(
+                              stage,
+                              field,
+                              Number(e.target.value),
+                            )
+                          }
+                          className="w-full bg-background border border-border rounded px-2 py-1 text-xs font-mono"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={resetScoringOverrides}
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              Reset all to defaults
+            </button>
+          </details>
           <label className="block">
             <span className="text-xs text-muted-foreground">Details (JSON object)</span>
             <textarea
@@ -217,4 +315,14 @@ function toLocalDateTimeInput(iso: string): string {
   if (Number.isNaN(d.getTime())) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function extractScoringOverrides(
+  details: Record<string, unknown> | null,
+): ScoringOverrides {
+  const raw = details?.scoringOverridesByStage;
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    return raw as ScoringOverrides;
+  }
+  return {};
 }

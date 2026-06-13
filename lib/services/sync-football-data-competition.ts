@@ -39,6 +39,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { getCompetition, getCompetitionMatches } from "@/lib/services/football-data";
 import { applyFootballDataMatches } from "@/lib/services/apply-football-data-matches";
 import { parseCompetitionEndDate } from "@/lib/services/competition-end-date";
@@ -117,32 +118,105 @@ export async function syncFootballDataCompetition(
     autoSettle: true,
   });
 
-  // 5.5. Refresh endDate from the provider's competition metadata.
-  //      The matches endpoint doesn't carry season end-dates, so we
-  //      have to hit the single-competition endpoint too. A failure
-  //      here is non-fatal — the matches are the primary payload, and
-  //      we'd rather stamp lastSyncedAt (so the admin sees the sync
-  //      ran) than abort over a metadata refresh. parseCompetitionEndDate
-  //      returns undefined on bad/missing input, which means "leave the
-  //      column alone" in the spread below.
+  // 5.5. Refresh competition metadata from the provider. The matches
+  //      endpoint doesn't carry season/area/emblem data, so we have to
+  //      hit the single-competition endpoint too. A failure here is
+  //      non-fatal — the matches are the primary payload, and we'd
+  //      rather stamp lastSyncedAt (so the admin sees the sync ran)
+  //      than abort over a metadata refresh.
+  //
+  //      We capture rich metadata into Competition.details (area,
+  //      code, type, emblem, plan, currentSeason, availableSeasons,
+  //      lastUpdated) and compute isActive from currentSeason.winner.
+  //
+  //      CRITICAL: when merging with existing details, we must
+  //      preserve user-set fields like scoringOverridesByStage. The
+  //      pattern is:
+  //        { ...apiFetchedFields, ...userSetFields }
+  //      so that the user's overrides win for keys that the API
+  //      doesn't provide.
   let endDate: Date | undefined;
+  let richDetails: Record<string, unknown> | null = null;
   try {
     const compMeta = await getCompetition(code);
     endDate = parseCompetitionEndDate(compMeta?.currentSeason?.endDate);
+
+    if (compMeta) {
+      const currentSeasonWinner = compMeta.currentSeason?.winner;
+      richDetails = {
+        area: compMeta.area ?? null,
+        code: compMeta.code ?? null,
+        type: compMeta.type ?? null,
+        emblem: compMeta.emblem ?? null,
+        plan: compMeta.plan ?? null,
+        currentSeason: {
+          id: compMeta.currentSeason?.id ?? null,
+          startDate: compMeta.currentSeason?.startDate ?? null,
+          endDate: compMeta.currentSeason?.endDate ?? null,
+          currentMatchday: compMeta.currentSeason?.currentMatchday ?? null,
+          winner: currentSeasonWinner ?? null,
+        },
+        availableSeasons: compMeta.numberOfAvailableSeasons ?? null,
+        lastUpdated: compMeta.lastUpdated ?? null,
+        // isActive: true if the current season is still in progress
+        // (no winner declared). The principal uses this flag to
+        // know whether to expect new matches from a sync.
+        isActive: currentSeasonWinner === null,
+      };
+    }
   } catch (e) {
     console.warn(
-      `[syncFootballDataCompetition] endDate refresh failed for ${competition.name} (${competition.id}): ${(e as Error).message}. Matches were applied; endDate left unchanged.`,
+      `[syncFootballDataCompetition] competition metadata refresh failed for ${competition.name} (${competition.id}): ${(e as Error).message}. Matches were applied; competition metadata left unchanged.`,
     );
   }
 
   // 6. Stamp lastSyncedAt. We only update it on success — if the
   //    apply above threw, this line wouldn't run.
+  const updateData: {
+    lastSyncedAt: Date;
+    endDate?: Date;
+    details?: Prisma.InputJsonValue;
+  } = {
+    lastSyncedAt: new Date(),
+  };
+  if (endDate) updateData.endDate = endDate;
+  if (richDetails) {
+    // Load existing details to preserve user-set fields.
+    // (One extra round-trip, but only on the metadata refresh path
+    // which already does a separate `getCompetition` call.)
+    const existing = await prisma.competition.findUnique({
+      where: { id: competition.id },
+      select: { details: true },
+    });
+    const existingDetails =
+      (existing?.details as Record<string, unknown> | null) ?? {};
+
+    // The user-set fields we want to preserve. Add more here as the
+    // schema grows.
+    const userSetFields = {
+      scoringOverridesByStage: existingDetails.scoringOverridesByStage,
+    };
+
+    // Remove undefined values to keep the JSONB clean.
+    const cleanUserFields = Object.fromEntries(
+      Object.entries(userSetFields).filter(([, v]) => v !== undefined),
+    );
+
+    // Merge: API fields first, user-set fields win for keys that
+    // both define. The cast through `unknown` is required because
+    // the spread result is `{ [k: string]: unknown }` (the `unknown`
+    // type leaks from our `richDetails: Record<string, unknown>`
+    // declaration), but every concrete value here is JSON-serializable
+    // — strings, numbers, booleans, null, and nested plain objects.
+    updateData.details = {
+      ...richDetails,
+      ...cleanUserFields,
+    } as Prisma.InputJsonValue;
+  }
+
   await prisma.competition.update({
     where: { id: competition.id },
-    data: {
-      lastSyncedAt: new Date(),
-      ...(endDate ? { endDate } : {}),
-    },
+    data: updateData,
   });
 
   return {

@@ -141,3 +141,67 @@ describe("resolveConfig", () => {
     expect(result.GROUP_STAGE.exactScorePoints).toBe(99);
   });
 });
+
+describe("resolveConfig (competition-level override)", () => {
+  it("uses the competition override when present", () => {
+    const result = resolveConfig({
+      competitionDetails: { scoringOverridesByStage: { SEMI_FINAL: { exactScorePoints: 9 } } },
+    });
+    expect(result.SEMI_FINAL.exactScorePoints).toBe(9);
+  });
+
+  it("match override wins over competition override", () => {
+    const result = resolveConfig({
+      matchDetails: { scoringOverride: { SEMI_FINAL: { exactScorePoints: 11 } } },
+      competitionDetails: { scoringOverridesByStage: { SEMI_FINAL: { exactScorePoints: 9 } } },
+    });
+    expect(result.SEMI_FINAL.exactScorePoints).toBe(11);
+  });
+
+  it("competition override wins over group config", () => {
+    const result = resolveConfig({
+      competitionDetails: { scoringOverridesByStage: { SEMI_FINAL: { exactScorePoints: 9 } } },
+      groupScoringConfig: { SEMI_FINAL: { exactScorePoints: 7 } },
+    });
+    expect(result.SEMI_FINAL.exactScorePoints).toBe(9);
+  });
+
+  it("precedence: match > competition > group > default", () => {
+    const result = resolveConfig({
+      matchDetails: { scoringOverride: { SEMI_FINAL: { exactScorePoints: 11 } } },
+      competitionDetails: { scoringOverridesByStage: { SEMI_FINAL: { exactScorePoints: 9 } } },
+      groupScoringConfig: { SEMI_FINAL: { exactScorePoints: 7 } },
+    });
+    expect(result.SEMI_FINAL.exactScorePoints).toBe(11);
+  });
+
+  it("no competition override falls through to group or default", () => {
+    const result = resolveConfig({
+      groupScoringConfig: { SEMI_FINAL: { exactScorePoints: 7 } },
+    });
+    expect(result.SEMI_FINAL.exactScorePoints).toBe(7);
+  });
+
+  it("invalid competitionDetails is ignored", () => {
+    const result = resolveConfig({
+      competitionDetails: null,
+    });
+    expect(result.GROUP_STAGE).toBeDefined();
+    expect(result.SEMI_FINAL).toBeDefined();
+  });
+
+  it("competitionDetails without scoringOverridesByStage is ignored", () => {
+    const result = resolveConfig({
+      competitionDetails: { area: { id: 1, name: "Europe" }, type: "CUP" },
+    });
+    // No override, so default applies.
+    expect(result.GROUP_STAGE.exactScorePoints).toBe(5);
+  });
+
+  it("empty competition override ({} in scoringOverridesByStage) falls through to defaults", () => {
+    const result = resolveConfig({
+      competitionDetails: { scoringOverridesByStage: {} },
+    });
+    expect(result.GROUP_STAGE.exactScorePoints).toBe(5);
+  });
+});
