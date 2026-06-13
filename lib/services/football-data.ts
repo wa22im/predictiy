@@ -306,3 +306,17 @@ export async function getCompetitionMatches(
   );
   return envelope.matches;
 }
+
+/**
+ * Fetch a single match by its football-data.org numeric id. Returns
+ * the Match object directly (not wrapped in an envelope).
+ *
+ * Hits GET /v4/matches/{id}. Used by the user-driven live-polling
+ * endpoint at app/api/v1/matches/[id]/refresh/route.ts to pull the
+ * latest score for one match without re-listing the whole
+ * competition. Cached in the shared 5-min in-memory cache alongside
+ * every other call.
+ */
+export async function getMatchById(id: number | string): Promise<Match> {
+  return call<Match>(`/matches/${encodeURIComponent(String(id))}`);
+}

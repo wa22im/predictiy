@@ -1,0 +1,220 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { patchCompetitionAction } from "@/app/(app)/admin/leagues/actions";
+
+type EditState =
+  | { kind: "idle" }
+  | { kind: "saving" }
+  | { kind: "error"; message: string };
+
+type EditableCompetition = {
+  id: string;
+  name: string;
+  endDate: string | null;
+  externalLeagueId: string | null;
+  externalSeason: number | null;
+  details: Record<string, unknown> | null;
+};
+
+export function EditCompetitionButton({
+  competition,
+}: {
+  competition: EditableCompetition;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [state, setState] = useState<EditState>({ kind: "idle" });
+  const [isPending, startTransition] = useTransition();
+
+  // Form state. We keep the form in sync with the initial values and
+  // re-derive it from the latest `competition` prop when the dialog
+  // is re-opened (so a successful save + reopen shows the new data).
+  const [name, setName] = useState(competition.name);
+  const [endDate, setEndDate] = useState(
+    competition.endDate ? toLocalDateTimeInput(competition.endDate) : "",
+  );
+  const [externalLeagueId, setExternalLeagueId] = useState(
+    competition.externalLeagueId ?? "",
+  );
+  const [externalSeason, setExternalSeason] = useState(
+    competition.externalSeason === null ? "" : String(competition.externalSeason),
+  );
+  const [detailsRaw, setDetailsRaw] = useState(
+    competition.details ? JSON.stringify(competition.details, null, 2) : "",
+  );
+
+  const reset = () => {
+    setName(competition.name);
+    setEndDate(competition.endDate ? toLocalDateTimeInput(competition.endDate) : "");
+    setExternalLeagueId(competition.externalLeagueId ?? "");
+    setExternalSeason(
+      competition.externalSeason === null ? "" : String(competition.externalSeason),
+    );
+    setDetailsRaw(
+      competition.details ? JSON.stringify(competition.details, null, 2) : "",
+    );
+    setState({ kind: "idle" });
+  };
+
+  const submit = () => {
+    setState({ kind: "saving" });
+    const input: {
+      name?: string;
+      endDate?: string | null;
+      externalLeagueId?: string | null;
+      externalSeason?: number | null;
+      details?: Record<string, unknown> | null;
+    } = {};
+
+    if (name !== competition.name) input.name = name;
+    const endDateIso = endDate ? new Date(endDate).toISOString() : null;
+    if (
+      endDateIso !==
+      (competition.endDate ? new Date(competition.endDate).toISOString() : null)
+    ) {
+      input.endDate = endDateIso;
+    }
+    if (externalLeagueId !== (competition.externalLeagueId ?? "")) {
+      input.externalLeagueId = externalLeagueId || null;
+    }
+    const seasonNum = externalSeason === "" ? null : Number(externalSeason);
+    if (seasonNum !== competition.externalSeason) {
+      input.externalSeason = seasonNum;
+    }
+    let details: Record<string, unknown> | null | undefined;
+    if (detailsRaw.trim() === "") {
+      details = null;
+    } else {
+      try {
+        const parsed = JSON.parse(detailsRaw);
+        if (
+          parsed === null ||
+          typeof parsed !== "object" ||
+          Array.isArray(parsed)
+        ) {
+          setState({ kind: "error", message: "details must be a JSON object" });
+          return;
+        }
+        details = parsed as Record<string, unknown>;
+      } catch (e) {
+        setState({ kind: "error", message: "details is not valid JSON" });
+        return;
+      }
+    }
+    if (JSON.stringify(details ?? null) !== JSON.stringify(competition.details ?? null)) {
+      input.details = details;
+    }
+
+    if (Object.keys(input).length === 0) {
+      setState({ kind: "idle" });
+      setOpen(false);
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await patchCompetitionAction(competition.id, input);
+      if (result.ok) {
+        setState({ kind: "idle" });
+        setOpen(false);
+        router.refresh();
+      } else {
+        setState({ kind: "error", message: result.error });
+      }
+    });
+  };
+
+  return (
+    <div className="flex flex-col items-end gap-1 shrink-0">
+      <button
+        type="button"
+        onClick={() => {
+          if (!open) reset();
+          setOpen((v) => !v);
+        }}
+        className="px-3 py-1 text-xs font-bold border border-muted-foreground/30 text-foreground hover:bg-muted rounded"
+      >
+        {open ? "Cancel" : "Edit"}
+      </button>
+      {open && (
+        <div className="pitch-card p-3 mt-2 w-80 text-left space-y-2 text-sm z-20">
+          <label className="block">
+            <span className="text-xs text-muted-foreground">Name</span>
+            <input
+              className="w-full bg-background border border-border rounded px-2 py-1 text-sm"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={200}
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs text-muted-foreground">End date</span>
+            <input
+              type="datetime-local"
+              className="w-full bg-background border border-border rounded px-2 py-1 text-sm"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs text-muted-foreground">External league id</span>
+            <input
+              className="w-full bg-background border border-border rounded px-2 py-1 text-sm"
+              value={externalLeagueId}
+              onChange={(e) => setExternalLeagueId(e.target.value)}
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs text-muted-foreground">External season</span>
+            <input
+              type="number"
+              className="w-full bg-background border border-border rounded px-2 py-1 text-sm"
+              value={externalSeason}
+              onChange={(e) => setExternalSeason(e.target.value)}
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs text-muted-foreground">Details (JSON object)</span>
+            <textarea
+              className="w-full bg-background border border-border rounded px-2 py-1 text-xs font-mono h-24"
+              value={detailsRaw}
+              onChange={(e) => setDetailsRaw(e.target.value)}
+              placeholder='{"branding": {"color": "red"}}'
+            />
+          </label>
+          {state.kind === "error" && (
+            <p className="text-xs text-destructive">Save failed: {state.message}</p>
+          )}
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="px-2 py-1 text-xs"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={submit}
+              disabled={isPending || state.kind === "saving"}
+              className="neon-button px-3 py-1 text-xs"
+            >
+              {isPending ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function toLocalDateTimeInput(iso: string): string {
+  // <input type="datetime-local"> wants a "YYYY-MM-DDTHH:mm" string in
+  // local time. We build it from the ISO so the user sees the
+  // already-displayed time, not a UTC shift.
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

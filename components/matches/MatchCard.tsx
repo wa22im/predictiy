@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { FeedMatch } from "@/lib/services/group-feed";
 import { formatUtc } from "@/lib/time";
 import { Countdown } from "./Countdown";
@@ -68,6 +69,66 @@ export function MatchCard({
       ? `pitch-card p-3 md:p-4 space-y-4 border-t-4 ${statusBorderClass} shadow-[0_0_12px_-4px_var(--locked)]`
       : `pitch-card p-3 md:p-4 space-y-4 border-t-4 ${statusBorderClass}`;
 
+  // Live-polling state. The match's score row is updated as the
+  // polling effect returns new values. The viewer's betting form
+  // uses `liveScores` to show a "live: +N" preview badge next to the
+  // viewer's locked bet — see the `livePreview` prop on
+  // MatchBettingForm. We initialise from the server-rendered scores
+  // so the first paint is correct.
+  const [liveScores, setLiveScores] = useState<{
+    home: number | null;
+    away: number | null;
+  } | null>(
+    match.status === "GOING"
+      ? { home: match.homeScore, away: match.awayScore }
+      : null,
+  );
+
+  // Polling effect. The endpoint is rate-limited to 5 min per match
+  // server-side; on the client we follow the server's `nextRefreshMs`
+  // hint so we don't ask for data we won't get. The effect is a no-op
+  // for pre-kickoff and FINISHED matches (the server returns
+  // `nextRefreshMs: null` and we stop scheduling).
+  useEffect(() => {
+    if (match.status !== "GOING") return;
+    const kickoffMs = new Date(match.kickoffTime).getTime();
+    if (kickoffMs > Date.now()) return;
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    async function poll() {
+      if (cancelled) return;
+      try {
+        const res = await fetch(`/api/v1/matches/${match.id}/refresh`, {
+          method: "POST",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          homeScore: number | null;
+          awayScore: number | null;
+          status?: string;
+          nextRefreshMs: number | null;
+        };
+        if (cancelled) return;
+        setLiveScores({ home: data.homeScore, away: data.awayScore });
+        if (data.nextRefreshMs) {
+          timer = setTimeout(poll, data.nextRefreshMs);
+        }
+      } catch {
+        // Network error — back off and retry in 60s.
+        if (cancelled) return;
+        timer = setTimeout(poll, 60_000);
+      }
+    }
+
+    poll();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [match.id, match.status, match.kickoffTime]);
+
   return (
     <article className={`${stateClass} ${hasCorrectPrediction ? "ring-2 ring-success ring-offset-2 ring-offset-background" : ""}`}>
       {hasCorrectPrediction && (
@@ -84,8 +145,8 @@ export function MatchCard({
         <ScoreBug
           home={match.homeTeam}
           away={match.awayTeam}
-          homeScore={match.homeScore}
-          awayScore={match.awayScore}
+          homeScore={liveScores?.home ?? match.homeScore}
+          awayScore={liveScores?.away ?? match.awayScore}
           status={scoreBugStatus}
           kickoffAt={match.kickoffTime}
           homeCrest={match.homeCrest}
@@ -124,7 +185,11 @@ export function MatchCard({
         </div>
       </div>
 
-      <MatchBettingForm match={match} groupId={groupId} />
+      <MatchBettingForm
+        match={match}
+        groupId={groupId}
+        liveScores={liveScores}
+      />
 
       <MemberPredictions otherBets={deduped} />
     </article>

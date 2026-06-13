@@ -104,7 +104,7 @@ export type SyncFootballDataCompetitionResult =
       settledMarkets: number;
       totalMatches: number;
     }
-  | { ok: false; error: string; status?: number };
+  | { ok: false; error: string; status?: number; retryAfterMs?: number };
 
 export async function syncFootballDataCompetitionAction(
   competitionId: string,
@@ -132,9 +132,133 @@ export async function syncFootballDataCompetitionAction(
 
     const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) {
+      const retryAfterMs =
+        typeof body.retryAfterMs === "number" ? body.retryAfterMs : undefined;
       return {
         ok: false,
         error: typeof body.error === "string" ? body.error : `Sync failed (${res.status})`,
+        status: res.status,
+        retryAfterMs,
+      };
+    }
+
+  revalidatePath("/admin/leagues");
+  revalidatePath(`/admin/leagues/${competitionId}`);
+  return {
+    ok: true,
+    fetched: Number(body.fetched ?? 0),
+    createdMatches: Number(body.createdMatches ?? 0),
+    updatedMatches: Number(body.updatedMatches ?? 0),
+    createdMarkets: Number(body.createdMarkets ?? 0),
+    updatedMarkets: Number(body.updatedMarkets ?? 0),
+    settledMarkets: Number(body.settledMarkets ?? 0),
+    totalMatches: Number(body.totalMatches ?? 0),
+  };
+  } catch (e) {
+    return {
+      ok: false,
+      error: (e as Error).message,
+      status: (e as { status?: number }).status,
+    };
+  }
+}
+
+/**
+ * Server Action: PATCH a competition's editable fields.
+ *
+ * Mirrors `syncFootballDataCompetitionAction`: goes through the
+ * public API route so the auth + validation + error envelope match
+ * exactly what a curl call would see. The set of editable fields is
+ * the same as the route's zod schema — admin must use the DB
+ * directly to change other columns.
+ */
+export type PatchCompetitionInput = {
+  name?: string;
+  endDate?: string | null;
+  externalLeagueId?: string | null;
+  externalSeason?: number | null;
+  details?: Record<string, unknown> | null;
+};
+
+export type PatchCompetitionResult =
+  | { ok: true; id: string }
+  | { ok: false; error: string; status?: number };
+
+export async function patchCompetitionAction(
+  competitionId: string,
+  input: PatchCompetitionInput,
+): Promise<PatchCompetitionResult> {
+  try {
+    await requireAdmin();
+    if (!competitionId) {
+      return { ok: false, error: "Missing competition id" };
+    }
+
+    const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
+    const res = await fetch(
+      `${baseUrl}/api/v1/admin/competitions/${encodeURIComponent(competitionId)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+        cache: "no-store",
+      },
+    );
+
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: typeof body.error === "string" ? body.error : `Update failed (${res.status})`,
+        status: res.status,
+      };
+    }
+
+    revalidatePath("/admin/leagues");
+    revalidatePath(`/admin/leagues/${competitionId}`);
+    const id = typeof body.id === "string" ? body.id : competitionId;
+    return { ok: true, id };
+  } catch (e) {
+    return {
+      ok: false,
+      error: (e as Error).message,
+      status: (e as { status?: number }).status,
+    };
+  }
+}
+
+/**
+ * Server Action: soft-delete a competition. Stamps `deletedAt =
+ * now()`. Idempotent — re-running on an already-deleted row returns
+ * success without changing anything.
+ */
+export type DeleteCompetitionResult =
+  | { ok: true; id: string; deletedAt: string }
+  | { ok: false; error: string; status?: number };
+
+export async function deleteCompetitionAction(
+  competitionId: string,
+): Promise<DeleteCompetitionResult> {
+  try {
+    await requireAdmin();
+    if (!competitionId) {
+      return { ok: false, error: "Missing competition id" };
+    }
+
+    const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
+    const res = await fetch(
+      `${baseUrl}/api/v1/admin/competitions/${encodeURIComponent(competitionId)}`,
+      {
+        method: "DELETE",
+        cache: "no-store",
+      },
+    );
+
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: typeof body.error === "string" ? body.error : `Delete failed (${res.status})`,
         status: res.status,
       };
     }
@@ -143,13 +267,9 @@ export async function syncFootballDataCompetitionAction(
     revalidatePath(`/admin/leagues/${competitionId}`);
     return {
       ok: true,
-      fetched: Number(body.fetched ?? 0),
-      createdMatches: Number(body.createdMatches ?? 0),
-      updatedMatches: Number(body.updatedMatches ?? 0),
-      createdMarkets: Number(body.createdMarkets ?? 0),
-      updatedMarkets: Number(body.updatedMarkets ?? 0),
-      settledMarkets: Number(body.settledMarkets ?? 0),
-      totalMatches: Number(body.totalMatches ?? 0),
+      id: typeof body.id === "string" ? body.id : competitionId,
+      deletedAt:
+        typeof body.deletedAt === "string" ? body.deletedAt : new Date().toISOString(),
     };
   } catch (e) {
     return {

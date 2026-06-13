@@ -987,7 +987,9 @@ export const CompetitionScalarFieldEnum = {
   externalSource: 'externalSource',
   externalLeagueId: 'externalLeagueId',
   externalSeason: 'externalSeason',
-  lastSyncedAt: 'lastSyncedAt'
+  lastSyncedAt: 'lastSyncedAt',
+  deletedAt: 'deletedAt',
+  details: 'details'
 } as const
 
 export type CompetitionScalarFieldEnum = (typeof CompetitionScalarFieldEnum)[keyof typeof CompetitionScalarFieldEnum]
@@ -1010,7 +1012,9 @@ export const MatchScalarFieldEnum = {
   awayPenalties: 'awayPenalties',
   externalStatus: 'externalStatus',
   homeCrest: 'homeCrest',
-  awayCrest: 'awayCrest'
+  awayCrest: 'awayCrest',
+  scoreLastSyncedAt: 'scoreLastSyncedAt',
+  details: 'details'
 } as const
 
 export type MatchScalarFieldEnum = (typeof MatchScalarFieldEnum)[keyof typeof MatchScalarFieldEnum]
@@ -1022,7 +1026,8 @@ export const GroupScalarFieldEnum = {
   name: 'name',
   inviteCode: 'inviteCode',
   scoringConfig: 'scoringConfig',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  details: 'details'
 } as const
 
 export type GroupScalarFieldEnum = (typeof GroupScalarFieldEnum)[keyof typeof GroupScalarFieldEnum]
@@ -1045,7 +1050,8 @@ export const BetMarketScalarFieldEnum = {
   title: 'title',
   options: 'options',
   correctAnswer: 'correctAnswer',
-  isSettled: 'isSettled'
+  isSettled: 'isSettled',
+  details: 'details'
 } as const
 
 export type BetMarketScalarFieldEnum = (typeof BetMarketScalarFieldEnum)[keyof typeof BetMarketScalarFieldEnum]
@@ -1073,19 +1079,19 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
-export const JsonNullValueInput = {
-  JsonNull: JsonNull
-} as const
-
-export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
-
-
 export const NullableJsonNullValueInput = {
   DbNull: DbNull,
   JsonNull: JsonNull
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
@@ -1096,14 +1102,6 @@ export const QueryMode = {
 export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
 
 
-export const NullsOrder = {
-  first: 'first',
-  last: 'last'
-} as const
-
-export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
-
-
 export const JsonNullValueFilter = {
   DbNull: DbNull,
   JsonNull: JsonNull,
@@ -1111,6 +1109,14 @@ export const JsonNullValueFilter = {
 } as const
 
 export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 
 
 
@@ -1169,20 +1175,6 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
- * Reference to a field of type 'MatchStatus'
- */
-export type EnumMatchStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MatchStatus'>
-    
-
-
-/**
- * Reference to a field of type 'MatchStatus[]'
- */
-export type ListEnumMatchStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MatchStatus[]'>
-    
-
-
-/**
  * Reference to a field of type 'Json'
  */
 export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
@@ -1193,6 +1185,20 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'MatchStatus'
+ */
+export type EnumMatchStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MatchStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'MatchStatus[]'
+ */
+export type ListEnumMatchStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MatchStatus[]'>
     
 
 

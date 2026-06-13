@@ -4,6 +4,11 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader, Save } from "lucide-react";
 import { saveBetsBatchAction } from "@/app/(app)/groups/[groupId]/matches/actions";
+import { computeLiveScore } from "@/lib/services/score-preview";
+import {
+  DEFAULT_SCORING_CONFIG,
+  type ScoringConfig,
+} from "@/lib/scoring/default-config";
 import type { FeedMatch } from "@/lib/services/group-feed";
 
 // ---- Human-readable label maps (PURELY COSMETIC) ---------------------------
@@ -73,9 +78,18 @@ function truncate(name: string): { display: string; fullName: string } {
 export function MatchBettingForm({
   match,
   groupId,
+  liveScores = null,
 }: {
   match: FeedMatch;
   groupId: string;
+  /**
+   * Latest polled score from the live refresh endpoint. The
+   * LockedMarketRow uses this to render a "live: +N pts" preview
+   * next to the viewer's bet when the match is GOING. When the
+   * match isn't GOING, or no live scores have been polled yet,
+   * the preview is hidden.
+   */
+  liveScores?: { home: number | null; away: number | null } | null;
 }) {
   const router = useRouter();
   const isLockedOrSettled =
@@ -196,6 +210,57 @@ export function MatchBettingForm({
             }
             homeTeam={match.homeTeam}
             awayTeam={match.awayTeam}
+            livePreview={computeLivePreviewForMarket(
+              "EXACT_SCORE",
+              exactScore.viewerBet?.predictedValue ?? null,
+              liveScores,
+              match.stage,
+            )}
+            isLive={match.status === "GOING" && liveScores !== null}
+          />
+        )}
+        {halfScoring && halfScoring.viewerBet && (
+          <LockedMarketRow
+            title="Which teams score in which half?"
+            type="HALF_SCORING"
+            marketId={halfScoring.id}
+            savedValue={halfScoring.viewerBet.predictedValue}
+            pointsAwarded={
+              halfScoring.isSettled
+                ? halfScoring.viewerBet.pointsAwarded ?? null
+                : null
+            }
+            homeTeam={match.homeTeam}
+            awayTeam={match.awayTeam}
+            livePreview={computeLivePreviewForMarket(
+              "HALF_SCORING",
+              halfScoring.viewerBet.predictedValue,
+              liveScores,
+              match.stage,
+            )}
+            isLive={match.status === "GOING" && liveScores !== null}
+          />
+        )}
+        {inGamePenalty && inGamePenalty.viewerBet && (
+          <LockedMarketRow
+            title="Which team gets an in-game penalty?"
+            type="IN_GAME_PENALTY"
+            marketId={inGamePenalty.id}
+            savedValue={inGamePenalty.viewerBet.predictedValue}
+            pointsAwarded={
+              inGamePenalty.isSettled
+                ? inGamePenalty.viewerBet.pointsAwarded ?? null
+                : null
+            }
+            homeTeam={match.homeTeam}
+            awayTeam={match.awayTeam}
+            livePreview={computeLivePreviewForMarket(
+              "IN_GAME_PENALTY",
+              inGamePenalty.viewerBet.predictedValue,
+              liveScores,
+              match.stage,
+            )}
+            isLive={match.status === "GOING" && liveScores !== null}
           />
         )}
         {outrightMarkets.map((m) => (
@@ -210,6 +275,8 @@ export function MatchBettingForm({
             }
             homeTeam={match.homeTeam}
             awayTeam={match.awayTeam}
+            livePreview={null}
+            isLive={false}
           />
         ))}
       </div>
@@ -496,6 +563,8 @@ function LockedMarketRow({
   pointsAwarded,
   homeTeam,
   awayTeam,
+  livePreview,
+  isLive,
 }: {
   title: string;
   type: string;
@@ -504,6 +573,15 @@ function LockedMarketRow({
   pointsAwarded: number | null;
   homeTeam: string;
   awayTeam: string;
+  /**
+   * Live preview points, computed by `computeLiveScore` against the
+   * current polled score. `null` when there is no preview (outright
+   * markets, or no live scores polled yet). Rendered as a muted
+   * "live: +N pts" badge to the right of the viewer's pick when
+   * `isLive` is true.
+   */
+  livePreview: number | null;
+  isLive: boolean;
 }) {
   return (
     <div className="rounded-xl bg-background/40 border border-border p-3 text-sm">
@@ -528,9 +606,42 @@ function LockedMarketRow({
             </span>
           </>
         )}
+        {isLive && livePreview !== null && (
+          <span className="ml-2 micro-tag text-muted-foreground">
+            live: {formatPoints(livePreview)}
+          </span>
+        )}
       </p>
     </div>
   );
+}
+
+/**
+ * Helper: compute the live preview for one of the three default
+ * markets. Returns `null` if no preview is possible (no viewer bet,
+ * no live scores, or outright market). The scoring config defaults
+ * to the production DEFAULT_SCORING_CONFIG — per-group overrides
+ * would require a richer prop chain; that's deferred until a UI
+ * demand materializes.
+ */
+function computeLivePreviewForMarket(
+  marketType: string,
+  predictedValue: string | null,
+  liveScores: { home: number | null; away: number | null } | null,
+  stage: string,
+): number | null {
+  if (!predictedValue || !liveScores) return null;
+  if (liveScores.home === null || liveScores.away === null) return null;
+  const result = computeLiveScore({
+    predictedValue,
+    currentHomeScore: liveScores.home,
+    currentAwayScore: liveScores.away,
+    marketType,
+    marketStage: stage,
+    scoringConfig: DEFAULT_SCORING_CONFIG satisfies ScoringConfig,
+  });
+  if (result.isOutright) return null;
+  return result.points;
 }
 
 // ---- Helpers --------------------------------------------------------------

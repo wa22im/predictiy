@@ -3,7 +3,7 @@ import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { getStrategy } from "@/lib/scoring";
-import type { ScoringConfig } from "@/lib/scoring/default-config";
+import { resolveConfig } from "@/lib/services/scoring/resolve-config";
 
 export type SettleInput = {
   marketId: string;
@@ -199,7 +199,10 @@ export async function settleMarket(
             //    betsWithScore: Array<{ betId: string, groupId: string,
             //                          groupName: string, points: number }>
             const betsWithScore = bets.map((bet) => {
-              const scoringConfig = bet.group.scoringConfig as unknown as ScoringConfig;
+              const scoringConfig = resolveConfig({
+                matchDetails: market.details,
+                groupScoringConfig: bet.group.scoringConfig,
+              });
               const result = strategy.score({
                 predictedValue: bet.predictedValue,
                 correctAnswer: trimmed,
@@ -428,7 +431,10 @@ export async function recoverLegacyStrandedBets(
 
       let count = 0;
       for (const bet of stranded) {
-        const scoringConfig = bet.group.scoringConfig as unknown as ScoringConfig;
+        const scoringConfig = resolveConfig({
+          matchDetails: market.details,
+          groupScoringConfig: bet.group.scoringConfig,
+        });
         const result = strategy!.score({
           predictedValue: bet.predictedValue,
           correctAnswer: market.correctAnswer!,

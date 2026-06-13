@@ -39,6 +39,16 @@ model Competition {
   externalLeagueId  String?
   externalSeason    Int?
   lastSyncedAt      DateTime?
+  // Soft delete: NULL = active, non-NULL = deleted at this time. The
+  // data is preserved so an admin can un-delete by clearing the
+  // column. The PATCH endpoint at
+  // app/api/v1/admin/competitions/[id]/route.ts writes to this column;
+  // every competition read path must filter `deletedAt: null` to
+  // exclude deleted tournaments from listings.
+  deletedAt         DateTime?
+  // Free-form JSON. Future use cases: tournament branding, custom
+  // rule overrides, etc. Consumers must defensively validate.
+  details           Json?
 }
 
 model Match {
@@ -75,6 +85,21 @@ model Match {
   // omitted one — the UI falls back to a team-initial circle in that case.
   homeCrest       String?
   awayCrest       String?
+  // Timestamp of the most recent successful user-driven refresh
+  // (see app/api/v1/matches/[id]/refresh/route.ts). The 5-min
+  // per-match rate limit is enforced against this column. NULL means
+  // "never refreshed" (i.e. only the cron / sync has touched this
+  // match). The cron path does NOT update this column — the cron is
+  // its own cadence and the user-driven rate limit is independent.
+  scoreLastSyncedAt DateTime?
+  // Free-form JSON column. Phase 11+ uses it for:
+  //   - scoringOverride: { <STAGE>: Partial<StageScoring> } — per-match
+  //     override on top of the group's scoring config (see
+  //     lib/services/scoring/resolve-config.ts).
+  //   - any future per-match metadata (stage notes, admin tags, etc.)
+  // The shape is intentionally open. Consumers must defensively
+  // validate the contents.
+  details         Json?
 
   @@index([competitionId])
   @@index([kickoffTime])
@@ -91,6 +116,10 @@ model Group {
   createdAt     DateTime      @default(now())
   members       GroupMember[]
   bets          UserBet[]
+  // Free-form JSON. Future use: per-group custom metadata that
+  // doesn't belong in scoringConfig. Consumers must defensively
+  // validate.
+  details       Json?
 
   @@index([competitionId])
 }
@@ -117,6 +146,10 @@ model BetMarket {
   correctAnswer String?
   isSettled     Boolean   @default(false)
   userBets      UserBet[]
+  // Free-form JSON. Future use: per-market metadata (custom
+  // labels, scoring rule overrides, etc.). Consumers must
+  // defensively validate.
+  details       Json?
 
   @@unique([matchId, type, title])
   @@index([matchId])

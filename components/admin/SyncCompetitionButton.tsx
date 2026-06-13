@@ -53,6 +53,12 @@ export function SyncCompetitionButton({
           });
         }
         router.refresh();
+      } else if (result.status === 429 && typeof result.retryAfterMs === "number") {
+        const retrySec = Math.ceil(result.retryAfterMs / 1000);
+        setState({
+          kind: "error",
+          message: `Sync rate-limited. Try again in ${retrySec}s.`,
+        });
       } else {
         setState({ kind: "error", message: result.error });
       }

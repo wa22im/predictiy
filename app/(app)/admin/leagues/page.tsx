@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SyncCompetitionButton } from "@/components/admin/SyncCompetitionButton";
+import { EditCompetitionButton } from "@/components/admin/EditCompetitionButton";
+import { DeleteCompetitionButton } from "@/components/admin/DeleteCompetitionButton";
 import { PitchBg } from "@/components/football";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +15,17 @@ export default async function AdminLeaguesPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // Soft-deleted tournaments (deletedAt != null) are excluded from
+  // this listing. The DELETE endpoint sets deletedAt; an admin can
+  // un-delete by clearing the column directly in the DB. The filter
+  // is explicit (vs. a Prisma extension) for now — the
+  // Competition table is small (we're pre-launch with a handful of
+  // seeded rows) and the explicit `where` keeps every read site
+  // visible. A code comment is left in sync-football-data-competition.ts
+  // and onboard-competition.ts to note that the same filter should
+  // be applied in any new read paths.
   const competitions = await prisma.competition.findMany({
+    where: { deletedAt: null },
     orderBy: { createdAt: "desc" },
     include: {
       _count: { select: { matches: true, groups: true } },
@@ -81,10 +93,26 @@ export default async function AdminLeaguesPage() {
                           season={c.externalSeason}
                         </p>
                       </div>
-                      <SyncCompetitionButton
-                        competitionId={c.id}
-                        externalSource={c.externalSource ?? "unknown"}
-                      />
+                      <div className="flex items-start gap-2">
+                        <SyncCompetitionButton
+                          competitionId={c.id}
+                          externalSource={c.externalSource ?? "unknown"}
+                        />
+                        <EditCompetitionButton
+                          competition={{
+                            id: c.id,
+                            name: c.name,
+                            endDate: c.endDate ? c.endDate.toISOString() : null,
+                            externalLeagueId: c.externalLeagueId,
+                            externalSeason: c.externalSeason,
+                            details: (c.details as Record<string, unknown> | null) ?? null,
+                          }}
+                        />
+                        <DeleteCompetitionButton
+                          competitionId={c.id}
+                          competitionName={c.name}
+                        />
+                      </div>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>
@@ -113,7 +141,7 @@ export default async function AdminLeaguesPage() {
               <ul className="space-y-2">
                 {manual.map((c) => (
                   <li key={c.id} className="pitch-card p-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-3">
                       <div>
                         <p className="font-medium">{c.name}</p>
                         <p className="text-xs text-muted-foreground">
@@ -123,9 +151,22 @@ export default async function AdminLeaguesPage() {
                           {c._count.groups === 1 ? "" : "s"}
                         </p>
                       </div>
-                      <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-                        static
-                      </span>
+                      <div className="flex items-start gap-2">
+                        <EditCompetitionButton
+                          competition={{
+                            id: c.id,
+                            name: c.name,
+                            endDate: c.endDate ? c.endDate.toISOString() : null,
+                            externalLeagueId: c.externalLeagueId,
+                            externalSeason: c.externalSeason,
+                            details: (c.details as Record<string, unknown> | null) ?? null,
+                          }}
+                        />
+                        <DeleteCompetitionButton
+                          competitionId={c.id}
+                          competitionName={c.name}
+                        />
+                      </div>
                     </div>
                   </li>
                 ))}

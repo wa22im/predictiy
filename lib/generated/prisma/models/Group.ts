@@ -47,6 +47,7 @@ export type GroupCountAggregateOutputType = {
   inviteCode: number
   scoringConfig: number
   createdAt: number
+  details: number
   _all: number
 }
 
@@ -74,6 +75,7 @@ export type GroupCountAggregateInputType = {
   inviteCode?: true
   scoringConfig?: true
   createdAt?: true
+  details?: true
   _all?: true
 }
 
@@ -156,6 +158,7 @@ export type GroupGroupByOutputType = {
   inviteCode: string
   scoringConfig: runtime.JsonValue
   createdAt: Date
+  details: runtime.JsonValue | null
   _count: GroupCountAggregateOutputType | null
   _min: GroupMinAggregateOutputType | null
   _max: GroupMaxAggregateOutputType | null
@@ -186,6 +189,7 @@ export type GroupWhereInput = {
   inviteCode?: Prisma.StringFilter<"Group"> | string
   scoringConfig?: Prisma.JsonFilter<"Group">
   createdAt?: Prisma.DateTimeFilter<"Group"> | Date | string
+  details?: Prisma.JsonNullableFilter<"Group">
   competition?: Prisma.XOR<Prisma.CompetitionScalarRelationFilter, Prisma.CompetitionWhereInput>
   members?: Prisma.GroupMemberListRelationFilter
   bets?: Prisma.UserBetListRelationFilter
@@ -198,6 +202,7 @@ export type GroupOrderByWithRelationInput = {
   inviteCode?: Prisma.SortOrder
   scoringConfig?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  details?: Prisma.SortOrderInput | Prisma.SortOrder
   competition?: Prisma.CompetitionOrderByWithRelationInput
   members?: Prisma.GroupMemberOrderByRelationAggregateInput
   bets?: Prisma.UserBetOrderByRelationAggregateInput
@@ -213,6 +218,7 @@ export type GroupWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"Group"> | string
   scoringConfig?: Prisma.JsonFilter<"Group">
   createdAt?: Prisma.DateTimeFilter<"Group"> | Date | string
+  details?: Prisma.JsonNullableFilter<"Group">
   competition?: Prisma.XOR<Prisma.CompetitionScalarRelationFilter, Prisma.CompetitionWhereInput>
   members?: Prisma.GroupMemberListRelationFilter
   bets?: Prisma.UserBetListRelationFilter
@@ -225,6 +231,7 @@ export type GroupOrderByWithAggregationInput = {
   inviteCode?: Prisma.SortOrder
   scoringConfig?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  details?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.GroupCountOrderByAggregateInput
   _max?: Prisma.GroupMaxOrderByAggregateInput
   _min?: Prisma.GroupMinOrderByAggregateInput
@@ -240,6 +247,7 @@ export type GroupScalarWhereWithAggregatesInput = {
   inviteCode?: Prisma.StringWithAggregatesFilter<"Group"> | string
   scoringConfig?: Prisma.JsonWithAggregatesFilter<"Group">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Group"> | Date | string
+  details?: Prisma.JsonNullableWithAggregatesFilter<"Group">
 }
 
 export type GroupCreateInput = {
@@ -248,6 +256,7 @@ export type GroupCreateInput = {
   inviteCode: string
   scoringConfig: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   competition: Prisma.CompetitionCreateNestedOneWithoutGroupsInput
   members?: Prisma.GroupMemberCreateNestedManyWithoutGroupInput
   bets?: Prisma.UserBetCreateNestedManyWithoutGroupInput
@@ -260,6 +269,7 @@ export type GroupUncheckedCreateInput = {
   inviteCode: string
   scoringConfig: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   members?: Prisma.GroupMemberUncheckedCreateNestedManyWithoutGroupInput
   bets?: Prisma.UserBetUncheckedCreateNestedManyWithoutGroupInput
 }
@@ -270,6 +280,7 @@ export type GroupUpdateInput = {
   inviteCode?: Prisma.StringFieldUpdateOperationsInput | string
   scoringConfig?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   competition?: Prisma.CompetitionUpdateOneRequiredWithoutGroupsNestedInput
   members?: Prisma.GroupMemberUpdateManyWithoutGroupNestedInput
   bets?: Prisma.UserBetUpdateManyWithoutGroupNestedInput
@@ -282,6 +293,7 @@ export type GroupUncheckedUpdateInput = {
   inviteCode?: Prisma.StringFieldUpdateOperationsInput | string
   scoringConfig?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   members?: Prisma.GroupMemberUncheckedUpdateManyWithoutGroupNestedInput
   bets?: Prisma.UserBetUncheckedUpdateManyWithoutGroupNestedInput
 }
@@ -293,6 +305,7 @@ export type GroupCreateManyInput = {
   inviteCode: string
   scoringConfig: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type GroupUpdateManyMutationInput = {
@@ -301,6 +314,7 @@ export type GroupUpdateManyMutationInput = {
   inviteCode?: Prisma.StringFieldUpdateOperationsInput | string
   scoringConfig?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type GroupUncheckedUpdateManyInput = {
@@ -310,6 +324,7 @@ export type GroupUncheckedUpdateManyInput = {
   inviteCode?: Prisma.StringFieldUpdateOperationsInput | string
   scoringConfig?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type GroupListRelationFilter = {
@@ -329,6 +344,7 @@ export type GroupCountOrderByAggregateInput = {
   inviteCode?: Prisma.SortOrder
   scoringConfig?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  details?: Prisma.SortOrder
 }
 
 export type GroupMaxOrderByAggregateInput = {
@@ -428,6 +444,7 @@ export type GroupCreateWithoutCompetitionInput = {
   inviteCode: string
   scoringConfig: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   members?: Prisma.GroupMemberCreateNestedManyWithoutGroupInput
   bets?: Prisma.UserBetCreateNestedManyWithoutGroupInput
 }
@@ -438,6 +455,7 @@ export type GroupUncheckedCreateWithoutCompetitionInput = {
   inviteCode: string
   scoringConfig: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   members?: Prisma.GroupMemberUncheckedCreateNestedManyWithoutGroupInput
   bets?: Prisma.UserBetUncheckedCreateNestedManyWithoutGroupInput
 }
@@ -478,6 +496,7 @@ export type GroupScalarWhereInput = {
   inviteCode?: Prisma.StringFilter<"Group"> | string
   scoringConfig?: Prisma.JsonFilter<"Group">
   createdAt?: Prisma.DateTimeFilter<"Group"> | Date | string
+  details?: Prisma.JsonNullableFilter<"Group">
 }
 
 export type GroupCreateWithoutMembersInput = {
@@ -486,6 +505,7 @@ export type GroupCreateWithoutMembersInput = {
   inviteCode: string
   scoringConfig: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   competition: Prisma.CompetitionCreateNestedOneWithoutGroupsInput
   bets?: Prisma.UserBetCreateNestedManyWithoutGroupInput
 }
@@ -497,6 +517,7 @@ export type GroupUncheckedCreateWithoutMembersInput = {
   inviteCode: string
   scoringConfig: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   bets?: Prisma.UserBetUncheckedCreateNestedManyWithoutGroupInput
 }
 
@@ -522,6 +543,7 @@ export type GroupUpdateWithoutMembersInput = {
   inviteCode?: Prisma.StringFieldUpdateOperationsInput | string
   scoringConfig?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   competition?: Prisma.CompetitionUpdateOneRequiredWithoutGroupsNestedInput
   bets?: Prisma.UserBetUpdateManyWithoutGroupNestedInput
 }
@@ -533,6 +555,7 @@ export type GroupUncheckedUpdateWithoutMembersInput = {
   inviteCode?: Prisma.StringFieldUpdateOperationsInput | string
   scoringConfig?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   bets?: Prisma.UserBetUncheckedUpdateManyWithoutGroupNestedInput
 }
 
@@ -542,6 +565,7 @@ export type GroupCreateWithoutBetsInput = {
   inviteCode: string
   scoringConfig: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   competition: Prisma.CompetitionCreateNestedOneWithoutGroupsInput
   members?: Prisma.GroupMemberCreateNestedManyWithoutGroupInput
 }
@@ -553,6 +577,7 @@ export type GroupUncheckedCreateWithoutBetsInput = {
   inviteCode: string
   scoringConfig: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   members?: Prisma.GroupMemberUncheckedCreateNestedManyWithoutGroupInput
 }
 
@@ -578,6 +603,7 @@ export type GroupUpdateWithoutBetsInput = {
   inviteCode?: Prisma.StringFieldUpdateOperationsInput | string
   scoringConfig?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   competition?: Prisma.CompetitionUpdateOneRequiredWithoutGroupsNestedInput
   members?: Prisma.GroupMemberUpdateManyWithoutGroupNestedInput
 }
@@ -589,6 +615,7 @@ export type GroupUncheckedUpdateWithoutBetsInput = {
   inviteCode?: Prisma.StringFieldUpdateOperationsInput | string
   scoringConfig?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   members?: Prisma.GroupMemberUncheckedUpdateManyWithoutGroupNestedInput
 }
 
@@ -598,6 +625,7 @@ export type GroupCreateManyCompetitionInput = {
   inviteCode: string
   scoringConfig: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type GroupUpdateWithoutCompetitionInput = {
@@ -606,6 +634,7 @@ export type GroupUpdateWithoutCompetitionInput = {
   inviteCode?: Prisma.StringFieldUpdateOperationsInput | string
   scoringConfig?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   members?: Prisma.GroupMemberUpdateManyWithoutGroupNestedInput
   bets?: Prisma.UserBetUpdateManyWithoutGroupNestedInput
 }
@@ -616,6 +645,7 @@ export type GroupUncheckedUpdateWithoutCompetitionInput = {
   inviteCode?: Prisma.StringFieldUpdateOperationsInput | string
   scoringConfig?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   members?: Prisma.GroupMemberUncheckedUpdateManyWithoutGroupNestedInput
   bets?: Prisma.UserBetUncheckedUpdateManyWithoutGroupNestedInput
 }
@@ -626,6 +656,7 @@ export type GroupUncheckedUpdateManyWithoutCompetitionInput = {
   inviteCode?: Prisma.StringFieldUpdateOperationsInput | string
   scoringConfig?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 
@@ -675,6 +706,7 @@ export type GroupSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   inviteCode?: boolean
   scoringConfig?: boolean
   createdAt?: boolean
+  details?: boolean
   competition?: boolean | Prisma.CompetitionDefaultArgs<ExtArgs>
   members?: boolean | Prisma.Group$membersArgs<ExtArgs>
   bets?: boolean | Prisma.Group$betsArgs<ExtArgs>
@@ -688,6 +720,7 @@ export type GroupSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   inviteCode?: boolean
   scoringConfig?: boolean
   createdAt?: boolean
+  details?: boolean
   competition?: boolean | Prisma.CompetitionDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["group"]>
 
@@ -698,6 +731,7 @@ export type GroupSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   inviteCode?: boolean
   scoringConfig?: boolean
   createdAt?: boolean
+  details?: boolean
   competition?: boolean | Prisma.CompetitionDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["group"]>
 
@@ -708,9 +742,10 @@ export type GroupSelectScalar = {
   inviteCode?: boolean
   scoringConfig?: boolean
   createdAt?: boolean
+  details?: boolean
 }
 
-export type GroupOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "competitionId" | "name" | "inviteCode" | "scoringConfig" | "createdAt", ExtArgs["result"]["group"]>
+export type GroupOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "competitionId" | "name" | "inviteCode" | "scoringConfig" | "createdAt" | "details", ExtArgs["result"]["group"]>
 export type GroupInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   competition?: boolean | Prisma.CompetitionDefaultArgs<ExtArgs>
   members?: boolean | Prisma.Group$membersArgs<ExtArgs>
@@ -738,6 +773,7 @@ export type $GroupPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     inviteCode: string
     scoringConfig: runtime.JsonValue
     createdAt: Date
+    details: runtime.JsonValue | null
   }, ExtArgs["result"]["group"]>
   composites: {}
 }
@@ -1170,6 +1206,7 @@ export interface GroupFieldRefs {
   readonly inviteCode: Prisma.FieldRef<"Group", 'String'>
   readonly scoringConfig: Prisma.FieldRef<"Group", 'Json'>
   readonly createdAt: Prisma.FieldRef<"Group", 'DateTime'>
+  readonly details: Prisma.FieldRef<"Group", 'Json'>
 }
     
 
