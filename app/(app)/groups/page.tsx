@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, Swords } from "lucide-react";
+import { ChevronLeft, Crown, Swords } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { CreatePoolButton } from "@/components/groups/CreatePoolButton";
@@ -56,12 +56,19 @@ export default async function GroupsPage() {
                       {m.group.name}
                     </p>
                     <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                      <Swords
+                      <Crown
+                      color="yellow"
                         aria-hidden="true"
                         className="h-3.5 w-3.5 text-accent"
                       />
                       {m.group.competition.name}
+                     <Crown
+                      color="yellow"
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5 text-accent"
+                      />
                     </p>
+                    
                     <p className="text-xs text-muted-foreground mt-1">
                       {memberCount} {memberCount === 1 ? "member" : "members"}
                     </p>

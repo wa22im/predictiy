@@ -98,6 +98,10 @@ export function ScoreBug({
         <ScoreOrDash value={awayScore} />
       </div>
 
+      <div className="flex shrink-0 items-center">
+        <StatusBadge status={status} kickoffAt={kickoffAt} />
+      </div>
+
       <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
         <span className="truncate text-right font-display font-bold uppercase tracking-tight text-foreground">
           {away}

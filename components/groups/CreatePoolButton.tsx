@@ -194,7 +194,7 @@ export function CreatePoolButton({
           className="pitch-card-fut p-6 hover:-translate-y-0.5 transition-transform text-left"
         >
           <p className="font-display text-2xl font-bold tracking-tight mb-2">
-            ➕  New Pool
+            ➕  Create a Pool
           </p>
           <p className="text-muted-foreground text-sm">
             Start a new tournament pool.

@@ -89,7 +89,7 @@ export function MatchList({
               <div className="space-y-3 mt-3">
                 {items.map((m) => (
                   <MatchCard
-                    key={m.id}
+                    key={`${groupId}-${m.id}`}
                     match={m}
                     serverNow={serverNow}
                     lockdownMs={lockdownMs}

@@ -14,7 +14,7 @@ export function MemberPredictions({
   
   if (otherBets.length === 0) return null;
 
-  const MAX_VISIBLE = 5;
+  const MAX_VISIBLE = 3;
   const isLongList = otherBets.length > MAX_VISIBLE;
   const visibleBets = isExpanded ? otherBets : otherBets.slice(0, MAX_VISIBLE);
 
@@ -34,7 +34,7 @@ export function MemberPredictions({
               </span>
             ) : (
               <span className="micro-tag">
-                 ({otherBets.length}) <ChevronDown className="h-3 w-3" />
+                Show all ({otherBets.length}) <ChevronDown className="h-3 w-3" />
               </span>
             )}
           </button>
