@@ -51,6 +51,7 @@ import {
   ApiFootballError,
 } from "@/lib/services/api-football";
 import { settleMarket, SettleError } from "@/lib/services/settle-market";
+import { parseCompetitionEndDate } from "@/lib/services/competition-end-date";
 
 export type IngestLeagueInput = {
   /** Display name for the competition. e.g., "Premier League 2024-25" */
@@ -111,6 +112,11 @@ export async function ingestLeague(
       400,
     );
   }
+  // Capture the season's end-date as the competition's endDate. The
+  // dashboard's "active" filter (`!endDate || endDate > now`) treats
+  // a populated endDate as the moment the tournament finished; once
+  // we cross it the group stops appearing in the dashboard.
+  const endDate = parseCompetitionEndDate(season.end);
 
   // Upsert the competition row first so we have a stable id to attach
   // matches to, even if the fixture fetch partially fails.
@@ -125,11 +131,13 @@ export async function ingestLeague(
       externalSource: "api-football",
       externalLeagueId: String(input.externalLeagueId),
       externalSeason: input.externalSeason,
+      ...(endDate ? { endDate } : {}),
     },
     update: {
       externalSource: "api-football",
       externalLeagueId: String(input.externalLeagueId),
       externalSeason: input.externalSeason,
+      ...(endDate ? { endDate } : {}),
     },
   });
 

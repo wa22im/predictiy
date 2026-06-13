@@ -53,6 +53,7 @@ import {
   FootballDataError,
 } from "@/lib/services/football-data";
 import { applyFootballDataMatches } from "@/lib/services/apply-football-data-matches";
+import { parseCompetitionEndDate } from "@/lib/services/competition-end-date";
 
 /**
  * Phase 7.16 (2026-06-08): the "NONE" option was removed from
@@ -110,6 +111,7 @@ export async function onboardCompetition(input: OnboardInput): Promise<OnboardRe
   const season = compMeta.currentSeason
     ? Number(compMeta.currentSeason.startDate.slice(0, 4))
     : new Date().getUTCFullYear();
+  const endDate = parseCompetitionEndDate(compMeta.currentSeason?.endDate);
 
   // 2. Pull the matches for the current season.
   const matches = await getCompetitionMatches(code, { season });
@@ -140,11 +142,13 @@ export async function onboardCompetition(input: OnboardInput): Promise<OnboardRe
       externalSource: "football-data",
       externalLeagueId: code,
       externalSeason: season,
+      ...(endDate ? { endDate } : {}),
     },
     update: {
       externalSource: "football-data",
       externalLeagueId: code,
       externalSeason: season,
+      ...(endDate ? { endDate } : {}),
     },
   });
 

@@ -29,6 +29,7 @@ model Competition {
   id                String    @id @default(uuid())
   name              String    @unique
   createdAt         DateTime  @default(now())
+  endDate           DateTime?
   matches           Match[]
   groups            Group[]
   // External provider linkage. NULL for competitions seeded by hand

@@ -39,8 +39,9 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
-import { getCompetitionMatches } from "@/lib/services/football-data";
+import { getCompetition, getCompetitionMatches } from "@/lib/services/football-data";
 import { applyFootballDataMatches } from "@/lib/services/apply-football-data-matches";
+import { parseCompetitionEndDate } from "@/lib/services/competition-end-date";
 
 export type SyncResult = {
   /** Number of fixtures the API returned for the requested season. */
@@ -116,11 +117,32 @@ export async function syncFootballDataCompetition(
     autoSettle: true,
   });
 
+  // 5.5. Refresh endDate from the provider's competition metadata.
+  //      The matches endpoint doesn't carry season end-dates, so we
+  //      have to hit the single-competition endpoint too. A failure
+  //      here is non-fatal — the matches are the primary payload, and
+  //      we'd rather stamp lastSyncedAt (so the admin sees the sync
+  //      ran) than abort over a metadata refresh. parseCompetitionEndDate
+  //      returns undefined on bad/missing input, which means "leave the
+  //      column alone" in the spread below.
+  let endDate: Date | undefined;
+  try {
+    const compMeta = await getCompetition(code);
+    endDate = parseCompetitionEndDate(compMeta?.currentSeason?.endDate);
+  } catch (e) {
+    console.warn(
+      `[syncFootballDataCompetition] endDate refresh failed for ${competition.name} (${competition.id}): ${(e as Error).message}. Matches were applied; endDate left unchanged.`,
+    );
+  }
+
   // 6. Stamp lastSyncedAt. We only update it on success — if the
   //    apply above threw, this line wouldn't run.
   await prisma.competition.update({
     where: { id: competition.id },
-    data: { lastSyncedAt: new Date() },
+    data: {
+      lastSyncedAt: new Date(),
+      ...(endDate ? { endDate } : {}),
+    },
   });
 
   return {

@@ -66,14 +66,13 @@ export function EnterCodeForm() {
             type="text"
             inputMode="text"
             autoComplete="off"
-            autoCapitalize="characters"
             spellCheck="false"
             maxLength={32}
             value={code}
             onChange={(e) => setCode(e.target.value)}
             placeholder="ABC12345"
             disabled={isPending}
-            className="w-full rounded-xl bg-background/40 border border-border pl-9 pr-3 py-2 font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-ring/50 disabled:opacity-50"
+            className="w-full rounded-xl bg-background/40 border border-border pl-9 pr-3 py-2 font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-ring/50 disabled:opacity-50"
           />
         </div>
         <button

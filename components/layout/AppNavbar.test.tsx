@@ -9,16 +9,15 @@ vi.mock("next/navigation", () => ({
 afterEach(() => cleanup());
 
 describe("AppNavbar", () => {
-  it("renders a link for every main app section (Dashboard, Groups, Leaderboard, Admin)", () => {
+  it("renders a link for every main app section (Home, Groups, Admin)", () => {
     render(<AppNavbar user={null} />);
+    // The brand <a> uses aria-label "Predicty home" which would also
+    // match /Home/i — disambiguate by exact name match.
     expect(
-      screen.getByRole("link", { name: /Dashboard/i }),
+      screen.getByRole("link", { name: "Home" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Groups/i })).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /Leaderboard/i }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Admin/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Groups" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Admin" })).toBeInTheDocument();
   });
 
   it("renders the brand link to the dashboard", () => {
@@ -29,7 +28,19 @@ describe("AppNavbar", () => {
 
   it("marks the active route with the primary text color", () => {
     render(<AppNavbar user={null} />);
-    const dashboardLink = screen.getByRole("link", { name: /Dashboard/i });
-    expect(dashboardLink.className).toMatch(/text-primary/);
+    // Exact "Home" — the brand link uses aria-label "Predicty home".
+    const homeLink = screen.getByRole("link", { name: "Home" });
+    expect(homeLink.className).toMatch(/text-primary/);
+  });
+
+  it("renders Settings as a disabled, non-link element", () => {
+    render(<AppNavbar user={null} />);
+    // Settings is rendered as a <span>, not an <a> or <button>.
+    const settings = screen.getByText(/Settings/i);
+    expect(settings).toBeInTheDocument();
+    expect(settings.tagName).toBe("SPAN");
+    expect(settings).toHaveAttribute("aria-disabled", "true");
+    // Sanity: the inner span has the cursor-not-allowed class.
+    expect(settings.className).toMatch(/cursor-not-allowed/);
   });
 });

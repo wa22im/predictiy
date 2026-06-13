@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Trophy,
+  Home,
   Users,
   Shield,
+  Settings,
   Menu,
   X,
   Goal,
@@ -14,10 +14,15 @@ import {
 import { CrestSlot } from "@/components/football/crest-slot";
 import { useState } from "react";
 
-const navItems = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+interface NavItem {
+  name: string;
+  href: string;
+  icon: typeof Home;
+}
+
+const navItems: NavItem[] = [
+  { name: "Home", href: "/dashboard", icon: Home },
   { name: "Groups", href: "/groups", icon: Users },
-  { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
   { name: "Admin", href: "/admin", icon: Shield },
 ];
 
@@ -74,6 +79,14 @@ export function AppNavbar({ user }: { user: any }) {
                 </Link>
               );
             })}
+            <span
+              aria-disabled="true"
+              className="flex items-center gap-2 text-sm font-medium text-muted-foreground/50 cursor-not-allowed select-none"
+              title="Settings (coming soon)"
+            >
+              <Settings className="h-4 w-4" />
+              Settings
+            </span>
           </div>
 
           {/* User Profile / Mobile Menu Button */}
@@ -118,6 +131,14 @@ export function AppNavbar({ user }: { user: any }) {
               </Link>
             );
           })}
+          <span
+            aria-disabled="true"
+            className="flex items-center gap-3 text-base font-medium text-muted-foreground/50 cursor-not-allowed select-none"
+            title="Settings (coming soon)"
+          >
+            <Settings className="h-5 w-5" />
+            Settings
+          </span>
         </div>
       )}
     </nav>

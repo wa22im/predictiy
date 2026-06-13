@@ -108,6 +108,14 @@ export function MatchBettingForm({
     }
     return out;
   }, [match.markets]);
+  // IMPORTANT: useState only uses the initializer on the FIRST mount.
+  // Subsequent prop changes (e.g. a different groupId with a different
+  // viewerBet) are IGNORED — the picks state would stay stuck on the
+  // first group's values. Parents that can re-render this form with a
+  // different groupId (or any other context that changes the bet state)
+  // MUST pass a React `key` that changes with that context. See
+  // components/dashboard/DashboardTabs.tsx where the key is
+  // `${activeGroup.id}-${match.id}` to force a remount on tab switch.
   const [picks, setPicks] = useState<Record<string, string>>(initialPicks);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();

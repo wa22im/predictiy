@@ -1,4 +1,5 @@
 import "server-only";
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getStrategy } from "@/lib/scoring";
 import type { ScoringConfig } from "@/lib/scoring/default-config";
@@ -130,6 +131,17 @@ export async function settleMarket(input: SettleInput): Promise<SettleResult> {
       }
     }
   }
+
+  // Invalidate the leaderboard cache so all affected groups'
+  // leaderboards are refetched on next request. The cache uses a
+  // single global tag ("group-leaderboard"); a settle invalidates
+  // every group's leaderboard entry at once. This is mild
+  // over-invalidation, but settles are infrequent (only when an
+  // admin marks a market settled) and the leaderboard data set is
+  // small. Per-group tags would require a per-group cache function
+  // (unstable_cache does not accept dynamic tag lists), which adds
+  // complexity for marginal benefit.
+  revalidateTag("group-leaderboard");
 
   return {
     marketId: market.id,

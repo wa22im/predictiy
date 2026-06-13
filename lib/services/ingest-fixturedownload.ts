@@ -73,6 +73,24 @@ export async function ingestFromFixtureDownload(
     aboveMaxRound: matches.filter((m) => m.RoundNumber > maxRound).length,
   };
 
+  // fixturedownload.com doesn't expose a tournament end-date, so
+  // derive one from the latest real match's kickoffTime. The
+  // dashboard's active-competition filter (`!endDate || endDate >
+  // now`) treats a populated endDate as "tournament finished" — for
+  // an upcoming tournament with no matches played yet the max
+  // kickoffTime is the final, and once that moment passes the group
+  // drops off the dashboard. If `real` is empty (e.g. all matches
+  // were placeholders) we leave endDate undefined.
+  const lastKickoff = real.reduce<Date | null>(
+    (acc, m) => {
+      const d = parseDateUtc(m.DateUtc);
+      if (!acc || d.getTime() > acc.getTime()) return d;
+      return acc;
+    },
+    null,
+  );
+  const endDate = lastKickoff ?? undefined;
+
   // Upsert the competition. externalLeagueId is null for this source
   // (the feed has no numeric league id). lastSyncedAt is set so
   // future api-football ingests can co-exist on the same competition
@@ -88,10 +106,12 @@ export async function ingestFromFixtureDownload(
       externalSource: "fixturedownload",
       externalLeagueId: null,
       externalSeason: input.season,
+      ...(endDate ? { endDate } : {}),
     },
     update: {
       externalSource: "fixturedownload",
       externalSeason: input.season,
+      ...(endDate ? { endDate } : {}),
     },
   });
 

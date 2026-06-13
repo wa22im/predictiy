@@ -49,12 +49,24 @@ export function MatchCard({
     return m.correctAnswer === viewerBet.predictedValue;
   });
 
+  // Top-border color encodes the match status at a glance:
+  //   - FINISHED: blue-500 (settled, no further action)
+  //   - GOING: success green (live)
+  //   - SCHEDULED + locked: emerald-400 (in the 5-min lockdown, soon)
+  //   - SCHEDULED + not locked: muted gray (still editable, no rush)
+  const statusBorderClass = (() => {
+    if (match.status === "FINISHED") return "border-t-blue-500";
+    if (match.status === "GOING") return "border-t-success";
+    if (match.isLocked) return "border-t-emerald-400";
+    return "border-t-muted";
+  })();
+
   const stateClass =
     matchState === "has-bet"
-      ? "pitch-card p-3 md:p-4 space-y-4 !border-2 !border-primary shadow-[0_0_18px_-2px_var(--primary)]"
+      ? `pitch-card p-3 md:p-4 space-y-4 border-t-4 ${statusBorderClass} shadow-[0_0_18px_-2px_var(--primary)]`
       : matchState === "locked"
-      ? "pitch-card p-3 md:p-4 space-y-4 !border-2 !border-locked shadow-[0_0_12px_-4px_var(--locked)]"
-      : "pitch-card p-3 md:p-4 space-y-4";
+      ? `pitch-card p-3 md:p-4 space-y-4 border-t-4 ${statusBorderClass} shadow-[0_0_12px_-4px_var(--locked)]`
+      : `pitch-card p-3 md:p-4 space-y-4 border-t-4 ${statusBorderClass}`;
 
   return (
     <article className={`${stateClass} ${hasCorrectPrediction ? "ring-2 ring-success ring-offset-2 ring-offset-background" : ""}`}>

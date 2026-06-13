@@ -54,3 +54,23 @@ codyy completed the UI overhaul. Added AppNavbar, implemented football-themed ic
 - Used football-themed icons consistent with sports prediction domain
 - Made MemberPredictions expandable for better space utilization
 - Added visual indicator (CheckCircle2) on MatchCard for correct predictions
+
+## Phase Boundary: Build
+
+**Agent:** codyy  
+**Task:** Tabbed dashboard implementation  
+**Status:** Completed
+
+### Summary
+Implemented tabbed dashboard. Created `lib/services/dashboard.ts` (optimized querying), `components/dashboard/DashboardTabs.tsx` (navigation), and `components/dashboard/DashboardMatchRow.tsx` (matches display). Updated `app/(app)/dashboard/page.tsx`. Verified with 14 unit/component tests.
+
+### Files Changed
+- `lib/services/dashboard.ts` - Optimized querying
+- `components/dashboard/DashboardTabs.tsx` - Navigation tabs
+- `components/dashboard/DashboardMatchRow.tsx` - Matches display
+- `app/(app)/dashboard/page.tsx` - Dashboard page updated
+
+### Decisions Made
+- Created service layer for dashboard data queries
+- Implemented tabbed navigation for dashboard sections
+- Built reusable match row component for display

@@ -40,14 +40,15 @@ export default async function LeaderboardPage({ params }: { params: Params }) {
             href={`/groups/${groupId}`}
             className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-block"
           >
-            ← Back to {group.name}
+            ← {group.name}
           </Link>
-          <p className="micro-tag mb-2">{group.competition.name}</p>
           <h1 className="font-display text-4xl md:text-5xl tracking-tight mb-2">
             Leaderboard
           </h1>
+          <p className="micro-tag mb-2">{group.competition.name}</p>
+          
           <p className="text-muted-foreground text-sm leading-6 mb-8">
-            Standings for {group.name}. Updates instantly when a match settles.
+            Standings Updates instantly when a match settles.
           </p>
 
           <LeaderboardList entries={entries} groupId={groupId} />

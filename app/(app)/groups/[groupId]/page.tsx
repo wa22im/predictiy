@@ -1,10 +1,12 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Goal, Trophy, Users } from "lucide-react";
+import { ChevronLeft, Goal, Trophy } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { ShareInvite } from "@/components/groups/ShareInvite";
-import { PitchBg, CrestSlot } from "@/components/football";
+import { LeaderboardList } from "@/components/leaderboard/LeaderboardList";
+import { getGroupLeaderboard } from "@/lib/services/leaderboard";
+import { PitchBg } from "@/components/football";
 
 export const dynamic = "force-dynamic";
 
@@ -42,25 +44,17 @@ export default async function GroupPage({ params }: { params: Params }) {
     redirect("/dashboard");
   }
 
+  // Top-5 leaderboard preview for the landing page. The full list
+  // lives on /groups/[groupId]/leaderboard; the preview gives a
+  // quick-glance summary without leaving the landing page.
+  const entries = await getGroupLeaderboard(groupId);
+
   return (
     <PitchBg variant="canvas">
       <main className="min-h-screen flex-1 px-4 py-12">
         <div className="max-w-4xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
-            <div className="inline-flex items-center gap-2 text-sm">
-              <Link
-                href="/dashboard"
-                className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
-              >
-                <ChevronLeft aria-hidden="true" className="h-4 w-4" />
-                Back 
-              </Link>
-              <span aria-hidden="true" className="text-border">/</span>
-              <span className="text-foreground/50 font-medium">{group.name}</span>
-            </div>
-          </div>
 
-          <div className="mb-8">           
+          <div className="mb-8">
              <h1 className="font-display sm:text-4xl font-bold tracking-tight ">
                {group.name}
              </h1>
@@ -72,62 +66,45 @@ export default async function GroupPage({ params }: { params: Params }) {
                {group.members.length === 1 ? "member" : "members"}
              </p>
           </div>
-      
+
           <div className="mb-8">
             <ShareInvite inviteCode={group.inviteCode} />
           </div>
- 
-          <div className="grid gap-6 md:grid-cols-3">
+
+          {/* Action buttons: stacked column, matching ShareInvite collapsed-summary size */}
+          <div className="space-y-2 mb-8">
             <Link
               href={`/groups/${groupId}/matches`}
-              className="pitch-card p-6 hover:-translate-y-0.5 transition-transform"
+              className="pitch-card p-4 flex items-center gap-3 hover:bg-secondary/40 transition-colors"
             >
-              <p className="micro-tag mb-2 inline-flex items-center gap-1.5">
-                <Goal aria-hidden="true" className="h-3.5 w-3.5 text-accent" />
-                Fixtures
-              </p>
-              <h2 className="font-display text-2xl font-bold tracking-tight mb-1">
-                Matches
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                Today&apos;s games and your predictions.
-              </p>
+              <Goal aria-hidden="true" className="h-5 w-5 text-accent" />
+              <span className="font-display font-bold tracking-tight">Matches</span>
+              <span aria-hidden="true" className="ml-auto text-muted-foreground text-sm">→</span>
             </Link>
-
             <Link
               href={`/groups/${groupId}/leaderboard`}
-              className="pitch-card p-6 hover:-translate-y-0.5 transition-transform"
+              className="pitch-card p-4 flex items-center gap-3 hover:bg-secondary/40 transition-colors"
             >
-              <p className="micro-tag mb-2 inline-flex items-center gap-1.5">
-                <Trophy
-                  aria-hidden="true"
-                  className="h-3.5 w-3.5 text-accent"
-                />
-                Standings
-              </p>
-              <h2 className="font-display text-2xl font-bold tracking-tight mb-1">
-                Leaderboard
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                See who&apos;s winning the pool.
-              </p>
+              <Trophy aria-hidden="true" className="h-5 w-5 text-accent" />
+              <span className="font-display font-bold tracking-tight">Leaderboard</span>
+              <span aria-hidden="true" className="ml-auto text-muted-foreground text-sm">→</span>
             </Link>
-
-            <div className="pitch-card p-6">
-              <p className="micro-tag mb-2 inline-flex items-center gap-1.5">
-                <Users aria-hidden="true" className="h-3.5 w-3.5 text-accent" />
-                Members
-              </p>
-              <ul className="space-y-1 text-sm">
-                {group.members.map((m) => (
-                  <li key={m.id} className="flex items-center gap-2">
-                    <CrestSlot name={m.user.nickname} size="sm" />
-                    <span>{m.user.nickname}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
           </div>
+
+          {/* Leaderboard preview: top 5 */}
+          <section className="mb-8">
+            <h2 className="font-display text-xl font-bold tracking-tight mb-3">
+                {`Top ${entries.length >10 ? "10": entries.length}`}
+            </h2>
+            
+            <LeaderboardList
+              entries={entries.slice(0, 10)}
+              groupId={groupId}
+            />
+            <div className="flex justify-end mt-2">
+          
+            </div>
+          </section>
         </div>
       </main>
     </PitchBg>

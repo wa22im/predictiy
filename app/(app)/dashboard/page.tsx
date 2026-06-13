@@ -1,10 +1,13 @@
-import { Trophy, Volleyball } from "lucide-react";
-import Link from "next/link";
+import { Volleyball } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { CreatePoolButton } from "@/components/groups/CreatePoolButton";
 import { EnterCodeForm } from "@/components/groups/EnterCodeForm";
 import { PitchBg } from "@/components/football";
+import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
+import { getDashboardData } from "@/lib/services/dashboard";
+
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -14,23 +17,15 @@ export default async function DashboardPage() {
 
   if (!user) return null; // Handled by middleware usually
 
-  const memberships = await prisma.groupMember.findMany({
-    where: { userId: user.id },
-    include: {
-      group: {
-        include: {
-          competition: { select: { name: true } },
-          _count: { select: { members: true } },
-        },
-      },
-    },
-    orderBy: { joinedAt: "desc" },
-  });
+  const [dashboard, competitions] = await Promise.all([
+    getDashboardData(user.id),
+    prisma.competition.findMany({
+      select: { id: true, name: true },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
-  const competitions = await prisma.competition.findMany({
-    select: { id: true, name: true },
-    orderBy: { createdAt: "desc" },
-  });
+  const hasActiveGroups = dashboard.groups.length > 0;
 
   return (
     <PitchBg variant="canvas">
@@ -45,16 +40,27 @@ export default async function DashboardPage() {
               />
               Predictyy
             </h1>
-            <CreatePoolButton competitions={competitions} />
+          
           </div>
           <p className="text-muted-foreground leading-7 mb-6">
             The groups you&apos;re in. Predict, compete, win.
           </p>
-          <div className="mb-12">
-            <EnterCodeForm />
+
+          {/* Header actions: side-by-side CreatePool + EnterCode */}
+          <div className="pitch-card-fut p-4 sm:p-6 mb-8">
+            <div className="grid sm:grid-cols-2 gap-3">
+              <CreatePoolButton competitions={competitions} variant="card" />
+              <EnterCodeForm />
+            </div>
           </div>
 
-          {memberships.length === 0 ? (
+          {hasActiveGroups ? (
+            <DashboardTabs
+              groups={dashboard.groups}
+              serverNow={dashboard.serverNow}
+              lockdownMs={dashboard.lockdownMs}
+            />
+          ) : (
             <div className="pitch-card-hero p-10 text-center max-w-md mx-auto">
               <Volleyball
                 aria-hidden="true"
@@ -63,32 +69,9 @@ export default async function DashboardPage() {
               <p className="font-display text-2xl tracking-tight mb-2">
                 You aren&apos;t in any pools yet!
               </p>
-              <p className="text-muted-foreground text-sm leading-6 mb-6">
-                Create a tournament pool to start competing with friends.
+              <p className="text-muted-foreground text-sm leading-6">
+                Create a tournament pool or enter an invite code to start competing with friends.
               </p>
-              <CreatePoolButton competitions={competitions} />
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {memberships.map(({ group }) => (
-                <Link
-                  key={group.id}
-                  href={`/groups/${group.id}`}
-                  className="pitch-card-fut p-6 hover:-translate-y-0.5 transition-transform"
-                >
-                  <p className="micro-tag mb-2 inline-flex items-center gap-2">
-                    <Trophy aria-hidden="true" className="h-3.5 w-3.5 text-accent" />
-                    {group.competition.name}
-                  </p>
-                  <h2 className="font-display text-2xl font-bold tracking-tight mb-2">
-                    {group.name}
-                  </h2>
-                  <p className="text-muted-foreground text-sm">
-                    {group._count.members}{" "}
-                    {group._count.members === 1 ? "member" : "members"}
-                  </p>
-                </Link>
-              ))}
             </div>
           )}
         </div>

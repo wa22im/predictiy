@@ -14,7 +14,7 @@ export function MemberPredictions({
   
   if (otherBets.length === 0) return null;
 
-  const MAX_VISIBLE = 3;
+  const MAX_VISIBLE = 5;
   const isLongList = otherBets.length > MAX_VISIBLE;
   const visibleBets = isExpanded ? otherBets : otherBets.slice(0, MAX_VISIBLE);
 
@@ -29,13 +29,13 @@ export function MemberPredictions({
             className="text-xs font-medium text-primary hover:underline flex items-center gap-1"
           >
             {isExpanded ? (
-              <>
+              <span className="micro-tag">
                 Show less <ChevronUp className="h-3 w-3" />
-              </>
+              </span>
             ) : (
-              <>
-                Show all ({otherBets.length}) <ChevronDown className="h-3 w-3" />
-              </>
+              <span className="micro-tag">
+                 ({otherBets.length}) <ChevronDown className="h-3 w-3" />
+              </span>
             )}
           </button>
         )}
@@ -53,6 +53,11 @@ export function MemberPredictions({
               <span className={b.isMasked ? "text-muted-foreground" : ""}>
                 {b.predictedValue}
               </span>
+              
+
+              
+
+              
             </span>
           </span>
         ))}

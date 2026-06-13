@@ -983,6 +983,7 @@ export const CompetitionScalarFieldEnum = {
   id: 'id',
   name: 'name',
   createdAt: 'createdAt',
+  endDate: 'endDate',
   externalSource: 'externalSource',
   externalLeagueId: 'externalLeagueId',
   externalSeason: 'externalSeason',

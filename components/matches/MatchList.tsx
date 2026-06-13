@@ -20,11 +20,22 @@ export function MatchList({
     [matches, serverNow],
   );
 
-  // Default the first 2 day-groups to open, the rest closed. The user
-  // can toggle any day header to expand or collapse. The state is
-  // local — it does not persist across navigation.
+  // Default-open: 3 OLDEST day-groups that contain at least one
+  // unsettled match. The day-groups are sorted chronologically
+  // (oldest first) by groupByDay, so the first 3 entries of the
+  // filtered (unsettled) array are the 3 oldest unsettled days.
+  // The user can toggle any day header to expand or collapse. The
+  // state is local — it does not persist across navigation. Days
+  // with all-FINISHED match lists stay closed, as do day-groups
+  // beyond the top 3 even if they have unsettled matches.
   const [openDays, setOpenDays] = useState<Set<string>>(
-    () => new Set(grouped.slice(0, 2).map((g) => g.day)),
+    () =>
+      new Set(
+        grouped
+          .filter((g) => g.items.some((m) => m.status !== "FINISHED"))
+          .slice(0, 3)
+          .map((g) => g.day),
+      ),
   );
 
   function toggleDay(day: string) {
@@ -95,20 +106,29 @@ export function MatchList({
 }
 
 function groupByDay(matches: FeedMatch[], _serverNow: string) {
-  // Group by UTC date — display stays consistent across users in any
-  // timezone. The serverNow param is unused but kept for forward
-  // compatibility (e.g. "today / tomorrow" labels).
-  const buckets = new Map<string, FeedMatch[]>();
-  for (const m of matches) {
-    const date = new Date(m.kickoffTime);
+  // Simple: sort matches first, then group while maintaining order
+  const sortedMatches = [...matches].sort((a, b) => 
+    new Date(a.kickoffTime).getTime() - new Date(b.kickoffTime).getTime()
+  );
+  
+  const result: { day: string; items: FeedMatch[] }[] = [];
+  
+  for (const match of sortedMatches) {
+    const date = new Date(match.kickoffTime);
     const day = date.toLocaleDateString("en-GB", {
       weekday: "long",
       day: "2-digit",
       month: "long",
       timeZone: "UTC",
     });
-    if (!buckets.has(day)) buckets.set(day, []);
-    buckets.get(day)!.push(m);
+    
+    const lastGroup = result[result.length - 1];
+    if (lastGroup && lastGroup.day === day) {
+      lastGroup.items.push(match);
+    } else {
+      result.push({ day, items: [match] });
+    }
   }
-  return Array.from(buckets.entries()).map(([day, items]) => ({ day, items }));
+  
+  return result;
 }

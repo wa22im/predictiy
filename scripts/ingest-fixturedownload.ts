@@ -73,6 +73,21 @@ async function main() {
   const firstDate = real[0] ? parseDateUtc(real[0].DateUtc) : new Date();
   const season = firstDate.getUTCFullYear();
 
+  // Derive endDate from the latest match's kickoffTime. Mirrors
+  // lib/services/ingest-fixturedownload.ts: fixturedownload.com has
+  // no tournament end-date field, so the max kickoffTime is the
+  // best proxy. If `real` is empty we leave endDate undefined so the
+  // column stays null (no tournament end known).
+  const lastKickoff = real.reduce<Date | null>(
+    (acc, m) => {
+      const d = parseDateUtc(m.DateUtc);
+      if (!acc || d.getTime() > acc.getTime()) return d;
+      return acc;
+    },
+    null,
+  );
+  const endDate = lastKickoff ?? undefined;
+
   // Upsert competition
   const existing = await prisma.competition.findUnique({
     where: { name },
@@ -85,10 +100,12 @@ async function main() {
       externalSource: "fixturedownload",
       externalLeagueId: null,
       externalSeason: season,
+      ...(endDate ? { endDate } : {}),
     },
     update: {
       externalSource: "fixturedownload",
       externalSeason: season,
+      ...(endDate ? { endDate } : {}),
     },
   });
   console.log(`Competition: ${competition.name} (id=${competition.id})${existing ? " — updated" : " — created"}`);
