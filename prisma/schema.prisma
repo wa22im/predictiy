@@ -23,6 +23,7 @@ model User {
   createdAt   DateTime @default(now())
   memberships GroupMember[]
   bets        UserBet[]
+  details       Json?
 }
 
 model Competition {
@@ -131,7 +132,7 @@ model GroupMember {
   joinedAt DateTime @default(now())
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-
+  details       Json?
   @@unique([userId, groupId])
   @@index([groupId])
 }
@@ -172,7 +173,7 @@ model UserBet {
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   group          Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
   market         BetMarket @relation(fields: [marketId], references: [id], onDelete: Cascade)
-
+  details       Json?
   @@unique([userId, groupId, marketId])
   @@index([groupId])
   @@index([marketId])

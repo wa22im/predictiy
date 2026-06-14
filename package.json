@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "db:init": "tsx scripts/db-init.ts",
     "db:migrate": "prisma migrate deploy",
     "db:reset": "prisma migrate reset --force",
     "db:seed": "prisma db seed",
@@ -22,7 +23,8 @@
     "cleanup:legacy": "tsx scripts/cleanup-legacy-markets.ts",
     "wipe:db": "tsx scripts/wipe-db.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:push":"prisma db push"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
