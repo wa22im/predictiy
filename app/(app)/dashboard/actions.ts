@@ -40,6 +40,11 @@ export async function createGroupAction(input: CreateGroupPayload) {
       competitionId: parsed.data.competitionId,
       inviteCode,
       scoringConfig: DEFAULT_SCORING_CONFIG,
+      // Track the creator in JSONB (no schema migration). The
+      // rename endpoint reads this to enforce creator-only
+      // permission. Legacy groups have no createdBy and cannot be
+      // renamed until a creator is assigned.
+      details: { createdBy: user.id },
       members: {
         create: {
           userId: user.id,

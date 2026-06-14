@@ -47,10 +47,14 @@ export default async function DashboardPage() {
           </p>
 
           {/* Header actions: side-by-side CreatePool + EnterCode */}
-          <div className="pitch-card-fut p-4 sm:p-6 mb-8">
-            <div className="grid sm:grid-cols-2 gap-3">
-              <CreatePoolButton competitions={competitions} variant="card" />
-              <EnterCodeForm />
+          <div className="pitch-card-fut p-2 sm:p-3 mb-4">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1">
+                <CreatePoolButton competitions={competitions} variant="card" />
+              </div>
+              <div className="flex-1">
+                <EnterCodeForm />
+              </div>
             </div>
           </div>
 

@@ -191,13 +191,10 @@ export function CreatePoolButton({
       ) : (
         <button
           onClick={() => setOpen(true)}
-          className="pitch-card-fut p-6 hover:-translate-y-0.5 transition-transform text-left"
+          className="pitch-card-fut p-3 hover:-translate-y-0.5 transition-transform text-left w-full"
         >
-          <p className="font-display text-2xl font-bold tracking-tight mb-2">
+          <p className="font-display text-base font-bold tracking-tight">
             ➕  Create a Pool
-          </p>
-          <p className="text-muted-foreground text-sm">
-            Start a new tournament pool.
           </p>
         </button>
       )}

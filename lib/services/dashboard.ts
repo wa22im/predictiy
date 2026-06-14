@@ -41,7 +41,7 @@ export type DashboardPayload = {
 /**
  * Optimized dashboard data fetcher.
  * Fetches groups with active (unexpired) competitions, their unsettled matches,
- * and the two most recent finished matches.
+ * and the three most recent finished matches per group.
  */
 export async function getDashboardData(viewerId: string): Promise<DashboardPayload> {
   const now = new Date();
@@ -54,12 +54,19 @@ export async function getDashboardData(viewerId: string): Promise<DashboardPaylo
   //    group ids — this keeps the batched-query contract (2 calls,
   //    not 1 nested + N per-group) while still loading the member
   //    data needed for "other bets".
+  //
+  //    We `select` only the competition fields we need: `endDate`
+  //    (typed column) and `details` (JSONB, carries
+  //    `endDateWithGrace`). Full competition rows would pull a lot
+  //    of extra columns we never read on the dashboard.
   const memberships = await prisma.groupMember.findMany({
     where: { userId: viewerId },
     include: {
       group: {
         include: {
-          competition: true,
+          competition: {
+            select: { id: true, name: true, endDate: true, details: true },
+          },
           _count: { select: { members: true } },
           members: {
             include: {
@@ -81,10 +88,32 @@ export async function getDashboardData(viewerId: string): Promise<DashboardPaylo
     };
   }
 
-  // 2. Filter for active competitions (endDate > now)
-  const activeMemberships = memberships.filter(
-    (m) => !m.group.competition.endDate || m.group.competition.endDate > now
-  );
+  // 2. Filter for active competitions: manual groups (no competition)
+  //    are always active. For linked competitions, prefer the JSONB
+  //    `details.endDateWithGrace` (7-day grace period) over the
+  //    typed `endDate` column. Falls back to the typed column when
+  //    the JSONB field is absent or malformed — this is what
+  //    classifyGroupArchive does, and the dashboard must agree so a
+  //    group is "active" or "archived" consistently across the two
+  //    read sites.
+  const activeMemberships = memberships.filter((m) => {
+    const comp = m.group.competition;
+    if (!comp) return true; // manual group, always active
+    const details = (comp.details as Record<string, unknown> | null) ?? {};
+    const grace =
+      typeof details.endDateWithGrace === "string"
+        ? details.endDateWithGrace
+        : null;
+    const effective = grace ? new Date(grace) : comp.endDate;
+    if (
+      effective &&
+      !isNaN(effective.getTime()) &&
+      effective.getTime() <= now.getTime()
+    ) {
+      return false; // archived (past grace)
+    }
+    return true; // active
+  });
 
   if (activeMemberships.length === 0) {
     return {
@@ -95,33 +124,56 @@ export async function getDashboardData(viewerId: string): Promise<DashboardPaylo
   }
 
   const activeGroupIds = activeMemberships.map((m) => m.group.id);
-  const activeCompetitionIds = activeMemberships.map(
-    (m) => m.group.competition.id
-  );
+  // Manual groups (no linked competition) cannot have matches, so
+  // they are excluded from the competitionId IN (...) lookup. The
+  // match query would also be a no-op for them.
+  const activeCompetitionIds = activeMemberships
+    .map((m) => m.group.competition?.id)
+    .filter((id): id is string => typeof id === "string");
 
   // 3. Fetch all relevant matches, all group members, and all user bets
-  //    in parallel. The match query filters to unsettled statuses only
-  //    (SCHEDULED | GOING) — settled matches never surface on the
-  //    dashboard. The all-members lookup and the user-bet lookup both
-  //    use IN filters keyed on the active group ids so the database can
-  //    serve the read in one round trip.
-  const [allMatches, allGroupMembers] = await Promise.all([
-    prisma.match.findMany({
-      where: {
-        competitionId: { in: activeCompetitionIds },
-        status: { in: ["SCHEDULED", "GOING"] },
-      },
-      include: { markets: true },
-      orderBy: { kickoffTime: "desc" },
-    }),
-    prisma.groupMember.findMany({
-      where: { groupId: { in: activeGroupIds } },
-      include: {
-        user: { select: { id: true, nickname: true, emoji: true } },
-      },
-      orderBy: { joinedAt: "asc" },
-    }),
-  ]);
+  //    in parallel. The unsettled match query filters to non-FINISHED
+  //    statuses (SCHEDULED | GOING); a SECOND query fetches recent
+  //    FINISHED matches so the dashboard can prepend settled games
+  //    (the "last settled" surface per principal direction). The
+  //    all-members lookup and the user-bet lookup both use IN filters
+  //    keyed on the active group ids so the database can serve the
+  //    read in one round trip.
+  const [allMatches, allGroupMembers, recentFinishedMatches] =
+    await Promise.all([
+      prisma.match.findMany({
+        where: {
+          competitionId: { in: activeCompetitionIds },
+          status: { in: ["SCHEDULED", "GOING"] },
+        },
+        include: { markets: true },
+        orderBy: { kickoffTime: "desc" },
+      }),
+      prisma.groupMember.findMany({
+        where: { groupId: { in: activeGroupIds } },
+        include: {
+          user: { select: { id: true, nickname: true, emoji: true } },
+        },
+        orderBy: { joinedAt: "asc" },
+      }),
+      // Recent FINISHED matches across all active competitions. We
+      // cap at 50 globally (10 competitions × 5 per group) and slice
+      // to 3 per group below. The take is intentionally loose: a
+      // single user has at most a few active competitions, and the
+      // dashboard's per-group cap (3) is much smaller than the fetch
+      // size, so 50 covers any realistic scenario. A raw LIMIT would
+      // require dropping into SQL; in-memory take is fine for this
+      // surface.
+      prisma.match.findMany({
+        where: {
+          competitionId: { in: activeCompetitionIds },
+          status: "FINISHED",
+        },
+        include: { markets: true },
+        orderBy: { kickoffTime: "desc" },
+        take: 50,
+      }),
+    ]);
 
   // marketIds is derived from the unsettled matches (those are the markets
   // the user is interacting with on the dashboard). Filtering userBet by
@@ -172,17 +224,34 @@ export async function getDashboardData(viewerId: string): Promise<DashboardPaylo
     `;
   }
 
-  // 4. Filter out groups that have zero unsettled matches — settled
-  //    competitions shouldn't surface on the dashboard.
-  const groupsWithUnsettled = activeMemberships.filter((m) =>
-    allMatches.some((match) => match.competitionId === m.group.competition.id)
-  );
+  // 4. Keep groups that have at least one unsettled OR one recent
+  //    FINISHED match. Fully-settled competitions within the grace
+  //    window still surface — the principal wants "always show the
+  //    last settled games" on the dashboard. Manual groups (no
+  //    competition) can never have matches on either side, so they
+  //    are filtered out here (the `?.` keeps us safe when
+  //    competition is null).
+  const groupsWithMatches = activeMemberships.filter((m) => {
+    const compId = m.group.competition?.id;
+    if (!compId) return false; // manual group
+    const hasUnsettled = allMatches.some((match) => match.competitionId === compId);
+    const hasFinished = recentFinishedMatches.some(
+      (match) => match.competitionId === compId,
+    );
+    return hasUnsettled || hasFinished;
+  });
 
   // 5. Organize data into DashboardGroups
-  const dashboardGroups: DashboardGroup[] = groupsWithUnsettled.map((m) => {
+  const dashboardGroups: DashboardGroup[] = groupsWithMatches.map((m) => {
     const groupId = m.group.id;
-    const groupMatches = allMatches.filter((match) =>
-      match.competitionId === m.group.competition.id
+    const groupMatches = allMatches.filter(
+      (match) => match.competitionId === m.group.competition?.id,
+    );
+    // Filter the recent FINISHED fetch to this group's competition. The
+    // competitionId column is on the Match row; the per-group competition
+    // id comes from the joined membership.
+    const groupFinishedMatches = recentFinishedMatches.filter(
+      (match) => match.competitionId === m.group.competition?.id,
     );
     // Prefer the second groupMember call's result (the batched lookup).
     // Fall back to the nested include from the first call if the second
@@ -192,33 +261,50 @@ export async function getDashboardData(viewerId: string): Promise<DashboardPaylo
     const groupMembers =
       membersByGroupId.get(groupId) ?? m.group.members ?? [];
 
-    // Unsettled: chronological, past first (oldest kickoff at top).
-    // The "2/8 format" — 2 most-recent finished + 8 unsettled — caps the
-    // dashboard surface at 10. The 2 finished are PREPENDED at the top
-    // (most-recent first), then the 8 unsettled chronological past-first.
-    // The user navigates to the group detail page for the live-updating
-    // chronological feed.
+    // The "always-10 format" — take as many unsettled as possible
+    // (up to 7), then fill the remaining slots with the most-recent
+    // settled games (up to 10 - unsettled). If there aren't enough
+    // settled to fill to 10, show what's available (no padding).
+    // The settled are PREPENDED at the top (most-recent first by
+    // kickoffTime DESC), then the unsettled chronological past-first
+    // (kickoffTime ASC, oldest first).
+    // The user navigates to the group detail page for the full
+    // chronological feed and the live-updating settled list.
     //
-    // The service is defensive: even though the query filter excludes
-    // FINISHED at the DB level, we still split the returned matches so
-    // the "2 most-recent finished" prepend works in cases where the
-    // underlying data source returns settled matches too (e.g. future
-    // cache layer, integration tests).
+    // Source split:
+    //   - `groupMatches` already filters out FINISHED (the unsettled
+    //     query excludes status: "FINISHED" at the DB level).
+    //   - `groupFinishedMatches` is the slice of the second query for
+    //     this group's competition, sorted DESC by kickoffTime.
+    // We still defensively filter by status here so the split is
+    // robust to future data sources (e.g. a cache layer that returns
+    // a mixed bag).
     const unsettledMatches = groupMatches
       .filter((match) => match.status !== "FINISHED")
       .sort((a, b) => a.kickoffTime.getTime() - b.kickoffTime.getTime());
 
-    const finishedMatches = groupMatches
-      .filter((match) => match.status === "FINISHED")
-      .sort((a, b) => b.kickoffTime.getTime() - a.kickoffTime.getTime());
+    // Combine the in-group FINISHED matches (defensive: should be
+    // empty given the query filter, but the union keeps the split
+    // self-correcting) with the recent-FINISHED fetch. The fetch is
+    // already sorted DESC, so the combined list is sorted DESC too.
+    const finishedMatches = [
+      ...groupMatches.filter((match) => match.status === "FINISHED"),
+      ...groupFinishedMatches,
+    ].sort((a, b) => b.kickoffTime.getTime() - a.kickoffTime.getTime());
 
-    // Cap the dashboard surface to at most 10 matches per group:
-    //   - 2 most-recent finished (prepended at top)
-    //   - up to 8 unsettled (sorted chronologically, past first)
-    // The user navigates to the group detail page for the full list; the
-    // dashboard is a quick-glance summary.
-    const cappedUnsettled = unsettledMatches.slice(0, 8);
-    const latestFinished = finishedMatches.slice(0, 2);
+    // Always-10 algorithm: cap unsettled at 7, then fill the gap
+    // with the most-recent settled games up to (10 - unsettled). If
+    // unsettled < 7, settled count = 10 - unsettled (capped at
+    // finished.length). Total surface is min(10, unsettled + finished);
+    // if there aren't enough matches we show what's available — the
+    // dashboard never shows > 10.
+    const unsettledCount = Math.min(unsettledMatches.length, 7);
+    const settledCount = Math.min(
+      finishedMatches.length,
+      10 - unsettledCount,
+    );
+    const cappedUnsettled = unsettledMatches.slice(0, unsettledCount);
+    const latestFinished = finishedMatches.slice(0, settledCount);
     const combinedMatches = [...latestFinished, ...cappedUnsettled].map(
       (match) => {
       // Find bets for this match in this group

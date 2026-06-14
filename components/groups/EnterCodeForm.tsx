@@ -49,12 +49,9 @@ export function EnterCodeForm() {
     <form
       onSubmit={handleSubmit}
       aria-describedby={error ? errorId : undefined}
-      className="pitch-card p-4"
+      className="pitch-card p-3 w-full"
     >
-      <label htmlFor={inputId} className="micro-tag block mb-2">
-        Have a code? Join a pool
-      </label>
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-row gap-2">
         <div className="relative flex-1">
           <Hash
             aria-hidden="true"
@@ -72,13 +69,13 @@ export function EnterCodeForm() {
             onChange={(e) => setCode(e.target.value)}
             placeholder="ABC12345"
             disabled={isPending}
-            className="w-full rounded-xl bg-background/40 border border-border pl-9 pr-3 py-2 font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-ring/50 disabled:opacity-50"
+            className="w-full rounded-xl bg-background/40 border border-border pl-9 pr-3 py-1.5 font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-ring/50 disabled:opacity-50"
           />
         </div>
         <button
           type="submit"
           disabled={isPending || trimmedLen < 8}
-          className="neon-button-flat px-5 py-2 text-sm font-bold disabled:opacity-50 disabled:pointer-events-none"
+          className="neon-button-flat px-5 py-1.5 text-sm font-bold disabled:opacity-50 disabled:pointer-events-none"
         >
           {isPending ? "Joining…" : "Join"}
         </button>

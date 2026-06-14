@@ -1,11 +1,36 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { ingestLeague, syncCompetition } from "@/lib/services/ingest-league";
 import { ApiFootballError } from "@/lib/services/api-football";
+
+/**
+ * Build a Cookie header from the user's session. Server actions that
+ * fetch their own API routes need to forward the session cookies so
+ * the route's `requireAdmin()` can authenticate the request. Without
+ * this, the route sees an unauthenticated request and returns 401
+ * NOT_AUTHENTICATED — which is the exact error the principal hit.
+ *
+ * Why we fetch the API route at all instead of calling the service
+ * directly: the action's contract is "go through the public API so
+ * curl and the UI share the same auth + validation + error envelope."
+ * The cookie forwarding is what makes that contract actually work.
+ *
+ * IMPORTANT: this fix has been lost and re-applied twice in the past
+ * few sessions. If you remove it again, document the reason or this
+ * comment will be wrong. The principal relies on sync working.
+ */
+async function getCookieHeader(): Promise<string> {
+  const cookieStore = await cookies();
+  return cookieStore
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+}
 
 async function requireAdmin(): Promise<string> {
   const supabase = await createClient();
@@ -120,12 +145,12 @@ export async function syncFootballDataCompetitionAction(
       `${baseUrl}/api/v1/admin/competitions/${encodeURIComponent(competitionId)}/sync`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // The route is admin-guarded server-side; we don't need to
-        // forward the user session because `requireAdmin()` above
-        // already verified the actor, and the same admin will be
-        // re-checked inside the route. For belt-and-suspenders we
-        // forward the auth cookies so the route sees the same user.
+        headers: {
+          "Content-Type": "application/json",
+          // Forward the user's session cookies so the API route can authenticate.
+          // The route does its own requireAdmin() check.
+          "Cookie": await getCookieHeader(),
+        },
         cache: "no-store",
       },
     );
@@ -199,7 +224,12 @@ export async function patchCompetitionAction(
       `${baseUrl}/api/v1/admin/competitions/${encodeURIComponent(competitionId)}`,
       {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          // Forward the user's session cookies so the API route can authenticate.
+          // The route does its own requireAdmin() check.
+          "Cookie": await getCookieHeader(),
+        },
         body: JSON.stringify(input),
         cache: "no-store",
       },
@@ -250,6 +280,11 @@ export async function deleteCompetitionAction(
       `${baseUrl}/api/v1/admin/competitions/${encodeURIComponent(competitionId)}`,
       {
         method: "DELETE",
+        headers: {
+          // Forward the user's session cookies so the API route can authenticate.
+          // The route does its own requireAdmin() check.
+          "Cookie": await getCookieHeader(),
+        },
         cache: "no-store",
       },
     );

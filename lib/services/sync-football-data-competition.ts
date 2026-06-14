@@ -143,6 +143,17 @@ export async function syncFootballDataCompetition(
 
     if (compMeta) {
       const currentSeasonWinner = compMeta.currentSeason?.winner;
+
+      // Compute the grace date: endDate + 7 days. This lets the UI
+      // show a recently-ended tournament for 7 more days before
+      // marking it "archived" (which removes it from the home
+      // page and moves it to the bottom of /groups). The principal
+      // wanted this so users who land on the app right after a
+      // tournament ends still see the results.
+      const endDateWithGrace = endDate
+        ? new Date(endDate.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        : null;
+
       richDetails = {
         area: compMeta.area ?? null,
         code: compMeta.code ?? null,
@@ -162,6 +173,10 @@ export async function syncFootballDataCompetition(
         // (no winner declared). The principal uses this flag to
         // know whether to expect new matches from a sync.
         isActive: currentSeasonWinner === null,
+        // endDate + 7 days, used by classifyGroupArchive to keep a
+        // recently-ended tournament visible on the dashboard for
+        // one week after the API's official end date.
+        endDateWithGrace,
       };
     }
   } catch (e) {

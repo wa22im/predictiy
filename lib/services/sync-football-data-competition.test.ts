@@ -213,7 +213,7 @@ describe("syncFootballDataCompetition", () => {
   });
 
   describe("rich metadata population", () => {
-    it("populates Competition.details with area/code/type/emblem/plan/currentSeason/availableSeasons/lastUpdated/isActive", async () => {
+    it("populates Competition.details with area/code/type/emblem/plan/currentSeason/availableSeasons/lastUpdated/isActive/endDateWithGrace", async () => {
       // The beforeEach default already returns { details: null }
       // for the select.details call, which is what we want here.
       getCompetition.mockResolvedValueOnce(makeCompetitionMetadata());
@@ -237,6 +237,8 @@ describe("syncFootballDataCompetition", () => {
         availableSeasons: 12,
         lastUpdated: "2026-04-15T20:00:00Z",
         isActive: true,
+        // CL ends 2026-05-30 → grace is 7 days later = 2026-06-06.
+        endDateWithGrace: "2026-06-06T00:00:00.000Z",
       });
     });
 
@@ -301,6 +303,40 @@ describe("syncFootballDataCompetition", () => {
         tla: "ESP",
         crest: null,
       });
+    });
+  });
+
+  describe("endDateWithGrace (7-day grace period)", () => {
+    it("computes endDateWithGrace as endDate + 7 days (CL ends 2026-05-30 → 2026-06-06)", async () => {
+      // The default fixture's currentSeason.endDate is "2026-05-30"
+      // → grace date is "2026-06-06".
+      getCompetition.mockResolvedValueOnce(makeCompetitionMetadata());
+      await syncFootballDataCompetition("comp-1");
+      const details = competitionUpdate.mock.calls[0][0].data.details;
+      expect(details.endDateWithGrace).toBe("2026-06-06T00:00:00.000Z");
+    });
+
+    it("endDateWithGrace is null when endDate is null (tournament has no scheduled end)", async () => {
+      // A season with no endDate in the API response (e.g. an
+      // open-ended cup) should not produce a grace date.
+      getCompetition.mockResolvedValueOnce(
+        makeCompetitionMetadata({
+          currentSeason: {
+            id: 2415,
+            startDate: "2025-09-16",
+            // endDate omitted → currentSeason is null per the type
+            // definition. We model it as the field being absent.
+            endDate: "",
+            currentMatchday: 1,
+            winner: null,
+          } as unknown as ReturnType<typeof makeCompetitionMetadata>["currentSeason"],
+        }),
+      );
+      await syncFootballDataCompetition("comp-1");
+      const details = competitionUpdate.mock.calls[0][0].data.details;
+      // Empty endDate string → parseCompetitionEndDate returns
+      // undefined → endDate is undefined → no grace date.
+      expect(details.endDateWithGrace).toBeNull();
     });
   });
 
@@ -390,6 +426,43 @@ describe("syncFootballDataCompetition", () => {
       await syncFootballDataCompetition("comp-1");
       const details = competitionUpdate.mock.calls[0][0].data.details;
       expect("scoringOverridesByStage" in details).toBe(false);
+    });
+
+    it("recomputes endDateWithGrace from the latest API endDate (does not preserve stale values)", async () => {
+      // Existing details has a stale endDateWithGrace from a prior
+      // sync. The new sync must overwrite it with a fresh value
+      // derived from the current API response.
+      const existingDetails = {
+        area: { id: 999, name: "Stale Area", code: "ZZZ", flag: null },
+        code: "ZZ",
+        type: "LEAGUE",
+        emblem: "https://stale.example/emblem.svg",
+        plan: "TIER_THREE",
+        currentSeason: {
+          id: 1,
+          startDate: "2024-01-01",
+          endDate: "2024-12-31",
+          currentMatchday: 38,
+          winner: { id: 1, name: "Old Winner", tla: "OW", crest: null },
+        },
+        availableSeasons: 1,
+        lastUpdated: "2024-12-31T23:59:59Z",
+        isActive: false,
+        // Stale grace date from 2024 (one year off).
+        endDateWithGrace: "2025-01-07T00:00:00.000Z",
+      };
+      competitionFindUnique.mockImplementationOnce(
+        async () => makeCompetitionRow(),
+      );
+      competitionFindUnique.mockImplementationOnce(
+        async () => ({ details: existingDetails }),
+      );
+      getCompetition.mockResolvedValueOnce(makeCompetitionMetadata());
+
+      await syncFootballDataCompetition("comp-1");
+      const details = competitionUpdate.mock.calls[0][0].data.details;
+      // Fresh value from the API response (endDate 2026-05-30 → 7 days later).
+      expect(details.endDateWithGrace).toBe("2026-06-06T00:00:00.000Z");
     });
   });
 

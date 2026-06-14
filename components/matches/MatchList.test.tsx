@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { MatchList } from "./MatchList";
 import type { FeedMatch } from "@/lib/services/group-feed";
@@ -148,5 +148,73 @@ describe("MatchList day-open behavior", () => {
     // Assert tw1 is positioned before y1, and y1 before t1.
     expect(tw1.compareDocumentPosition(y1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(y1.compareDocumentPosition(t1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+describe("MatchList today-highlight", () => {
+  // The principal wants the day-group whose date matches "today" to
+  // stand out: a left border + tinted background + "Today ·" prefix.
+  // The component computes `todayDayString` from `new Date()` with
+  // the same formatter as groupByDay, so we drive both the system
+  // clock and the match kickoffTime off a fixed instant.
+  beforeEach(() => {
+    // Pin "now" to a known weekday so the formatted "Today · "
+    // string is reproducible. 2026-06-15 is a Monday (per
+    // calendar; pick any fixed Mon in the test window).
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-15T12:00:00Z"));
+  });
+
+  afterEach(() => {
+    // Restore real timers so the global afterEach(cleanup) and any
+    // other tests in the suite are unaffected.
+    vi.useRealTimers();
+  });
+
+  it("applies the today-highlight class to today's day-group button and prefixes the label with 'Today · '", () => {
+    // Two days: today and yesterday. Both have unsettled matches so
+    // both buttons render in the DOM.
+    const today = new Date();
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+
+    const matches: FeedMatch[] = [
+      makeMatch({ id: "t1", homeTeam: "T1-Home", status: "SCHEDULED", kickoffTime: today.toISOString() }),
+      makeMatch({ id: "y1", homeTeam: "Y1-Home", status: "SCHEDULED", kickoffTime: yesterday.toISOString() }),
+    ];
+
+    render(
+      <MatchList
+        matches={matches}
+        serverNow={today.toISOString()}
+        lockdownMs={300_000}
+        groupId="g1"
+      />,
+    );
+
+    // Compute the day string the component uses, so the assertion is
+    // exact (avoids relying on a hand-formatted string).
+    const todayLabel = new Date().toLocaleDateString("en-GB", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      timeZone: "UTC",
+    });
+    const yesterdayLabel = new Date(yesterday).toLocaleDateString("en-GB", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      timeZone: "UTC",
+    });
+
+    // Today's button has the accent border + tinted background.
+    const todayButton = screen.getByRole("button", { name: new RegExp(`^Today · ${todayLabel} ·`) });
+    expect(todayButton).toHaveClass("bg-accent/15");
+    expect(todayButton).toHaveClass("border-l-4");
+    expect(todayButton).toHaveClass("border-accent");
+
+    // Yesterday's button uses the default background (no accent).
+    const yesterdayButton = screen.getByRole("button", { name: new RegExp(`^${yesterdayLabel} ·`) });
+    expect(yesterdayButton).toHaveClass("bg-background/80");
+    expect(yesterdayButton).not.toHaveClass("border-l-4");
   });
 });

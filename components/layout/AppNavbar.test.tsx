@@ -9,7 +9,7 @@ vi.mock("next/navigation", () => ({
 afterEach(() => cleanup());
 
 describe("AppNavbar", () => {
-  it("renders a link for every main app section (Home, Groups, Admin)", () => {
+  it("renders a link for every main app section (Home, Groups, Settings, Admin)", () => {
     render(<AppNavbar user={null} />);
     // The brand <a> uses aria-label "Predicty home" which would also
     // match /Home/i — disambiguate by exact name match.
@@ -17,6 +17,7 @@ describe("AppNavbar", () => {
       screen.getByRole("link", { name: "Home" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Groups" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Settings" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Admin" })).toBeInTheDocument();
   });
 
@@ -33,14 +34,13 @@ describe("AppNavbar", () => {
     expect(homeLink.className).toMatch(/text-primary/);
   });
 
-  it("renders Settings as a disabled, non-link element", () => {
+  it("renders Settings as a real link to /settings (no longer disabled)", () => {
     render(<AppNavbar user={null} />);
-    // Settings is rendered as a <span>, not an <a> or <button>.
-    const settings = screen.getByText(/Settings/i);
+    const settings = screen.getByRole("link", { name: "Settings" });
     expect(settings).toBeInTheDocument();
-    expect(settings.tagName).toBe("SPAN");
-    expect(settings).toHaveAttribute("aria-disabled", "true");
-    // Sanity: the inner span has the cursor-not-allowed class.
-    expect(settings.className).toMatch(/cursor-not-allowed/);
+    expect(settings).toHaveAttribute("href", "/settings");
+    // The disabled-only cursor-not-allowed class is gone — the link
+    // is a normal nav item styled like Home/Groups/Admin.
+    expect(settings.className).not.toMatch(/cursor-not-allowed/);
   });
 });

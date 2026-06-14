@@ -3,7 +3,7 @@
 import type { FeedOtherBet } from "@/lib/services/group-feed";
 import { CrestSlot } from "@/components/football/crest-slot";
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronsDown, ChevronsUp } from "lucide-react";
 
 export function MemberPredictions({
   otherBets,
@@ -11,7 +11,7 @@ export function MemberPredictions({
   otherBets: FeedOtherBet[];
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   if (otherBets.length === 0) return null;
 
   const MAX_VISIBLE = 3;
@@ -26,21 +26,26 @@ export function MemberPredictions({
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
+            aria-label={isExpanded ? "Show less" : `Show all ${otherBets.length}`}
+            title={isExpanded ? "Show less" : `Show all ${otherBets.length}`}
             className="text-xs font-medium text-primary hover:underline flex items-center gap-1"
           >
             {isExpanded ? (
-              <span className="micro-tag">
-               {MAX_VISIBLE} <p className="h-3 w-3" />
-              </span>
+              <>
+                              <span className="micro-tag">{MAX_VISIBLE}</span>
+
+              <ChevronsUp className="h-3 w-3" aria-hidden="true" />
+              </>
             ) : (
-              <span className="micro-tag">
-                 ({otherBets.length}) <p className="h-3 w-3" /> <ChevronDown className="h-3 w-3" />
-              </span>
+              <>
+                <span className="micro-tag">{otherBets.length}</span>
+                <ChevronsDown className="h-3 w-3" aria-hidden="true" />
+              </>
             )}
           </button>
         )}
       </div>
-      
+
       <div className={`flex flex-wrap items-center gap-2 text-xs ${isExpanded ? "" : "max-h-10 overflow-hidden"}`}>
         {visibleBets.map((b) => (
           <span
@@ -53,17 +58,9 @@ export function MemberPredictions({
               <span className={b.isMasked ? "text-muted-foreground" : ""}>
                 {b.predictedValue}
               </span>
-              
-
-              
-
-              
             </span>
           </span>
         ))}
-        {isLongList && !isExpanded && (
-           <span className="text-muted-foreground italic">... and {otherBets.length - MAX_VISIBLE} more</span>
-        )}
       </div>
     </div>
   );

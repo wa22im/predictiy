@@ -20,6 +20,23 @@ export function MatchList({
     [matches, serverNow],
   );
 
+  // Today's day string, formatted with the same options as groupByDay
+  // so the two strings are byte-equal when "today" is one of the
+  // day-groups. The page is force-dynamic (re-rendered on every
+  // navigation) so this is recomputed per mount — no clock drift
+  // within a single visit. timeZone: "UTC" matches groupByDay to
+  // avoid ±1-day edge cases around midnight.
+  const todayDayString = useMemo(
+    () =>
+      new Date().toLocaleDateString("en-GB", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        timeZone: "UTC",
+      }),
+    [],
+  );
+
   // Default-open: 3 OLDEST day-groups that contain at least one
   // unsettled match. The day-groups are sorted chronologically
   // (oldest first) by groupByDay, so the first 3 entries of the
@@ -70,17 +87,23 @@ export function MatchList({
               type="button"
               onClick={() => toggleDay(day)}
               aria-expanded={isOpen}
-  className="w-[calc(100%+2rem)] -mx-4 my-2 flex items-center justify-between gap-2 micro-tag sticky top-0 bg-background/80 backdrop-blur-sm py-2 px-4 z-10 text-left"
+              className={`w-[calc(100%+2rem)] -mx-4 my-2 flex items-center justify-between gap-2 micro-tag sticky top-0 backdrop-blur-sm py-2 px-4 z-10 text-left ${
+                day === todayDayString
+                  ? "bg-accent/15 border-l-4 border-accent"
+                  : "bg-background/80"
+              }`}
             >
               <span>
+                {day === todayDayString && (
+                  <span className="font-bold text-foreground">Today · </span>
+                )}
                 {day} · {items.length} {items.length === 1 ? "match" : "matches"}
               </span>
               <span
-              
                 aria-hidden="true"
                 className={`inline-block transition-transform ${
                   isOpen ? "rotate-90" : ""
-                }` }
+                }`}
               >
                 ▶
               </span>

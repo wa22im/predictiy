@@ -66,6 +66,8 @@ describe("getDashboardData", () => {
     matchFindMany.mockResolvedValueOnce([
       makeMatch({ id: "m1", competitionId: "c1", status: "GOING" }),
     ]);
+    // Second call: FINISHED fetch. Empty here — test only cares about unsettled filtering.
+    matchFindMany.mockResolvedValueOnce([]);
 
     const result = await getDashboardData("user-1");
 
@@ -80,6 +82,7 @@ describe("getDashboardData", () => {
     matchFindMany.mockResolvedValueOnce([
       makeMatch({ id: "m1", competitionId: "c1", status: "GOING" }),
     ]);
+    matchFindMany.mockResolvedValueOnce([]);
 
     await getDashboardData("user-1");
 
@@ -118,6 +121,8 @@ describe("getDashboardData", () => {
         kickoffTime: new Date("2026-06-14T20:00:00Z"),
       }),
     ]);
+    // Second call: FINISHED fetch. Empty — sort test only exercises unsettled.
+    matchFindMany.mockResolvedValueOnce([]);
 
     const result = await getDashboardData("user-1");
     const order = result.groups[0].matches.map((m) => m.id);
@@ -127,8 +132,9 @@ describe("getDashboardData", () => {
     expect(order).toEqual(["m-going", "m-early-sched", "m-late-sched"]);
   });
 
-  it("caps each group to a maximum of 10 matches (8 unsettled + 2 finished)", async () => {
-    // Case A: 12 unsettled, 0 finished → 8 total (unsettled capped to 8)
+  it("always-10: caps unsettled to 7 and shows nothing else when no settled are available", async () => {
+    // 12 unsettled, 0 finished → unsettledCount=min(12,7)=7, settledCount=0.
+    // Total: 7 unsettled.
     setupMembers([membership("g1", "Group A", "c1", "World Cup", 3)]);
     const twelveUnsettled = Array.from({ length: 12 }, (_, i) =>
       makeMatch({
@@ -139,39 +145,47 @@ describe("getDashboardData", () => {
       }),
     );
     matchFindMany.mockResolvedValueOnce(twelveUnsettled);
+    // Second matchFindMany call is the FINISHED fetch — empty here.
+    matchFindMany.mockResolvedValueOnce([]);
     const result = await getDashboardData("user-1");
-    expect(result.groups[0].matches).toHaveLength(8);
-    // And all 8 should be unsettled (no FINISHED in input)
+    expect(result.groups[0].matches).toHaveLength(7);
+    // And all 7 should be unsettled (no FINISHED in input)
     for (const m of result.groups[0].matches) {
       expect(m.status).not.toBe("FINISHED");
     }
   });
 
-  it("prepends up to 2 most-recent finished matches before the unsettled ones", async () => {
-    // 2 unsettled, 5 finished → 2 finished + 2 unsettled = 4 total
+  it("prepends the most-recent finished matches before the unsettled ones", async () => {
+    // 2 unsettled, 3 finished → unsettledCount=2, settledCount=min(3, 8)=3.
+    // Total: 2 unsettled + 3 finished = 5.
     setupMembers([membership("g1", "Group A", "c1", "World Cup", 3)]);
+    // First call: unsettled query (status filter excludes FINISHED).
     matchFindMany.mockResolvedValueOnce([
       makeMatch({ id: "u1", competitionId: "c1", status: "GOING", kickoffTime: new Date("2026-06-14T20:00:00Z") }),
       makeMatch({ id: "u2", competitionId: "c1", status: "SCHEDULED", kickoffTime: new Date("2026-06-15T20:00:00Z") }),
-      makeMatch({ id: "f1", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-10T20:00:00Z") }),
-      makeMatch({ id: "f2", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-11T20:00:00Z") }),
+    ]);
+    // Second call: FINISHED fetch (most-recent DESC).
+    matchFindMany.mockResolvedValueOnce([
       makeMatch({ id: "f3", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-12T20:00:00Z") }),
-      makeMatch({ id: "f4", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-08T20:00:00Z") }),
+      makeMatch({ id: "f2", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-11T20:00:00Z") }),
       makeMatch({ id: "f5", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-09T20:00:00Z") }),
     ]);
     const result = await getDashboardData("user-1");
     const matches = result.groups[0].matches;
-    expect(matches).toHaveLength(4);
-    // Order: 2 most-recent finished PREPENDED at the top, then
-    // unsettled chronological by kickoffTime ASC. u1 (June 14)
+    // unsettledCount=2, settledCount=3 (we have 3 finished) → total 5.
+    expect(matches).toHaveLength(5);
+    // Order: 3 most-recent finished PREPENDED at the top (DESC by kickoff),
+    // then unsettled chronological by kickoffTime ASC. u1 (June 14)
     // precedes u2 (June 15) by kickoff ASC. The finished block is
-    // the 2 most-recent (f3 = June 12, f2 = June 11).
-    expect(matches.map((m) => m.id)).toEqual(["f3", "f2", "u1", "u2"]);
+    // the 3 most-recent (f3 = June 12, f2 = June 11, f5 = June 9).
+    expect(matches.map((m) => m.id)).toEqual(["f3", "f2", "f5", "u1", "u2"]);
   });
 
-  it("caps unsettled to 8 even when 9+ are present, with finished leading", async () => {
-    // 9 unsettled + 5 finished → 2 finished + 8 unsettled = 10 total
+  it("always-10: caps unsettled to 7 and fills the rest with settled (9 + 5 → 7 + 3 = 10)", async () => {
+    // 9 unsettled + 5 finished → unsettledCount=min(9,7)=7, settledCount=min(5,3)=3.
+    // Total: 7 unsettled + 3 settled = 10. Settled = 10 - 7 = 3.
     setupMembers([membership("g1", "Group A", "c1", "World Cup", 3)]);
+    // First call: unsettled fetch.
     matchFindMany.mockResolvedValueOnce([
       // 9 unsettled, sorted in arbitrary order — the service sorts them
       ...Array.from({ length: 9 }, (_, i) =>
@@ -182,40 +196,253 @@ describe("getDashboardData", () => {
           kickoffTime: new Date(`2026-06-${String(i + 1).padStart(2, "0")}T20:00:00Z`),
         }),
       ),
-      // 5 finished, various kickoff times
-      makeMatch({ id: "f1", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-01T20:00:00Z") }),
-      makeMatch({ id: "f2", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-02T20:00:00Z") }),
-      makeMatch({ id: "f3", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-03T20:00:00Z") }),
-      makeMatch({ id: "f4", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-04T20:00:00Z") }),
+    ]);
+    // Second call: FINISHED fetch — 5 finished, DESC by kickoff.
+    matchFindMany.mockResolvedValueOnce([
       makeMatch({ id: "f5", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-05T20:00:00Z") }),
+      makeMatch({ id: "f4", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-04T20:00:00Z") }),
+      makeMatch({ id: "f3", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-03T20:00:00Z") }),
+      makeMatch({ id: "f2", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-02T20:00:00Z") }),
+      makeMatch({ id: "f1", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-01T20:00:00Z") }),
     ]);
     const result = await getDashboardData("user-1");
     const matches = result.groups[0].matches;
+    // 7 unsettled + 3 settled = 10
     expect(matches).toHaveLength(10);
-    // 2 most-recent finished come first, then 8 unsettled
-    expect(matches.slice(2, 10).every((m) => m.status !== "FINISHED")).toBe(true);
-    expect(matches.slice(0, 2).every((m) => m.status === "FINISHED")).toBe(true);
-    // The 2 finished are the most recent (f5 then f4 by kickoff desc)
+    // First 3 should be settled (DESC by kickoff: f5, f4, f3)
+    expect(matches.slice(0, 3).every((m) => m.status === "FINISHED")).toBe(true);
     expect(matches[0].id).toBe("f5");
     expect(matches[1].id).toBe("f4");
+    expect(matches[2].id).toBe("f3");
+    // Then 7 unsettled (chronological ASC)
+    expect(matches.slice(3, 10).every((m) => m.status !== "FINISHED")).toBe(true);
   });
 
-  it("issues at most 3 batched queries (no N+1)", async () => {
+  // Always-10 algorithm — edge cases
+  it("always-10: shows nothing when there are 0 unsettled and 0 settled", async () => {
+    setupMembers([membership("g1", "Group A", "c1", "World Cup", 3)]);
+    matchFindMany.mockResolvedValueOnce([]); // unsettled
+    matchFindMany.mockResolvedValueOnce([]); // finished
+    const result = await getDashboardData("user-1");
+    // No unsettled AND no finished → group has no matches → not included.
+    // (groupsWithMatches requires unsettled OR finished.)
+    expect(result.groups).toHaveLength(0);
+  });
+
+  it("always-10: shows only settled when unsettled is 0 (0 + 12 → 10 settled)", async () => {
+    setupMembers([membership("g1", "Group A", "c1", "World Cup", 3)]);
+    matchFindMany.mockResolvedValueOnce([]); // unsettled
+    const twelveFinished = Array.from({ length: 12 }, (_, i) =>
+      makeMatch({
+        id: `f${i}`,
+        competitionId: "c1",
+        status: "FINISHED",
+        // Newest first by kickoffTime DESC.
+        kickoffTime: new Date(`2026-06-${String(12 - i).padStart(2, "0")}T20:00:00Z`),
+      }),
+    );
+    matchFindMany.mockResolvedValueOnce(twelveFinished);
+    const result = await getDashboardData("user-1");
+    const matches = result.groups[0].matches;
+    // unsettledCount=0, settledCount=min(12, 10)=10. Total: 10 settled.
+    expect(matches).toHaveLength(10);
+    expect(matches.every((m) => m.status === "FINISHED")).toBe(true);
+  });
+
+  it("always-10: shows only unsettled when finished is 0 (3 + 0 → 3 unsettled)", async () => {
+    setupMembers([membership("g1", "Group A", "c1", "World Cup", 3)]);
+    matchFindMany.mockResolvedValueOnce([
+      makeMatch({ id: "u1", competitionId: "c1", status: "SCHEDULED", kickoffTime: new Date("2026-06-15T20:00:00Z") }),
+      makeMatch({ id: "u2", competitionId: "c1", status: "SCHEDULED", kickoffTime: new Date("2026-06-16T20:00:00Z") }),
+      makeMatch({ id: "u3", competitionId: "c1", status: "SCHEDULED", kickoffTime: new Date("2026-06-17T20:00:00Z") }),
+    ]);
+    matchFindMany.mockResolvedValueOnce([]); // no finished
+    const result = await getDashboardData("user-1");
+    const matches = result.groups[0].matches;
+    // unsettledCount=3, settledCount=0 → total 3.
+    expect(matches).toHaveLength(3);
+    expect(matches.every((m) => m.status !== "FINISHED")).toBe(true);
+  });
+
+  it("always-10: fills with settled when unsettled < 7 (3 + 5 → 3 unsettled + 5 settled = 8)", async () => {
+    setupMembers([membership("g1", "Group A", "c1", "World Cup", 3)]);
+    matchFindMany.mockResolvedValueOnce([
+      makeMatch({ id: "u1", competitionId: "c1", status: "SCHEDULED", kickoffTime: new Date("2026-06-15T20:00:00Z") }),
+      makeMatch({ id: "u2", competitionId: "c1", status: "SCHEDULED", kickoffTime: new Date("2026-06-16T20:00:00Z") }),
+      makeMatch({ id: "u3", competitionId: "c1", status: "SCHEDULED", kickoffTime: new Date("2026-06-17T20:00:00Z") }),
+    ]);
+    matchFindMany.mockResolvedValueOnce([
+      makeMatch({ id: "f1", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-12T20:00:00Z") }),
+      makeMatch({ id: "f2", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-11T20:00:00Z") }),
+      makeMatch({ id: "f3", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-10T20:00:00Z") }),
+      makeMatch({ id: "f4", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-09T20:00:00Z") }),
+      makeMatch({ id: "f5", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-08T20:00:00Z") }),
+    ]);
+    const result = await getDashboardData("user-1");
+    const matches = result.groups[0].matches;
+    // unsettledCount=3, settledCount=min(5, 7)=5. Total: 3+5=8.
+    expect(matches).toHaveLength(8);
+    // First 5 should be the most-recent finished (DESC by kickoff).
+    expect(matches.slice(0, 5).every((m) => m.status === "FINISHED")).toBe(true);
+    // Then 3 unsettled in chronological order.
+    expect(matches.slice(5, 8).every((m) => m.status !== "FINISHED")).toBe(true);
+  });
+
+  it("always-10: caps total at 10 (7 + 3 → 7 unsettled + 3 settled = 10)", async () => {
+    // unsettled.length=7 → unsettledCount=7, settledCount=min(3, 3)=3.
+    // Total: 7+3=10.
+    setupMembers([membership("g1", "Group A", "c1", "World Cup", 3)]);
+    const sevenUnsettled = Array.from({ length: 7 }, (_, i) =>
+      makeMatch({
+        id: `u${i}`,
+        competitionId: "c1",
+        status: "SCHEDULED",
+        kickoffTime: new Date(`2026-06-${String(i + 1).padStart(2, "0")}T20:00:00Z`),
+      }),
+    );
+    matchFindMany.mockResolvedValueOnce(sevenUnsettled);
+    matchFindMany.mockResolvedValueOnce([
+      makeMatch({ id: "f5", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-05T20:00:00Z") }),
+      makeMatch({ id: "f4", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-04T20:00:00Z") }),
+      makeMatch({ id: "f3", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-03T20:00:00Z") }),
+    ]);
+    const result = await getDashboardData("user-1");
+    const matches = result.groups[0].matches;
+    // unsettledCount=7, settledCount=min(3, 3)=3. Total: 10.
+    expect(matches).toHaveLength(10);
+    expect(matches.slice(0, 3).every((m) => m.status === "FINISHED")).toBe(true);
+    expect(matches.slice(3, 10).every((m) => m.status !== "FINISHED")).toBe(true);
+  });
+
+  it("always-10: 7 + 5 → 7 unsettled + 3 settled (only 3 fill) = 10", async () => {
+    // unsettled.length=7 → unsettledCount=7, settledCount=min(5, 3)=3.
+    // Total: 7+3=10.
+    setupMembers([membership("g1", "Group A", "c1", "World Cup", 3)]);
+    const sevenUnsettled = Array.from({ length: 7 }, (_, i) =>
+      makeMatch({
+        id: `u${i}`,
+        competitionId: "c1",
+        status: "SCHEDULED",
+        kickoffTime: new Date(`2026-06-${String(i + 1).padStart(2, "0")}T20:00:00Z`),
+      }),
+    );
+    matchFindMany.mockResolvedValueOnce(sevenUnsettled);
+    matchFindMany.mockResolvedValueOnce([
+      makeMatch({ id: "f5", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-05T20:00:00Z") }),
+      makeMatch({ id: "f4", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-04T20:00:00Z") }),
+      makeMatch({ id: "f3", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-03T20:00:00Z") }),
+      makeMatch({ id: "f2", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-02T20:00:00Z") }),
+      makeMatch({ id: "f1", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-01T20:00:00Z") }),
+    ]);
+    const result = await getDashboardData("user-1");
+    const matches = result.groups[0].matches;
+    // unsettledCount=7, settledCount=min(5, 3)=3. Total: 7+3=10.
+    expect(matches).toHaveLength(10);
+    // The 3 most-recent finished come first (DESC: f5, f4, f3).
+    expect(matches[0].id).toBe("f5");
+    expect(matches[1].id).toBe("f4");
+    expect(matches[2].id).toBe("f3");
+  });
+
+  it("always-10: 10 unsettled + 0 settled → 7 unsettled shown (cap)", async () => {
+    setupMembers([membership("g1", "Group A", "c1", "World Cup", 3)]);
+    const tenUnsettled = Array.from({ length: 10 }, (_, i) =>
+      makeMatch({
+        id: `u${i}`,
+        competitionId: "c1",
+        status: "SCHEDULED",
+        kickoffTime: new Date(`2026-06-${String(i + 1).padStart(2, "0")}T20:00:00Z`),
+      }),
+    );
+    matchFindMany.mockResolvedValueOnce(tenUnsettled);
+    matchFindMany.mockResolvedValueOnce([]); // no finished
+    const result = await getDashboardData("user-1");
+    const matches = result.groups[0].matches;
+    // unsettledCount=min(10,7)=7, settledCount=0. Total: 7.
+    expect(matches).toHaveLength(7);
+  });
+
+  it("always-10: 5 unsettled + 5 finished → 5 + 5 = 10", async () => {
+    setupMembers([membership("g1", "Group A", "c1", "World Cup", 3)]);
+    matchFindMany.mockResolvedValueOnce([
+      makeMatch({ id: "u1", competitionId: "c1", status: "SCHEDULED", kickoffTime: new Date("2026-06-15T20:00:00Z") }),
+      makeMatch({ id: "u2", competitionId: "c1", status: "SCHEDULED", kickoffTime: new Date("2026-06-16T20:00:00Z") }),
+      makeMatch({ id: "u3", competitionId: "c1", status: "SCHEDULED", kickoffTime: new Date("2026-06-17T20:00:00Z") }),
+      makeMatch({ id: "u4", competitionId: "c1", status: "SCHEDULED", kickoffTime: new Date("2026-06-18T20:00:00Z") }),
+      makeMatch({ id: "u5", competitionId: "c1", status: "SCHEDULED", kickoffTime: new Date("2026-06-19T20:00:00Z") }),
+    ]);
+    matchFindMany.mockResolvedValueOnce([
+      makeMatch({ id: "f1", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-12T20:00:00Z") }),
+      makeMatch({ id: "f2", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-11T20:00:00Z") }),
+      makeMatch({ id: "f3", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-10T20:00:00Z") }),
+      makeMatch({ id: "f4", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-09T20:00:00Z") }),
+      makeMatch({ id: "f5", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-08T20:00:00Z") }),
+    ]);
+    const result = await getDashboardData("user-1");
+    const matches = result.groups[0].matches;
+    // unsettledCount=min(5,7)=5, settledCount=min(5, 5)=5. Total: 5+5=10.
+    expect(matches).toHaveLength(10);
+    // 5 finished first (DESC by kickoff), then 5 unsettled.
+    expect(matches.slice(0, 5).every((m) => m.status === "FINISHED")).toBe(true);
+    expect(matches.slice(5, 10).every((m) => m.status !== "FINISHED")).toBe(true);
+  });
+
+  it("shows recent FINISHED matches on the dashboard even though the unsettled query excludes them", async () => {
+    // The unsettled query filters out FINISHED at the DB level (status
+    // IN ["SCHEDULED", "GOING"]). For "settled games" to be visible on
+    // the dashboard, the service issues a second findMany for FINISHED
+    // matches and prepends them to the group. This test sets up a
+    // realistic scenario: zero unsettled, 3 finished → 3 finished shown.
+    setupMembers([membership("g1", "Group A", "c1", "World Cup", 3)]);
+    // Unsettled query: returns no rows.
+    matchFindMany.mockResolvedValueOnce([]);
+    // FINISHED query: returns 3 settled matches, DESC by kickoff.
+    matchFindMany.mockResolvedValueOnce([
+      makeMatch({ id: "f1", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-10T20:00:00Z") }),
+      makeMatch({ id: "f2", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-11T20:00:00Z") }),
+      makeMatch({ id: "f3", competitionId: "c1", status: "FINISHED", kickoffTime: new Date("2026-06-12T20:00:00Z") }),
+    ]);
+
+    const result = await getDashboardData("user-1");
+
+    // 2 matchFindMany calls: one for unsettled, one for FINISHED.
+    expect(matchFindMany).toHaveBeenCalledTimes(2);
+    // The FINISHED query should filter to status "FINISHED" only.
+    const finishedWhere = matchFindMany.mock.calls[1][0].where;
+    expect(finishedWhere.status).toBe("FINISHED");
+    // And it should sort by kickoffTime DESC.
+    expect(finishedWhere.competitionId.in).toEqual(expect.arrayContaining(["c1"]));
+    const finishedOrderBy = matchFindMany.mock.calls[1][0].orderBy;
+    expect(finishedOrderBy.kickoffTime).toBe("desc");
+
+    // The 3 finished matches are shown on the dashboard.
+    expect(result.groups[0].matches).toHaveLength(3);
+    expect(result.groups[0].matches.every((m) => m.status === "FINISHED")).toBe(true);
+    // Ordered DESC by kickoff: f3 (June 12), f2 (June 11), f1 (June 10).
+    expect(result.groups[0].matches.map((m) => m.id)).toEqual(["f3", "f2", "f1"]);
+  });
+
+  it("issues at most 4 batched queries (no N+1)", async () => {
     setupMembers([
       membership("g1", "Group A", "c1", "World Cup", 3),
       membership("g2", "Group B", "c2", "Euro Cup", 3),
     ]);
+    // First matchFindMany: unsettled (status IN ["SCHEDULED", "GOING"]).
     matchFindMany.mockResolvedValueOnce([
       makeMatch({ id: "m1", competitionId: "c1", status: "GOING" }),
     ]);
+    // Second matchFindMany: FINISHED. Empty here is fine — the test
+    // just verifies the call count, not the contents.
+    matchFindMany.mockResolvedValueOnce([]);
     userBetFindMany.mockResolvedValueOnce([]);
 
     await getDashboardData("user-1");
 
     // One query per top-level entity, no per-group loops.
-    // (groupMember.findMany runs twice: memberships, then all members.)
+    // (groupMember.findMany runs twice: memberships, then all members.
+    //  match.findMany runs twice: unsettled, then FINISHED.)
     expect(groupMemberFindMany).toHaveBeenCalledTimes(2);
-    expect(matchFindMany).toHaveBeenCalledTimes(1);
+    expect(matchFindMany).toHaveBeenCalledTimes(2);
     expect(userBetFindMany).toHaveBeenCalledTimes(1);
   });
 
@@ -227,6 +454,7 @@ describe("getDashboardData", () => {
     matchFindMany.mockResolvedValueOnce([
       makeMatch({ id: "m1", competitionId: "c1", status: "GOING" }),
     ]);
+    matchFindMany.mockResolvedValueOnce([]);
     userBetFindMany.mockResolvedValueOnce([]);
 
     await getDashboardData("user-1");
@@ -245,6 +473,7 @@ describe("getDashboardData", () => {
     matchFindMany.mockResolvedValueOnce([
       makeMatch({ id: "m1", competitionId: "c1", status: "GOING" }),
     ]);
+    matchFindMany.mockResolvedValueOnce([]);
     userBetFindMany.mockResolvedValueOnce([]);
 
     const result = await getDashboardData("user-1");
@@ -270,6 +499,7 @@ describe("getDashboardData", () => {
     matchFindMany.mockResolvedValueOnce([
       makeMatch({ id: "m1", competitionId: "c1", status: "GOING" }),
     ]);
+    matchFindMany.mockResolvedValueOnce([]);
     userBetFindMany.mockResolvedValueOnce([
       {
         id: "ub-viewer",
@@ -318,6 +548,7 @@ describe("getDashboardData", () => {
     matchFindMany.mockResolvedValueOnce([
       makeMatch({ id: "m1", competitionId: "c1", status: "SCHEDULED", kickoffTime: soon }),
     ]);
+    matchFindMany.mockResolvedValueOnce([]);
     userBetFindMany.mockResolvedValueOnce([
       {
         id: "ub-other",
@@ -336,6 +567,138 @@ describe("getDashboardData", () => {
     expect(market.otherBets).toHaveLength(1);
     expect(market.otherBets[0].isMasked).toBe(true);
     expect(market.otherBets[0].predictedValue).toBe("🔒");
+  });
+});
+
+describe("getDashboardData - endDateWithGrace filter", () => {
+  // The dashboard drops groups with zero unsettled matches (line
+  // 209-211 of dashboard.ts: "groupsWithUnsettled"). The tests
+  // below exercise the endDateWithGrace filter by giving each
+  // candidate group at least one unsettled match — the group is
+  // then gated only by the endDateWithGrace check.
+  function makeMatchForCompetition(competitionId: string) {
+    return makeMatch({
+      id: `m-${competitionId}`,
+      competitionId,
+      status: "SCHEDULED",
+      kickoffTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
+  }
+
+  it("includes a tournament that ended within the 7-day grace period", async () => {
+    // Competition endDate was 3 days ago, but the grace date is
+    // 4 days from now. The group should still appear on the
+    // dashboard because the grace period keeps it visible.
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const fourDaysFromNow = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000);
+    groupMemberFindMany.mockImplementation(
+      async (arg: { where?: { userId?: string; groupId?: { in?: string[] } } }) => {
+        if (arg?.where?.groupId?.in) {
+          return [
+            {
+              id: "gm-viewer-g1",
+              userId: "user-1",
+              groupId: "g1",
+              joinedAt: new Date(),
+              user: { id: "user-1", nickname: "Viewer", emoji: "🦅" },
+            },
+          ];
+        }
+        return [
+          membershipWithEndDate("g1", "Group A", "c1", "World Cup", 3, threeDaysAgo, {
+            endDateWithGrace: fourDaysFromNow.toISOString(),
+          }),
+        ];
+      },
+    );
+    // Provide an unsettled match so the group survives the
+    // groupsWithUnsettled filter downstream. Use mockImplementation
+    // (not mockResolvedValueOnce) to avoid queue-pollution from
+    // earlier tests.
+    matchFindMany.mockImplementation(
+      async () => [makeMatchForCompetition("c1")],
+    );
+
+    const result = await getDashboardData("user-1");
+    expect(result.groups).toHaveLength(1);
+    expect(result.groups[0].id).toBe("g1");
+  });
+
+  it("excludes a tournament whose grace period has elapsed (past endDateWithGrace)", async () => {
+    // endDate was 30 days ago, grace date was 23 days ago. Group
+    // is now archived → not on the dashboard.
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const twentyThreeDaysAgo = new Date(Date.now() - 23 * 24 * 60 * 60 * 1000);
+    groupMemberFindMany.mockImplementation(
+      async (arg: { where?: { userId?: string; groupId?: { in?: string[] } } }) => {
+        if (arg?.where?.groupId?.in) return [];
+        return [
+          membershipWithEndDate("g1", "Group A", "c1", "World Cup", 3, thirtyDaysAgo, {
+            endDateWithGrace: twentyThreeDaysAgo.toISOString(),
+          }),
+        ];
+      },
+    );
+    // The group is dropped at the endDateWithGrace filter, so the
+    // match query is never issued for it (no competitionId IN).
+    matchFindMany.mockImplementation(async () => []);
+
+    const result = await getDashboardData("user-1");
+    expect(result.groups).toEqual([]);
+  });
+
+  it("falls back to typed endDate when endDateWithGrace is absent (legacy data)", async () => {
+    // Typed endDate is in the future → group should appear.
+    const future = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    groupMemberFindMany.mockImplementation(
+      async (arg: { where?: { userId?: string; groupId?: { in?: string[] } } }) => {
+        if (arg?.where?.groupId?.in) return [];
+        return [
+          membershipWithEndDate("g1", "Group A", "c1", "World Cup", 3, future, {}),
+        ];
+      },
+    );
+    matchFindMany.mockImplementation(
+      async () => [makeMatchForCompetition("c1")],
+    );
+
+    const result = await getDashboardData("user-1");
+    expect(result.groups).toHaveLength(1);
+  });
+
+  it("includes manual groups (no competition linked) regardless of dates", async () => {
+    // Manual group: competition is null → always active. The
+    // "manual" branch of classifyGroupArchive returns "active".
+    // Manual groups never have matches (no competitionId), so they
+    // are dropped by groupsWithUnsettled — but the test asserts the
+    // endDateWithGrace filter PASSES for them (the "manual"
+    // branch returns true) before that downstream filter strips
+    // them. We assert activeMemberships is non-empty by checking
+    // the prisma call: the membership fetch did happen and the
+    // filter didn't throw.
+    groupMemberFindMany.mockImplementation(
+      async (arg: { where?: { userId?: string; groupId?: { in?: string[] } } }) => {
+        if (arg?.where?.groupId?.in) return [];
+        return [membershipManual("g1", "My Manual Group", 2)];
+      },
+    );
+    // Manual groups have no competitionId, so activeCompetitionIds
+    // is empty → match query returns no rows → groupsWithUnsettled
+    // is empty. The end result is `groups: []`, but the important
+    // assertion is that the endDateWithGrace filter DID NOT throw
+    // on a null competition (the previous bug).
+    matchFindMany.mockImplementation(async () => []);
+
+    const result = await getDashboardData("user-1");
+    // The endDateWithGrace filter accepted the manual group (didn't
+    // throw on null competition), and the downstream
+    // groupsWithUnsettled filter correctly dropped it (no matches).
+    // We assert: no error, no crash, and the prisma mocks were
+    // called the expected number of times (membership fetch + match
+    // fetch, but no extra calls).
+    expect(result.groups).toEqual([]);
+    expect(groupMemberFindMany).toHaveBeenCalledTimes(2);
+    expect(matchFindMany).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -417,5 +780,90 @@ function makeMatch(over: {
         matchId: over.id,
       },
     ],
+  };
+}
+
+/**
+ * Membership fixture that includes a competition with both an
+ * endDate column and a `details` JSONB (where endDateWithGrace
+ * lives). Used by the endDateWithGrace filter tests.
+ */
+function membershipWithEndDate(
+  groupId: string,
+  name: string,
+  competitionId: string,
+  competitionName: string,
+  memberCount: number,
+  endDate: Date | null,
+  details: Record<string, unknown>,
+) {
+  const memberRows = [
+    {
+      id: `gm-viewer-${groupId}`,
+      userId: "user-1",
+      groupId,
+      joinedAt: new Date(),
+      user: { id: "user-1", nickname: "Viewer", emoji: "🦅" },
+    },
+  ];
+  return {
+    userId: "user-1",
+    groupId,
+    joinedAt: new Date(),
+    id: `gm-${groupId}`,
+    group: {
+      id: groupId,
+      name,
+      competitionId,
+      inviteCode: `code-${groupId}`,
+      scoringConfig: {},
+      createdAt: new Date(),
+      competition: {
+        id: competitionId,
+        name: competitionName,
+        endDate,
+        details,
+      },
+      _count: { members: memberCount },
+      members: memberRows,
+    },
+  };
+}
+
+/**
+ * Membership fixture for a manual group (no linked competition).
+ * The dashboard's classifyGroupArchive helper returns "manual" for
+ * this case → always shown.
+ */
+function membershipManual(
+  groupId: string,
+  name: string,
+  memberCount: number,
+) {
+  const memberRows = [
+    {
+      id: `gm-viewer-${groupId}`,
+      userId: "user-1",
+      groupId,
+      joinedAt: new Date(),
+      user: { id: "user-1", nickname: "Viewer", emoji: "🦅" },
+    },
+  ];
+  return {
+    userId: "user-1",
+    groupId,
+    joinedAt: new Date(),
+    id: `gm-${groupId}`,
+    group: {
+      id: groupId,
+      name,
+      competitionId: null,
+      inviteCode: `code-${groupId}`,
+      scoringConfig: {},
+      createdAt: new Date(),
+      competition: null,
+      _count: { members: memberCount },
+      members: memberRows,
+    },
   };
 }
