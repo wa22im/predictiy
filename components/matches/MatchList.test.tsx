@@ -23,6 +23,7 @@ function makeMatch(over: Partial<FeedMatch>): FeedMatch {
     kickoffTime: over.kickoffTime ?? new Date().toISOString(),
     stage: "GROUP",
     status: over.status ?? "SCHEDULED",
+    externalStatus: over.externalStatus ?? null,
     isLocked: over.isLocked ?? false,
     timeUntilLockMs: 0,
     homeScore: null,

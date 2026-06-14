@@ -387,6 +387,7 @@ export const ModelName = {
   User: 'User',
   Competition: 'Competition',
   Match: 'Match',
+  CompetitionMatch: 'CompetitionMatch',
   Group: 'Group',
   GroupMember: 'GroupMember',
   BetMarket: 'BetMarket',
@@ -406,7 +407,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "competition" | "match" | "group" | "groupMember" | "betMarket" | "userBet"
+    modelProps: "user" | "competition" | "match" | "competitionMatch" | "group" | "groupMember" | "betMarket" | "userBet"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -629,6 +630,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.MatchCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.MatchCountAggregateOutputType> | number
+        }
+      }
+    }
+    CompetitionMatch: {
+      payload: Prisma.$CompetitionMatchPayload<ExtArgs>
+      fields: Prisma.CompetitionMatchFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CompetitionMatchFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompetitionMatchPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CompetitionMatchFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompetitionMatchPayload>
+        }
+        findFirst: {
+          args: Prisma.CompetitionMatchFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompetitionMatchPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CompetitionMatchFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompetitionMatchPayload>
+        }
+        findMany: {
+          args: Prisma.CompetitionMatchFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompetitionMatchPayload>[]
+        }
+        create: {
+          args: Prisma.CompetitionMatchCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompetitionMatchPayload>
+        }
+        createMany: {
+          args: Prisma.CompetitionMatchCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CompetitionMatchCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompetitionMatchPayload>[]
+        }
+        delete: {
+          args: Prisma.CompetitionMatchDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompetitionMatchPayload>
+        }
+        update: {
+          args: Prisma.CompetitionMatchUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompetitionMatchPayload>
+        }
+        deleteMany: {
+          args: Prisma.CompetitionMatchDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CompetitionMatchUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CompetitionMatchUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompetitionMatchPayload>[]
+        }
+        upsert: {
+          args: Prisma.CompetitionMatchUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CompetitionMatchPayload>
+        }
+        aggregate: {
+          args: Prisma.CompetitionMatchAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCompetitionMatch>
+        }
+        groupBy: {
+          args: Prisma.CompetitionMatchGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CompetitionMatchGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CompetitionMatchCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CompetitionMatchCountAggregateOutputType> | number
         }
       }
     }
@@ -973,7 +1048,8 @@ export const UserScalarFieldEnum = {
   nickname: 'nickname',
   emoji: 'emoji',
   isAdmin: 'isAdmin',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  details: 'details'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -1020,6 +1096,15 @@ export const MatchScalarFieldEnum = {
 export type MatchScalarFieldEnum = (typeof MatchScalarFieldEnum)[keyof typeof MatchScalarFieldEnum]
 
 
+export const CompetitionMatchScalarFieldEnum = {
+  matchId: 'matchId',
+  competitionId: 'competitionId',
+  addedAt: 'addedAt'
+} as const
+
+export type CompetitionMatchScalarFieldEnum = (typeof CompetitionMatchScalarFieldEnum)[keyof typeof CompetitionMatchScalarFieldEnum]
+
+
 export const GroupScalarFieldEnum = {
   id: 'id',
   competitionId: 'competitionId',
@@ -1037,7 +1122,8 @@ export const GroupMemberScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   groupId: 'groupId',
-  joinedAt: 'joinedAt'
+  joinedAt: 'joinedAt',
+  details: 'details'
 } as const
 
 export type GroupMemberScalarFieldEnum = (typeof GroupMemberScalarFieldEnum)[keyof typeof GroupMemberScalarFieldEnum]
@@ -1065,7 +1151,8 @@ export const UserBetScalarFieldEnum = {
   predictedValue: 'predictedValue',
   pointsAwarded: 'pointsAwarded',
   isRevealed: 'isRevealed',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  details: 'details'
 } as const
 
 export type UserBetScalarFieldEnum = (typeof UserBetScalarFieldEnum)[keyof typeof UserBetScalarFieldEnum]
@@ -1161,20 +1248,6 @@ export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
- * Reference to a field of type 'Int'
- */
-export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
-    
-
-
-/**
- * Reference to a field of type 'Int[]'
- */
-export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
-    
-
-
-/**
  * Reference to a field of type 'Json'
  */
 export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
@@ -1185,6 +1258,20 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'Int'
+ */
+export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+/**
+ * Reference to a field of type 'Int[]'
+ */
+export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
     
 
 
@@ -1328,6 +1415,7 @@ export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
   competition?: Prisma.CompetitionOmit
   match?: Prisma.MatchOmit
+  competitionMatch?: Prisma.CompetitionMatchOmit
   group?: Prisma.GroupOmit
   groupMember?: Prisma.GroupMemberOmit
   betMarket?: Prisma.BetMarketOmit

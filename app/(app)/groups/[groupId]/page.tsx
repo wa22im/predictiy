@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { ShareInvite } from "@/components/groups/ShareInvite";
 import { LeaderboardList } from "@/components/leaderboard/LeaderboardList";
+import { LeaveGroupButton } from "@/components/groups/LeaveGroupButton";
+import { RenameGroupButton } from "@/components/groups/RenameGroupButton";
 import { getGroupLeaderboard } from "@/lib/services/leaderboard";
 import { PitchBg } from "@/components/football";
 
@@ -44,6 +46,17 @@ export default async function GroupPage({ params }: { params: Params }) {
     redirect("/dashboard");
   }
 
+  // Creator is tracked in `Group.details.createdBy` (JSONB) — see
+  // `lib/services/groups.ts` for the rationale. Legacy groups have
+  // no `createdBy` and therefore can't be renamed (or have a rename
+  // button rendered). Sole-member is derived from the included
+  // members list; no extra query needed.
+  const details = (group.details as Record<string, unknown> | null) ?? {};
+  const createdBy =
+    typeof details.createdBy === "string" ? details.createdBy : null;
+  const isCreator = createdBy !== null && createdBy === user.id;
+  const isSoleMember = group.members.length === 1;
+
   // Top-5 leaderboard preview for the landing page. The full list
   // lives on /groups/[groupId]/leaderboard; the preview gives a
   // quick-glance summary without leaving the landing page.
@@ -55,16 +68,36 @@ export default async function GroupPage({ params }: { params: Params }) {
         <div className="max-w-4xl mx-auto">
 
           <div className="mb-8">
-             <h1 className="font-display sm:text-4xl font-bold tracking-tight ">
-               {group.name}
-             </h1>
-             <p className="text-muted-foreground font-display tracking-tight">
-               {group.competition.name}
-             </p>
-             <p className="text-muted-foreground text-sm mt-2">
-               {group.members.length}{" "}
-               {group.members.length === 1 ? "member" : "members"}
-             </p>
+             <div className="flex items-start justify-between gap-3 flex-wrap">
+               <div>
+                 <h1 className="font-display sm:text-4xl font-bold tracking-tight ">
+                   {group.name}
+                 </h1>
+                 <p className="text-muted-foreground font-display tracking-tight">
+                   {group.competition.name}
+                 </p>
+                 <p className="text-muted-foreground text-sm mt-2">
+                   {group.members.length}{" "}
+                   {group.members.length === 1 ? "member" : "members"}
+                 </p>
+               </div>
+               {(isCreator || !isSoleMember) && (
+                 <div className="flex items-center gap-2">
+                   {isCreator && (
+                     <RenameGroupButton
+                       groupId={groupId}
+                       currentName={group.name}
+                     />
+                   )}
+                   {!isSoleMember && (
+                     <LeaveGroupButton
+                       groupId={groupId}
+                       isSoleMember={isSoleMember}
+                     />
+                   )}
+                 </div>
+               )}
+             </div>
           </div>
 
           <div className="mb-8">

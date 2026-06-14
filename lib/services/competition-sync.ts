@@ -60,6 +60,24 @@ export async function syncCompetition(
         },
       });
 
+      // Link this match to its parent competition via the
+      // CompetitionMatch join table. The match's primary vendor
+      // parent is still `Match.competitionId` (typed FK, used for
+      // the cron's read paths); the join row is what powers the
+      // cross-tournament / mixed-tournament queries. We use upsert
+      // with an empty `update` block so re-running this function is
+      // a no-op for the join table.
+      await prisma.competitionMatch.upsert({
+        where: {
+          matchId_competitionId: {
+            matchId: match.id,
+            competitionId: competition.id,
+          },
+        },
+        create: { matchId: match.id, competitionId: competition.id },
+        update: {},
+      });
+
       if (existing) updatedMatches += 1;
       else createdMatches += 1;
 

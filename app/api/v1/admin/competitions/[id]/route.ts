@@ -79,6 +79,28 @@ export async function PATCH(
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
 
+  // endDate immutability for custom tournaments. A custom tournament
+  // (externalSource = null) has its endDate set at creation (or left
+  // null) and is locked from that point on — even clearing the field
+  // via `endDate: null` is rejected. This gives custom tournaments a
+  // stable "ends on" date that doesn't shift underneath the users
+  // who joined them. Vendor tournaments (externalSource =
+  // "football-data" | "fixturedownload") are unaffected — the vendor
+  // sync path may still rewrite endDate as the real tournament's
+  // season progresses.
+  if (
+    existing.externalSource === null &&
+    parsed.data.endDate !== undefined
+  ) {
+    return NextResponse.json(
+      {
+        error: "ENDDATE_IMMUTABLE",
+        message: "Custom tournaments have an immutable endDate set at creation.",
+      },
+      { status: 400 },
+    );
+  }
+
   // Build the partial update — only include fields the caller
   // actually provided. `undefined` means "leave alone", `null` means
   // "clear the column". We rely on the zod schema's optional+nullable

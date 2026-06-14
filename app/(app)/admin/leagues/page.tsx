@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SyncCompetitionButton } from "@/components/admin/SyncCompetitionButton";
 import { EditCompetitionButton } from "@/components/admin/EditCompetitionButton";
 import { DeleteCompetitionButton } from "@/components/admin/DeleteCompetitionButton";
+import { CreateCustomTournamentButton } from "@/components/admin/CreateCustomTournamentButton";
 import { PitchBg } from "@/components/football";
 
 export const dynamic = "force-dynamic";
@@ -55,18 +56,12 @@ export default async function AdminLeaguesPage() {
             syncs every 5 minutes and auto-settles finished matches.
           </p>
 
-          <div className="mb-6 flex justify-end gap-2">
+          <div className="mb-6 flex justify-end">
             <a
               href="/admin/leagues/discover"
               className="neon-button px-4 py-2 text-sm font-bold"
             >
-              Discover new competitions
-            </a>
-            <a
-              href="/admin/leagues/new"
-              className="neon-button px-4 py-2 text-sm font-bold"
-            >
-              + Onboard league
+              + Onboard competition
             </a>
           </div>
 
@@ -77,8 +72,8 @@ export default async function AdminLeaguesPage() {
             {onboarded.length === 0 ? (
               <div className="pitch-card-hero p-8 text-center">
                 <p className="text-muted-foreground text-sm">
-                  No leagues onboarded yet. Click &quot;Onboard league&quot; to
-                  get started.
+                  No competitions onboarded yet. Click &quot;Onboard
+                  competition&quot; to get started.
                 </p>
               </div>
             ) : (
@@ -106,6 +101,7 @@ export default async function AdminLeaguesPage() {
                             externalLeagueId: c.externalLeagueId,
                             externalSeason: c.externalSeason,
                             details: (c.details as Record<string, unknown> | null) ?? null,
+                            externalSource: c.externalSource,
                           }}
                         />
                         <DeleteCompetitionButton
@@ -133,11 +129,26 @@ export default async function AdminLeaguesPage() {
             )}
           </section>
 
-          {manual.length > 0 && (
-            <section>
-              <h2 className="font-display text-xl font-bold tracking-tight mb-3">
-                Manual (JSON-paste only)
+          <section>
+            <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+              <h2 className="font-display text-xl font-bold tracking-tight">
+                Manual (custom tournaments)
               </h2>
+              <CreateCustomTournamentButton />
+            </div>
+            {manual.length === 0 ? (
+              <div className="pitch-card-hero p-8 text-center">
+                <p className="text-muted-foreground text-sm">
+                  No custom tournaments yet. Click &quot;Create custom
+                  tournament&quot; to make one.
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Custom tournaments aggregate matches from any vendor
+                  competition. The end date is set at creation and cannot
+                  be changed later.
+                </p>
+              </div>
+            ) : (
               <ul className="space-y-2">
                 {manual.map((c) => (
                   <li key={c.id} className="pitch-card p-4">
@@ -152,6 +163,13 @@ export default async function AdminLeaguesPage() {
                         </p>
                       </div>
                       <div className="flex items-start gap-2">
+                        <a
+                          href={`/tournaments/${c.id}/matches`}
+                          className="px-3 py-1 text-xs font-bold border border-muted-foreground/30 text-foreground hover:bg-muted rounded"
+                          data-testid="manage-matches-link"
+                        >
+                          Manage matches
+                        </a>
                         <EditCompetitionButton
                           competition={{
                             id: c.id,
@@ -160,6 +178,7 @@ export default async function AdminLeaguesPage() {
                             externalLeagueId: c.externalLeagueId,
                             externalSeason: c.externalSeason,
                             details: (c.details as Record<string, unknown> | null) ?? null,
+                            externalSource: c.externalSource,
                           }}
                         />
                         <DeleteCompetitionButton
@@ -171,8 +190,8 @@ export default async function AdminLeaguesPage() {
                   </li>
                 ))}
               </ul>
-            </section>
-          )}
+            )}
+          </section>
         </div>
       </main>
     </PitchBg>

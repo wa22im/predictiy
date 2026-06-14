@@ -88,6 +88,49 @@ export async function renameGroup(opts: {
   return { ok: true, group: updated };
 }
 
+export type LeaveGroupInput = {
+  groupId: string;
+  callerId: string;
+};
+
+export type LeaveGroupResult =
+  | { ok: true; deletedGroup: boolean }
+  | { ok: false; error: "NOT_A_MEMBER" };
+
+/**
+ * Remove the caller from a group. Any member may leave.
+ *
+ * After removing the GroupMember row, we check if any members remain.
+ * If the group is now empty it is hard-deleted (cascade on the schema
+ * removes the associated UserBet rows). The groupDelete is issued from
+ * the service so that UserBet rows are torn down together with the
+ * Group — leaving an empty group alive would just produce a ghost
+ * leaderboard with no players.
+ *
+ * Returns a discriminated union so the server action can map the
+ * error code to a UI message without re-throwing. The `deletedGroup`
+ * flag is informational — the client uses it to decide whether to
+ * redirect to the dashboard (group is gone) or to a different group.
+ */
+export async function leaveGroup(input: LeaveGroupInput): Promise<LeaveGroupResult> {
+  const membership = await prisma.groupMember.findUnique({
+    where: { userId_groupId: { userId: input.callerId, groupId: input.groupId } },
+    select: { id: true },
+  });
+  if (!membership) return { ok: false, error: "NOT_A_MEMBER" };
+
+  await prisma.groupMember.delete({ where: { id: membership.id } });
+
+  const remaining = await prisma.groupMember.count({
+    where: { groupId: input.groupId },
+  });
+  if (remaining === 0) {
+    await prisma.group.delete({ where: { id: input.groupId } });
+    return { ok: true, deletedGroup: true };
+  }
+  return { ok: true, deletedGroup: false };
+}
+
 export type GroupArchiveStatus = "manual" | "active" | "archived";
 
 /**

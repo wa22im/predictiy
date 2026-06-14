@@ -170,6 +170,7 @@ describe("PATCH /api/v1/admin/competitions/[id]", () => {
       id: "c1",
       name: "X",
       deletedAt: null,
+      externalSource: "football-data",
     });
     mocks.competitionUpdate.mockResolvedValue({
       id: "c1",
@@ -197,6 +198,7 @@ describe("PATCH /api/v1/admin/competitions/[id]", () => {
       id: "c1",
       name: "X",
       deletedAt: null,
+      externalSource: "football-data",
     });
     mocks.competitionUpdate.mockResolvedValue({
       id: "c1",
@@ -216,6 +218,107 @@ describe("PATCH /api/v1/admin/competitions/[id]", () => {
     expect(mocks.competitionUpdate).toHaveBeenCalledWith({
       where: { id: "c1" },
       data: { endDate: null, externalLeagueId: null },
+    });
+  });
+
+  describe("endDate immutability for custom tournaments (externalSource = null)", () => {
+    it("returns 400 ENDDATE_IMMUTABLE when body includes a new endDate", async () => {
+      mocks.getUser.mockResolvedValue({ data: { user: { id: "u1" } } });
+      mocks.competitionFindUnique.mockResolvedValue({
+        id: "c1",
+        name: "Custom Cup",
+        deletedAt: null,
+        externalSource: null,
+      });
+      const req = new Request("http://localhost", {
+        method: "PATCH",
+        body: JSON.stringify({ endDate: "2027-01-01T00:00:00Z" }),
+      });
+      const res = await PATCH(req, {
+        params: Promise.resolve({ id: "c1" }),
+      });
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toBe("ENDDATE_IMMUTABLE");
+      expect(mocks.competitionUpdate).not.toHaveBeenCalled();
+    });
+
+    it("returns 400 ENDDATE_IMMUTABLE when body includes endDate: null (clearing is also rejected)", async () => {
+      mocks.getUser.mockResolvedValue({ data: { user: { id: "u1" } } });
+      mocks.competitionFindUnique.mockResolvedValue({
+        id: "c1",
+        name: "Custom Cup",
+        deletedAt: null,
+        externalSource: null,
+      });
+      const req = new Request("http://localhost", {
+        method: "PATCH",
+        body: JSON.stringify({ endDate: null }),
+      });
+      const res = await PATCH(req, {
+        params: Promise.resolve({ id: "c1" }),
+      });
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toBe("ENDDATE_IMMUTABLE");
+      expect(mocks.competitionUpdate).not.toHaveBeenCalled();
+    });
+
+    it("returns 200 when body does NOT include endDate (other fields still mutable)", async () => {
+      mocks.getUser.mockResolvedValue({ data: { user: { id: "u1" } } });
+      mocks.competitionFindUnique.mockResolvedValue({
+        id: "c1",
+        name: "Custom Cup",
+        deletedAt: null,
+        externalSource: null,
+      });
+      mocks.competitionUpdate.mockResolvedValue({
+        id: "c1",
+        name: "Renamed",
+        deletedAt: null,
+        externalSource: null,
+      });
+      const req = new Request("http://localhost", {
+        method: "PATCH",
+        body: JSON.stringify({ name: "Renamed" }),
+      });
+      const res = await PATCH(req, {
+        params: Promise.resolve({ id: "c1" }),
+      });
+      expect(res.status).toBe(200);
+      expect(mocks.competitionUpdate).toHaveBeenCalledWith({
+        where: { id: "c1" },
+        data: { name: "Renamed" },
+      });
+    });
+
+    it("returns 200 for a vendor tournament when body includes endDate (immutability does not apply)", async () => {
+      mocks.getUser.mockResolvedValue({ data: { user: { id: "u1" } } });
+      mocks.competitionFindUnique.mockResolvedValue({
+        id: "c1",
+        name: "Premier League",
+        deletedAt: null,
+        externalSource: "football-data",
+      });
+      mocks.competitionUpdate.mockResolvedValue({
+        id: "c1",
+        name: "Premier League",
+        endDate: new Date("2027-01-01T00:00:00Z"),
+        deletedAt: null,
+        externalSource: "football-data",
+      });
+      const req = new Request("http://localhost", {
+        method: "PATCH",
+        body: JSON.stringify({ endDate: "2027-01-01T00:00:00Z" }),
+      });
+      const res = await PATCH(req, {
+        params: Promise.resolve({ id: "c1" }),
+      });
+      expect(res.status).toBe(200);
+      expect(mocks.competitionUpdate).toHaveBeenCalledWith({
+        where: { id: "c1" },
+        data: { endDate: expect.any(Date) },
+      });
     });
   });
 

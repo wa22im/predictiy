@@ -20,9 +20,9 @@ To find the connection strings for a Supabase project:
 2. **Project Settings** → **Database** → **Connection string** → **URI**
 3. Copy both the **transaction-mode pooler** (port 6543, has `?pgbouncer=true`) and the **direct** connection (port 5432, on the `db.<ref>.supabase.co` host)
 
-## Step 2 — Apply Prisma migrations to the production database
+## Step 2 — Initialize the production database schema
 
-The production database is empty until the schema is applied. Apply migrations from your local machine (one-time setup):
+The production database is empty until the schema is applied. There are **no Prisma migrations** in this project — the schema lives in `prisma/init.sql` as a single canonical SQL file. Apply it from your local machine (one-time setup):
 
 ```bash
 # 1. Set the production DATABASE_URL and DIRECT_URL in your local .env
@@ -30,16 +30,16 @@ The production database is empty until the schema is applied. Apply migrations f
 #    DATABASE_URL = transaction-mode pooler (port 6543)
 #    DIRECT_URL   = direct connection (port 5432)
 
-# 2. Apply pending migrations
-npx prisma migrate deploy
+# 2. Apply the canonical schema (drops public, re-creates from init.sql)
+INIT_CONFIRM=yes-i-am-sure npm run db:init
 
 # 3. (Optional) seed the dev data
 npm run db:seed
 ```
 
-`prisma migrate deploy` is idempotent — it only applies migrations that haven't been applied yet, so it's safe to re-run. The seed is also idempotent (uses upserts), so re-running on a populated DB is a no-op.
+`npm run db:init` is destructive: it drops the entire `public` schema and re-applies `prisma/init.sql` from scratch. **It is intended for fresh-DB recovery only** — running it on a populated database wipes all data. The `INIT_CONFIRM=yes-i-am-sure` env var is a required safety guard. The script is idempotent at the schema level: the resulting `public` schema is identical whether you run it on an empty DB or re-run it on a freshly-wiped DB.
 
-You only need to do this step once. After the first deploy, Vercel doesn't run migrations — the application code assumes the schema is already there. (Future migrations applied via new entries in `prisma/migrations/` will need this step re-run.)
+For the first deploy, run `db:init` once and you're done. After that, Vercel doesn't apply the schema — the application code assumes the schema is already there. (See **Database management** in `AGENTS.md` for the schema-change workflow: edit `prisma/schema.prisma`, regenerate `prisma/init.sql`, run `npm run db:push` against the dev DB.)
 
 ## Step 3 — Connect Vercel to the GitHub repo
 

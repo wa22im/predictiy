@@ -49,6 +49,7 @@ export type UserCountAggregateOutputType = {
   emoji: number
   isAdmin: number
   createdAt: number
+  details: number
   _all: number
 }
 
@@ -78,6 +79,7 @@ export type UserCountAggregateInputType = {
   emoji?: true
   isAdmin?: true
   createdAt?: true
+  details?: true
   _all?: true
 }
 
@@ -160,6 +162,7 @@ export type UserGroupByOutputType = {
   emoji: string
   isAdmin: boolean
   createdAt: Date
+  details: runtime.JsonValue | null
   _count: UserCountAggregateOutputType | null
   _min: UserMinAggregateOutputType | null
   _max: UserMaxAggregateOutputType | null
@@ -190,6 +193,7 @@ export type UserWhereInput = {
   emoji?: Prisma.StringFilter<"User"> | string
   isAdmin?: Prisma.BoolFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  details?: Prisma.JsonNullableFilter<"User">
   memberships?: Prisma.GroupMemberListRelationFilter
   bets?: Prisma.UserBetListRelationFilter
 }
@@ -201,6 +205,7 @@ export type UserOrderByWithRelationInput = {
   emoji?: Prisma.SortOrder
   isAdmin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  details?: Prisma.SortOrderInput | Prisma.SortOrder
   memberships?: Prisma.GroupMemberOrderByRelationAggregateInput
   bets?: Prisma.UserBetOrderByRelationAggregateInput
 }
@@ -215,6 +220,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   emoji?: Prisma.StringFilter<"User"> | string
   isAdmin?: Prisma.BoolFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  details?: Prisma.JsonNullableFilter<"User">
   memberships?: Prisma.GroupMemberListRelationFilter
   bets?: Prisma.UserBetListRelationFilter
 }, "id" | "email">
@@ -226,6 +232,7 @@ export type UserOrderByWithAggregationInput = {
   emoji?: Prisma.SortOrder
   isAdmin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  details?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
   _max?: Prisma.UserMaxOrderByAggregateInput
   _min?: Prisma.UserMinOrderByAggregateInput
@@ -241,6 +248,7 @@ export type UserScalarWhereWithAggregatesInput = {
   emoji?: Prisma.StringWithAggregatesFilter<"User"> | string
   isAdmin?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
+  details?: Prisma.JsonNullableWithAggregatesFilter<"User">
 }
 
 export type UserCreateInput = {
@@ -250,6 +258,7 @@ export type UserCreateInput = {
   emoji?: string
   isAdmin?: boolean
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   memberships?: Prisma.GroupMemberCreateNestedManyWithoutUserInput
   bets?: Prisma.UserBetCreateNestedManyWithoutUserInput
 }
@@ -261,6 +270,7 @@ export type UserUncheckedCreateInput = {
   emoji?: string
   isAdmin?: boolean
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   memberships?: Prisma.GroupMemberUncheckedCreateNestedManyWithoutUserInput
   bets?: Prisma.UserBetUncheckedCreateNestedManyWithoutUserInput
 }
@@ -272,6 +282,7 @@ export type UserUpdateInput = {
   emoji?: Prisma.StringFieldUpdateOperationsInput | string
   isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   memberships?: Prisma.GroupMemberUpdateManyWithoutUserNestedInput
   bets?: Prisma.UserBetUpdateManyWithoutUserNestedInput
 }
@@ -283,6 +294,7 @@ export type UserUncheckedUpdateInput = {
   emoji?: Prisma.StringFieldUpdateOperationsInput | string
   isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   memberships?: Prisma.GroupMemberUncheckedUpdateManyWithoutUserNestedInput
   bets?: Prisma.UserBetUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -294,6 +306,7 @@ export type UserCreateManyInput = {
   emoji?: string
   isAdmin?: boolean
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserUpdateManyMutationInput = {
@@ -303,6 +316,7 @@ export type UserUpdateManyMutationInput = {
   emoji?: Prisma.StringFieldUpdateOperationsInput | string
   isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserUncheckedUpdateManyInput = {
@@ -312,6 +326,7 @@ export type UserUncheckedUpdateManyInput = {
   emoji?: Prisma.StringFieldUpdateOperationsInput | string
   isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserCountOrderByAggregateInput = {
@@ -321,6 +336,7 @@ export type UserCountOrderByAggregateInput = {
   emoji?: Prisma.SortOrder
   isAdmin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  details?: Prisma.SortOrder
 }
 
 export type UserMaxOrderByAggregateInput = {
@@ -393,6 +409,7 @@ export type UserCreateWithoutMembershipsInput = {
   emoji?: string
   isAdmin?: boolean
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   bets?: Prisma.UserBetCreateNestedManyWithoutUserInput
 }
 
@@ -403,6 +420,7 @@ export type UserUncheckedCreateWithoutMembershipsInput = {
   emoji?: string
   isAdmin?: boolean
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   bets?: Prisma.UserBetUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -429,6 +447,7 @@ export type UserUpdateWithoutMembershipsInput = {
   emoji?: Prisma.StringFieldUpdateOperationsInput | string
   isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   bets?: Prisma.UserBetUpdateManyWithoutUserNestedInput
 }
 
@@ -439,6 +458,7 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
   emoji?: Prisma.StringFieldUpdateOperationsInput | string
   isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   bets?: Prisma.UserBetUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -449,6 +469,7 @@ export type UserCreateWithoutBetsInput = {
   emoji?: string
   isAdmin?: boolean
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   memberships?: Prisma.GroupMemberCreateNestedManyWithoutUserInput
 }
 
@@ -459,6 +480,7 @@ export type UserUncheckedCreateWithoutBetsInput = {
   emoji?: string
   isAdmin?: boolean
   createdAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   memberships?: Prisma.GroupMemberUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -485,6 +507,7 @@ export type UserUpdateWithoutBetsInput = {
   emoji?: Prisma.StringFieldUpdateOperationsInput | string
   isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   memberships?: Prisma.GroupMemberUpdateManyWithoutUserNestedInput
 }
 
@@ -495,6 +518,7 @@ export type UserUncheckedUpdateWithoutBetsInput = {
   emoji?: Prisma.StringFieldUpdateOperationsInput | string
   isAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   memberships?: Prisma.GroupMemberUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -545,6 +569,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   emoji?: boolean
   isAdmin?: boolean
   createdAt?: boolean
+  details?: boolean
   memberships?: boolean | Prisma.User$membershipsArgs<ExtArgs>
   bets?: boolean | Prisma.User$betsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -557,6 +582,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   emoji?: boolean
   isAdmin?: boolean
   createdAt?: boolean
+  details?: boolean
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -566,6 +592,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   emoji?: boolean
   isAdmin?: boolean
   createdAt?: boolean
+  details?: boolean
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectScalar = {
@@ -575,9 +602,10 @@ export type UserSelectScalar = {
   emoji?: boolean
   isAdmin?: boolean
   createdAt?: boolean
+  details?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "nickname" | "emoji" | "isAdmin" | "createdAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "nickname" | "emoji" | "isAdmin" | "createdAt" | "details", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   memberships?: boolean | Prisma.User$membershipsArgs<ExtArgs>
   bets?: boolean | Prisma.User$betsArgs<ExtArgs>
@@ -599,6 +627,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     emoji: string
     isAdmin: boolean
     createdAt: Date
+    details: runtime.JsonValue | null
   }, ExtArgs["result"]["user"]>
   composites: {}
 }
@@ -1030,6 +1059,7 @@ export interface UserFieldRefs {
   readonly emoji: Prisma.FieldRef<"User", 'String'>
   readonly isAdmin: Prisma.FieldRef<"User", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
+  readonly details: Prisma.FieldRef<"User", 'Json'>
 }
     
 

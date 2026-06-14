@@ -1,6 +1,30 @@
 "use server";
 
+import { cookies } from "next/headers";
 import type { CreateGroupPayload } from "@/lib/validation/group";
+
+/**
+ * Build a Cookie header from the user's session. Server actions
+ * that fetch their own API routes need to forward the session
+ * cookies so the route's `requireAuth()` can authenticate the
+ * request. Without this, the route sees an unauthenticated
+ * request and returns 401 NOT_AUTHENTICATED.
+ *
+ * (Duplicated from `app/(app)/admin/leagues/actions.ts` because
+ * the existing helper is local to that file. Each server-action
+ * file that calls the public API needs its own. A shared helper
+ * in `lib/` would be the obvious follow-up, but the principal
+ * prefers explicit duplication for now — the comment above is
+ * the same one the admin file carries, and the same fix-lost-
+ * and-re-applied history applies.)
+ */
+async function getCookieHeader(): Promise<string> {
+  const cookieStore = await cookies();
+  return cookieStore
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+}
 
 export async function createGroupAction(input: CreateGroupPayload) {
   const { prisma } = await import("@/lib/prisma");
@@ -101,4 +125,85 @@ export async function joinByCodeAction(input: { inviteCode: string }):
   }
 
   return { ok: true, groupId: group.id, groupName: group.name };
+}
+
+/**
+ * Server Action: create a pool (Group) tied to either an existing
+ * competition or a new custom tournament. Goes through
+ * `POST /api/v1/pools` so the auth + validation + error envelope
+ * match what a curl call would see. Used by
+ * `components/groups/CreatePoolButton.tsx` when the user picks
+ * the "Create new custom tournament" mode in the modal.
+ *
+ * Discriminated union return — the UI switches on `ok` and
+ * surfaces the `error` code to the user (mapped to a friendly
+ * message in the modal). On success, returns the new group's id
+ * + name + the resolved competitionId + competitionName.
+ */
+export type CreatePoolWithCustomTournamentInput = {
+  name: string;
+  competitionId?: string;
+  newCompetition?: {
+    name: string;
+    endDate: string;
+  };
+};
+
+export type CreatePoolWithCustomTournamentResult =
+  | {
+      ok: true;
+      id: string;
+      name: string;
+      competitionId: string;
+      competitionName: string | undefined;
+    }
+  | { ok: false; error: string };
+
+export async function createPoolWithCustomTournamentAction(
+  input: CreatePoolWithCustomTournamentInput,
+): Promise<CreatePoolWithCustomTournamentResult> {
+  try {
+    const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
+    const res = await fetch(`${baseUrl}/api/v1/pools`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // Forward the user's session cookies so the API route can
+        // authenticate. The route does its own requireAuth() check.
+        "Cookie": await getCookieHeader(),
+      },
+      body: JSON.stringify(input),
+      cache: "no-store",
+    });
+
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!res.ok) {
+      return {
+        ok: false,
+        error:
+          typeof body.error === "string"
+            ? body.error
+            : `Create failed (${res.status})`,
+      };
+    }
+
+    return {
+      ok: true,
+      id: typeof body.id === "string" ? body.id : "",
+      name: typeof body.name === "string" ? body.name : input.name,
+      competitionId:
+        typeof body.competitionId === "string"
+          ? body.competitionId
+          : input.competitionId ?? "",
+      competitionName:
+        typeof body.competitionName === "string"
+          ? body.competitionName
+          : input.newCompetition?.name,
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      error: (e as Error).message,
+    };
+  }
 }

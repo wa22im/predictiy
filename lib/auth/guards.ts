@@ -41,6 +41,30 @@ export async function requireAdmin(): Promise<{ id: string; email: string }> {
 }
 
 /**
+ * Server-side guard that asserts the request comes from an
+ * authenticated user (any role — admin or not). Throws
+ * GuardError(401) on failure.
+ *
+ * Used by endpoints that are open to all logged-in users, such as
+ * the manage-matches endpoints for custom tournaments
+ * (`POST /api/v1/admin/competitions/[id]/matches` and
+ * `DELETE /api/v1/admin/competitions/[id]/matches/[matchId]`) —
+ * any user may curate the matches in a custom tournament.
+ */
+export async function requireAuth(): Promise<{ id: string; email: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new GuardError(401, "NOT_AUTHENTICATED");
+  }
+
+  return { id: user.id, email: user.email ?? "" };
+}
+
+/**
  * Server-side guard that asserts the current user is a member of the group.
  * Throws GuardError(401|403) on failure.
  */

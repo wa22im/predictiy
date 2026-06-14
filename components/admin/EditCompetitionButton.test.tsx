@@ -238,3 +238,93 @@ describe("EditCompetitionButton (scoring config section)", () => {
     expect(payload.details.scoringOverridesByStage).toEqual({});
   });
 });
+
+describe("EditCompetitionButton (endDate immutability for custom tournaments)", () => {
+  it("renders the endDate input when the competition is a vendor (externalSource set)", () => {
+    render(
+      <EditCompetitionButton
+        competition={{
+          id: "comp-1",
+          name: "World Cup 2026",
+          endDate: "2026-07-19T00:00:00.000Z",
+          externalLeagueId: null,
+          externalSeason: null,
+          details: null,
+          externalSource: "football-data",
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^edit$/i }));
+    // The datetime-local input is rendered, and the read-only
+    // paragraph is NOT rendered. Match by role+type to avoid
+    // timezone-dependent string assertions.
+    const input = screen.getByLabelText(/^end date$/i) as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+    expect(input.type).toBe("datetime-local");
+    expect(screen.queryByTestId("enddate-readonly")).toBeNull();
+  });
+
+  it("does NOT render the endDate input when the competition is custom (externalSource = null)", () => {
+    render(
+      <EditCompetitionButton
+        competition={{
+          id: "comp-1",
+          name: "Custom Cup",
+          endDate: "2026-07-19T00:00:00.000Z",
+          externalLeagueId: null,
+          externalSeason: null,
+          details: null,
+          externalSource: null,
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^edit$/i }));
+    // No datetime-local input is rendered. The read-only paragraph is
+    // shown instead.
+    expect(screen.queryByLabelText(/^end date$/i)).toBeNull();
+    expect(screen.getByTestId("enddate-readonly")).toBeInTheDocument();
+  });
+
+  it("shows the current endDate as read-only text when the competition is custom", () => {
+    render(
+      <EditCompetitionButton
+        competition={{
+          id: "comp-1",
+          name: "Custom Cup",
+          endDate: "2026-07-19T00:00:00.000Z",
+          externalLeagueId: null,
+          externalSeason: null,
+          details: null,
+          externalSource: null,
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^edit$/i }));
+    const readOnly = screen.getByTestId("enddate-readonly");
+    expect(readOnly).toBeInTheDocument();
+    // The read-only text contains the date (YYYY-MM-DD) and the
+    // immutability note. We match on the year-month-day portion to
+    // avoid coupling to the exact hour/minute string formatting.
+    expect(readOnly.textContent).toMatch(/2026-07-19/);
+    expect(readOnly.textContent).toMatch(/cannot be changed/);
+  });
+
+  it("shows a 'No end date set' message for custom tournaments with null endDate", () => {
+    render(
+      <EditCompetitionButton
+        competition={{
+          id: "comp-1",
+          name: "Custom Cup",
+          endDate: null,
+          externalLeagueId: null,
+          externalSeason: null,
+          details: null,
+          externalSource: null,
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^edit$/i }));
+    const readOnly = screen.getByTestId("enddate-readonly");
+    expect(readOnly.textContent).toMatch(/no end date set/i);
+  });
+});

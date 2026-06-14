@@ -54,6 +54,7 @@ export const ModelName = {
   User: 'User',
   Competition: 'Competition',
   Match: 'Match',
+  CompetitionMatch: 'CompetitionMatch',
   Group: 'Group',
   GroupMember: 'GroupMember',
   BetMarket: 'BetMarket',
@@ -82,7 +83,8 @@ export const UserScalarFieldEnum = {
   nickname: 'nickname',
   emoji: 'emoji',
   isAdmin: 'isAdmin',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  details: 'details'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -129,6 +131,15 @@ export const MatchScalarFieldEnum = {
 export type MatchScalarFieldEnum = (typeof MatchScalarFieldEnum)[keyof typeof MatchScalarFieldEnum]
 
 
+export const CompetitionMatchScalarFieldEnum = {
+  matchId: 'matchId',
+  competitionId: 'competitionId',
+  addedAt: 'addedAt'
+} as const
+
+export type CompetitionMatchScalarFieldEnum = (typeof CompetitionMatchScalarFieldEnum)[keyof typeof CompetitionMatchScalarFieldEnum]
+
+
 export const GroupScalarFieldEnum = {
   id: 'id',
   competitionId: 'competitionId',
@@ -146,7 +157,8 @@ export const GroupMemberScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   groupId: 'groupId',
-  joinedAt: 'joinedAt'
+  joinedAt: 'joinedAt',
+  details: 'details'
 } as const
 
 export type GroupMemberScalarFieldEnum = (typeof GroupMemberScalarFieldEnum)[keyof typeof GroupMemberScalarFieldEnum]
@@ -174,7 +186,8 @@ export const UserBetScalarFieldEnum = {
   predictedValue: 'predictedValue',
   pointsAwarded: 'pointsAwarded',
   isRevealed: 'isRevealed',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  details: 'details'
 } as const
 
 export type UserBetScalarFieldEnum = (typeof UserBetScalarFieldEnum)[keyof typeof UserBetScalarFieldEnum]

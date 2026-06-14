@@ -2,11 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
-import { ingestLeague, syncCompetition } from "@/lib/services/ingest-league";
-import { ApiFootballError } from "@/lib/services/api-football";
 
 /**
  * Build a Cookie header from the user's session. Server actions that
@@ -38,81 +35,25 @@ async function requireAdmin(): Promise<string> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    throw new ApiFootballError("Not authenticated", 401);
+    throw new Error("Not authenticated");
   }
   const actor = await prisma.user.findUnique({
     where: { id: user.id },
     select: { isAdmin: true },
   });
   if (!actor?.isAdmin) {
-    throw new ApiFootballError("Forbidden", 403);
+    throw new Error("Forbidden");
   }
   return user.id;
-}
-
-const IngestInput = z.object({
-  name: z.string().min(1).max(120),
-  externalLeagueId: z.coerce.number().int().positive(),
-  externalSeason: z.coerce.number().int().min(2000).max(2100),
-});
-
-export type IngestLeagueActionResult =
-  | {
-      ok: true;
-      competitionId: string;
-      created: { competition: boolean; matches: number; markets: number };
-      updated: { matches: number; markets: number };
-      fetched: number;
-      warning: string | null;
-      errors: { apiMatchId?: string; message: string }[];
-    }
-  | { ok: false; error: string };
-
-export async function ingestLeagueAction(
-  input: z.infer<typeof IngestInput>,
-): Promise<IngestLeagueActionResult> {
-  try {
-    await requireAdmin();
-    const parsed = IngestInput.safeParse(input);
-    if (!parsed.success) {
-      return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
-    }
-    const result = await ingestLeague(parsed.data);
-    revalidatePath("/admin/leagues");
-    revalidatePath("/admin");
-    return { ok: true, ...result };
-  } catch (e) {
-    return { ok: false, error: (e as Error).message };
-  }
-}
-
-export type SyncCompetitionResult =
-  | { ok: true; fetched: number; updated: { matches: number; markets: number; settledMarkets: number }; errors: { apiMatchId?: string; message: string }[] }
-  | { ok: false; error: string };
-
-export async function syncCompetitionAction(
-  competitionId: string,
-): Promise<SyncCompetitionResult> {
-  try {
-    await requireAdmin();
-    if (!competitionId) return { ok: false, error: "Missing competition id" };
-    const result = await syncCompetition(competitionId);
-    revalidatePath("/admin/leagues");
-    revalidatePath(`/admin/leagues/${competitionId}`);
-    return { ok: true, ...result };
-  } catch (e) {
-    return { ok: false, error: (e as Error).message };
-  }
 }
 
 /**
  * Server Action: sync a football-data.org competition.
  *
- * Mirrors the legacy `syncCompetitionAction` but talks to the new
- * `/api/v1/admin/competitions/[id]/sync` route handler via HTTP.
- * Going through the API keeps the request path identical to a curl
- * call from admin tooling — same auth, same error envelope, same
- * response shape.
+ * Goes through the `/api/v1/admin/competitions/[id]/sync` route
+ * handler via HTTP. Going through the API keeps the request path
+ * identical to a curl call from admin tooling — same auth, same
+ * error envelope, same response shape.
  *
  * Returns a discriminated union so the client can render a richer
  * success message (new matches, settled markets) without the
@@ -306,6 +247,195 @@ export async function deleteCompetitionAction(
       deletedAt:
         typeof body.deletedAt === "string" ? body.deletedAt : new Date().toISOString(),
     };
+  } catch (e) {
+    return {
+      ok: false,
+      error: (e as Error).message,
+      status: (e as { status?: number }).status,
+    };
+  }
+}
+
+/**
+ * Server Action: create a custom (hand-built) tournament. The new
+ * competition is born with `externalSource = null` so the cron never
+ * auto-syncs it. The admin then adds matches via
+ * `addMatchesToCompetitionAction` (which writes to the
+ * CompetitionMatch join table).
+ *
+ * Goes through `POST /api/v1/admin/competitions` for the same reason
+ * the other actions go through the API: shared auth + validation +
+ * error envelope with curl. The Cookie header is forwarded so the
+ * route's `requireAdmin()` can authenticate the request.
+ */
+export type CreateCustomCompetitionInput = {
+  name: string;
+  endDate?: string;
+};
+
+export type CreateCustomCompetitionResult =
+  | { ok: true; id: string; name: string }
+  | { ok: false; error: string; status?: number };
+
+export async function createCustomCompetitionAction(
+  input: CreateCustomCompetitionInput,
+): Promise<CreateCustomCompetitionResult> {
+  try {
+    await requireAdmin();
+    if (!input.name) {
+      return { ok: false, error: "Missing competition name" };
+    }
+
+    const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
+    const res = await fetch(`${baseUrl}/api/v1/admin/competitions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // Forward the user's session cookies so the API route can
+        // authenticate. The route does its own requireAdmin() check.
+        "Cookie": await getCookieHeader(),
+      },
+      body: JSON.stringify(input),
+      cache: "no-store",
+    });
+
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!res.ok) {
+      return {
+        ok: false,
+        error:
+          typeof body.error === "string" ? body.error : `Create failed (${res.status})`,
+        status: res.status,
+      };
+    }
+
+    revalidatePath("/admin/leagues");
+    return {
+      ok: true,
+      id: typeof body.id === "string" ? body.id : "",
+      name: typeof body.name === "string" ? body.name : input.name,
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      error: (e as Error).message,
+      status: (e as { status?: number }).status,
+    };
+  }
+}
+
+/**
+ * Server Action: add matches to a custom tournament. Goes through
+ * `POST /api/v1/admin/competitions/[id]/matches` so the auth +
+ * validation + idempotency contract match what a curl call would see.
+ */
+export type AddMatchesResult =
+  | { ok: true; added: number; requested: number }
+  | { ok: false; error: string; status?: number };
+
+export async function addMatchesToCompetitionAction(
+  competitionId: string,
+  matchIds: string[],
+): Promise<AddMatchesResult> {
+  try {
+    await requireAdmin();
+    if (!competitionId) {
+      return { ok: false, error: "Missing competition id" };
+    }
+    if (!Array.isArray(matchIds) || matchIds.length === 0) {
+      return { ok: false, error: "matchIds must be a non-empty array" };
+    }
+
+    const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
+    const res = await fetch(
+      `${baseUrl}/api/v1/admin/competitions/${encodeURIComponent(competitionId)}/matches`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Cookie": await getCookieHeader(),
+        },
+        body: JSON.stringify({ matchIds }),
+        cache: "no-store",
+      },
+    );
+
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!res.ok) {
+      return {
+        ok: false,
+        error:
+          typeof body.error === "string" ? body.error : `Add matches failed (${res.status})`,
+        status: res.status,
+      };
+    }
+
+    revalidatePath(`/admin/leagues/${competitionId}`);
+    revalidatePath("/admin/leagues");
+    return {
+      ok: true,
+      added: Number(body.added ?? 0),
+      requested: Number(body.requested ?? matchIds.length),
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      error: (e as Error).message,
+      status: (e as { status?: number }).status,
+    };
+  }
+}
+
+/**
+ * Server Action: remove a match from a custom tournament. The API
+ * route enforces "match has not been played" — this wrapper just
+ * forwards the response. On `MATCH_ALREADY_PLAYED` the UI surfaces
+ * a precise error message.
+ */
+export type RemoveMatchResult =
+  | { ok: true; removed: boolean }
+  | { ok: false; error: string; status?: number };
+
+export async function removeMatchFromCompetitionAction(
+  competitionId: string,
+  matchId: string,
+): Promise<RemoveMatchResult> {
+  try {
+    await requireAdmin();
+    if (!competitionId) {
+      return { ok: false, error: "Missing competition id" };
+    }
+    if (!matchId) {
+      return { ok: false, error: "Missing match id" };
+    }
+
+    const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
+    const res = await fetch(
+      `${baseUrl}/api/v1/admin/competitions/${encodeURIComponent(competitionId)}/matches/${encodeURIComponent(matchId)}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Cookie": await getCookieHeader(),
+        },
+        cache: "no-store",
+      },
+    );
+
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!res.ok) {
+      return {
+        ok: false,
+        error:
+          typeof body.error === "string"
+            ? body.error
+            : `Remove match failed (${res.status})`,
+        status: res.status,
+      };
+    }
+
+    revalidatePath(`/admin/leagues/${competitionId}`);
+    revalidatePath("/admin/leagues");
+    return { ok: true, removed: body.removed === true };
   } catch (e) {
     return {
       ok: false,

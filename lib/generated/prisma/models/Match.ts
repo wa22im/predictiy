@@ -346,6 +346,7 @@ export type MatchWhereInput = {
   details?: Prisma.JsonNullableFilter<"Match">
   competition?: Prisma.XOR<Prisma.CompetitionScalarRelationFilter, Prisma.CompetitionWhereInput>
   markets?: Prisma.BetMarketListRelationFilter
+  customLinks?: Prisma.CompetitionMatchListRelationFilter
 }
 
 export type MatchOrderByWithRelationInput = {
@@ -370,6 +371,7 @@ export type MatchOrderByWithRelationInput = {
   details?: Prisma.SortOrderInput | Prisma.SortOrder
   competition?: Prisma.CompetitionOrderByWithRelationInput
   markets?: Prisma.BetMarketOrderByRelationAggregateInput
+  customLinks?: Prisma.CompetitionMatchOrderByRelationAggregateInput
 }
 
 export type MatchWhereUniqueInput = Prisma.AtLeast<{
@@ -397,6 +399,7 @@ export type MatchWhereUniqueInput = Prisma.AtLeast<{
   details?: Prisma.JsonNullableFilter<"Match">
   competition?: Prisma.XOR<Prisma.CompetitionScalarRelationFilter, Prisma.CompetitionWhereInput>
   markets?: Prisma.BetMarketListRelationFilter
+  customLinks?: Prisma.CompetitionMatchListRelationFilter
 }, "id" | "apiMatchId">
 
 export type MatchOrderByWithAggregationInput = {
@@ -472,6 +475,7 @@ export type MatchCreateInput = {
   details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   competition: Prisma.CompetitionCreateNestedOneWithoutMatchesInput
   markets?: Prisma.BetMarketCreateNestedManyWithoutMatchInput
+  customLinks?: Prisma.CompetitionMatchCreateNestedManyWithoutMatchInput
 }
 
 export type MatchUncheckedCreateInput = {
@@ -495,6 +499,7 @@ export type MatchUncheckedCreateInput = {
   scoreLastSyncedAt?: Date | string | null
   details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   markets?: Prisma.BetMarketUncheckedCreateNestedManyWithoutMatchInput
+  customLinks?: Prisma.CompetitionMatchUncheckedCreateNestedManyWithoutMatchInput
 }
 
 export type MatchUpdateInput = {
@@ -518,6 +523,7 @@ export type MatchUpdateInput = {
   details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   competition?: Prisma.CompetitionUpdateOneRequiredWithoutMatchesNestedInput
   markets?: Prisma.BetMarketUpdateManyWithoutMatchNestedInput
+  customLinks?: Prisma.CompetitionMatchUpdateManyWithoutMatchNestedInput
 }
 
 export type MatchUncheckedUpdateInput = {
@@ -541,6 +547,7 @@ export type MatchUncheckedUpdateInput = {
   scoreLastSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   markets?: Prisma.BetMarketUncheckedUpdateManyWithoutMatchNestedInput
+  customLinks?: Prisma.CompetitionMatchUncheckedUpdateManyWithoutMatchNestedInput
 }
 
 export type MatchCreateManyInput = {
@@ -700,6 +707,11 @@ export type MatchSumOrderByAggregateInput = {
   awayPenalties?: Prisma.SortOrder
 }
 
+export type MatchScalarRelationFilter = {
+  is?: Prisma.MatchWhereInput
+  isNot?: Prisma.MatchWhereInput
+}
+
 export type MatchNullableScalarRelationFilter = {
   is?: Prisma.MatchWhereInput | null
   isNot?: Prisma.MatchWhereInput | null
@@ -751,6 +763,20 @@ export type EnumMatchStatusFieldUpdateOperationsInput = {
   set?: $Enums.MatchStatus
 }
 
+export type MatchCreateNestedOneWithoutCustomLinksInput = {
+  create?: Prisma.XOR<Prisma.MatchCreateWithoutCustomLinksInput, Prisma.MatchUncheckedCreateWithoutCustomLinksInput>
+  connectOrCreate?: Prisma.MatchCreateOrConnectWithoutCustomLinksInput
+  connect?: Prisma.MatchWhereUniqueInput
+}
+
+export type MatchUpdateOneRequiredWithoutCustomLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.MatchCreateWithoutCustomLinksInput, Prisma.MatchUncheckedCreateWithoutCustomLinksInput>
+  connectOrCreate?: Prisma.MatchCreateOrConnectWithoutCustomLinksInput
+  upsert?: Prisma.MatchUpsertWithoutCustomLinksInput
+  connect?: Prisma.MatchWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.MatchUpdateToOneWithWhereWithoutCustomLinksInput, Prisma.MatchUpdateWithoutCustomLinksInput>, Prisma.MatchUncheckedUpdateWithoutCustomLinksInput>
+}
+
 export type MatchCreateNestedOneWithoutMarketsInput = {
   create?: Prisma.XOR<Prisma.MatchCreateWithoutMarketsInput, Prisma.MatchUncheckedCreateWithoutMarketsInput>
   connectOrCreate?: Prisma.MatchCreateOrConnectWithoutMarketsInput
@@ -787,6 +813,7 @@ export type MatchCreateWithoutCompetitionInput = {
   scoreLastSyncedAt?: Date | string | null
   details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   markets?: Prisma.BetMarketCreateNestedManyWithoutMatchInput
+  customLinks?: Prisma.CompetitionMatchCreateNestedManyWithoutMatchInput
 }
 
 export type MatchUncheckedCreateWithoutCompetitionInput = {
@@ -809,6 +836,7 @@ export type MatchUncheckedCreateWithoutCompetitionInput = {
   scoreLastSyncedAt?: Date | string | null
   details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   markets?: Prisma.BetMarketUncheckedCreateNestedManyWithoutMatchInput
+  customLinks?: Prisma.CompetitionMatchUncheckedCreateNestedManyWithoutMatchInput
 }
 
 export type MatchCreateOrConnectWithoutCompetitionInput = {
@@ -862,6 +890,114 @@ export type MatchScalarWhereInput = {
   details?: Prisma.JsonNullableFilter<"Match">
 }
 
+export type MatchCreateWithoutCustomLinksInput = {
+  id?: string
+  apiMatchId: string
+  homeTeam: string
+  awayTeam: string
+  kickoffTime: Date | string
+  stage: string
+  status?: $Enums.MatchStatus
+  homeScore?: number | null
+  awayScore?: number | null
+  homeHtGoals?: number | null
+  awayHtGoals?: number | null
+  homePenalties?: number | null
+  awayPenalties?: number | null
+  externalStatus?: string | null
+  homeCrest?: string | null
+  awayCrest?: string | null
+  scoreLastSyncedAt?: Date | string | null
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  competition: Prisma.CompetitionCreateNestedOneWithoutMatchesInput
+  markets?: Prisma.BetMarketCreateNestedManyWithoutMatchInput
+}
+
+export type MatchUncheckedCreateWithoutCustomLinksInput = {
+  id?: string
+  competitionId: string
+  apiMatchId: string
+  homeTeam: string
+  awayTeam: string
+  kickoffTime: Date | string
+  stage: string
+  status?: $Enums.MatchStatus
+  homeScore?: number | null
+  awayScore?: number | null
+  homeHtGoals?: number | null
+  awayHtGoals?: number | null
+  homePenalties?: number | null
+  awayPenalties?: number | null
+  externalStatus?: string | null
+  homeCrest?: string | null
+  awayCrest?: string | null
+  scoreLastSyncedAt?: Date | string | null
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  markets?: Prisma.BetMarketUncheckedCreateNestedManyWithoutMatchInput
+}
+
+export type MatchCreateOrConnectWithoutCustomLinksInput = {
+  where: Prisma.MatchWhereUniqueInput
+  create: Prisma.XOR<Prisma.MatchCreateWithoutCustomLinksInput, Prisma.MatchUncheckedCreateWithoutCustomLinksInput>
+}
+
+export type MatchUpsertWithoutCustomLinksInput = {
+  update: Prisma.XOR<Prisma.MatchUpdateWithoutCustomLinksInput, Prisma.MatchUncheckedUpdateWithoutCustomLinksInput>
+  create: Prisma.XOR<Prisma.MatchCreateWithoutCustomLinksInput, Prisma.MatchUncheckedCreateWithoutCustomLinksInput>
+  where?: Prisma.MatchWhereInput
+}
+
+export type MatchUpdateToOneWithWhereWithoutCustomLinksInput = {
+  where?: Prisma.MatchWhereInput
+  data: Prisma.XOR<Prisma.MatchUpdateWithoutCustomLinksInput, Prisma.MatchUncheckedUpdateWithoutCustomLinksInput>
+}
+
+export type MatchUpdateWithoutCustomLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  apiMatchId?: Prisma.StringFieldUpdateOperationsInput | string
+  homeTeam?: Prisma.StringFieldUpdateOperationsInput | string
+  awayTeam?: Prisma.StringFieldUpdateOperationsInput | string
+  kickoffTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  stage?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
+  homeScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homeHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homePenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayPenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  externalStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCrest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  awayCrest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  scoreLastSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  competition?: Prisma.CompetitionUpdateOneRequiredWithoutMatchesNestedInput
+  markets?: Prisma.BetMarketUpdateManyWithoutMatchNestedInput
+}
+
+export type MatchUncheckedUpdateWithoutCustomLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  competitionId?: Prisma.StringFieldUpdateOperationsInput | string
+  apiMatchId?: Prisma.StringFieldUpdateOperationsInput | string
+  homeTeam?: Prisma.StringFieldUpdateOperationsInput | string
+  awayTeam?: Prisma.StringFieldUpdateOperationsInput | string
+  kickoffTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  stage?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumMatchStatusFieldUpdateOperationsInput | $Enums.MatchStatus
+  homeScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homeHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayHtGoals?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  homePenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  awayPenalties?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  externalStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCrest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  awayCrest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  scoreLastSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  markets?: Prisma.BetMarketUncheckedUpdateManyWithoutMatchNestedInput
+}
+
 export type MatchCreateWithoutMarketsInput = {
   id?: string
   apiMatchId: string
@@ -882,6 +1018,7 @@ export type MatchCreateWithoutMarketsInput = {
   scoreLastSyncedAt?: Date | string | null
   details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   competition: Prisma.CompetitionCreateNestedOneWithoutMatchesInput
+  customLinks?: Prisma.CompetitionMatchCreateNestedManyWithoutMatchInput
 }
 
 export type MatchUncheckedCreateWithoutMarketsInput = {
@@ -904,6 +1041,7 @@ export type MatchUncheckedCreateWithoutMarketsInput = {
   awayCrest?: string | null
   scoreLastSyncedAt?: Date | string | null
   details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  customLinks?: Prisma.CompetitionMatchUncheckedCreateNestedManyWithoutMatchInput
 }
 
 export type MatchCreateOrConnectWithoutMarketsInput = {
@@ -942,6 +1080,7 @@ export type MatchUpdateWithoutMarketsInput = {
   scoreLastSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   competition?: Prisma.CompetitionUpdateOneRequiredWithoutMatchesNestedInput
+  customLinks?: Prisma.CompetitionMatchUpdateManyWithoutMatchNestedInput
 }
 
 export type MatchUncheckedUpdateWithoutMarketsInput = {
@@ -964,6 +1103,7 @@ export type MatchUncheckedUpdateWithoutMarketsInput = {
   awayCrest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scoreLastSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  customLinks?: Prisma.CompetitionMatchUncheckedUpdateManyWithoutMatchNestedInput
 }
 
 export type MatchCreateManyCompetitionInput = {
@@ -1007,6 +1147,7 @@ export type MatchUpdateWithoutCompetitionInput = {
   scoreLastSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   markets?: Prisma.BetMarketUpdateManyWithoutMatchNestedInput
+  customLinks?: Prisma.CompetitionMatchUpdateManyWithoutMatchNestedInput
 }
 
 export type MatchUncheckedUpdateWithoutCompetitionInput = {
@@ -1029,6 +1170,7 @@ export type MatchUncheckedUpdateWithoutCompetitionInput = {
   scoreLastSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   markets?: Prisma.BetMarketUncheckedUpdateManyWithoutMatchNestedInput
+  customLinks?: Prisma.CompetitionMatchUncheckedUpdateManyWithoutMatchNestedInput
 }
 
 export type MatchUncheckedUpdateManyWithoutCompetitionInput = {
@@ -1059,10 +1201,12 @@ export type MatchUncheckedUpdateManyWithoutCompetitionInput = {
 
 export type MatchCountOutputType = {
   markets: number
+  customLinks: number
 }
 
 export type MatchCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   markets?: boolean | MatchCountOutputTypeCountMarketsArgs
+  customLinks?: boolean | MatchCountOutputTypeCountCustomLinksArgs
 }
 
 /**
@@ -1080,6 +1224,13 @@ export type MatchCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extens
  */
 export type MatchCountOutputTypeCountMarketsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.BetMarketWhereInput
+}
+
+/**
+ * MatchCountOutputType without action
+ */
+export type MatchCountOutputTypeCountCustomLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CompetitionMatchWhereInput
 }
 
 
@@ -1105,6 +1256,7 @@ export type MatchSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   details?: boolean
   competition?: boolean | Prisma.CompetitionDefaultArgs<ExtArgs>
   markets?: boolean | Prisma.Match$marketsArgs<ExtArgs>
+  customLinks?: boolean | Prisma.Match$customLinksArgs<ExtArgs>
   _count?: boolean | Prisma.MatchCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["match"]>
 
@@ -1180,6 +1332,7 @@ export type MatchOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
 export type MatchInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   competition?: boolean | Prisma.CompetitionDefaultArgs<ExtArgs>
   markets?: boolean | Prisma.Match$marketsArgs<ExtArgs>
+  customLinks?: boolean | Prisma.Match$customLinksArgs<ExtArgs>
   _count?: boolean | Prisma.MatchCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type MatchIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1194,6 +1347,7 @@ export type $MatchPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   objects: {
     competition: Prisma.$CompetitionPayload<ExtArgs>
     markets: Prisma.$BetMarketPayload<ExtArgs>[]
+    customLinks: Prisma.$CompetitionMatchPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1611,6 +1765,7 @@ export interface Prisma__MatchClient<T, Null = never, ExtArgs extends runtime.Ty
   readonly [Symbol.toStringTag]: "PrismaPromise"
   competition<T extends Prisma.CompetitionDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CompetitionDefaultArgs<ExtArgs>>): Prisma.Prisma__CompetitionClient<runtime.Types.Result.GetResult<Prisma.$CompetitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   markets<T extends Prisma.Match$marketsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Match$marketsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BetMarketPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  customLinks<T extends Prisma.Match$customLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Match$customLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CompetitionMatchPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2081,6 +2236,30 @@ export type Match$marketsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.BetMarketScalarFieldEnum | Prisma.BetMarketScalarFieldEnum[]
+}
+
+/**
+ * Match.customLinks
+ */
+export type Match$customLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CompetitionMatch
+   */
+  select?: Prisma.CompetitionMatchSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CompetitionMatch
+   */
+  omit?: Prisma.CompetitionMatchOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CompetitionMatchInclude<ExtArgs> | null
+  where?: Prisma.CompetitionMatchWhereInput
+  orderBy?: Prisma.CompetitionMatchOrderByWithRelationInput | Prisma.CompetitionMatchOrderByWithRelationInput[]
+  cursor?: Prisma.CompetitionMatchWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CompetitionMatchScalarFieldEnum | Prisma.CompetitionMatchScalarFieldEnum[]
 }
 
 /**

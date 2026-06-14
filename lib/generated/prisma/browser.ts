@@ -33,6 +33,11 @@ export type Competition = Prisma.CompetitionModel
  */
 export type Match = Prisma.MatchModel
 /**
+ * Model CompetitionMatch
+ * 
+ */
+export type CompetitionMatch = Prisma.CompetitionMatchModel
+/**
  * Model Group
  * 
  */

@@ -7,6 +7,7 @@ const competitionFindUnique = vi.fn();
 const competitionUpdate = vi.fn();
 const matchFindUnique = vi.fn();
 const matchUpsert = vi.fn();
+const competitionMatchUpsert = vi.fn();
 const betMarketFindUnique = vi.fn();
 const betMarketUpsert = vi.fn();
 const getCompetitionMatches = vi.fn();
@@ -22,6 +23,13 @@ vi.mock("@/lib/prisma", () => ({
     match: {
       findUnique: (...args: unknown[]) => matchFindUnique(...args),
       upsert: (...args: unknown[]) => matchUpsert(...args),
+    },
+    competitionMatch: {
+      // applyFootballDataMatches upserts a CompetitionMatch row
+      // alongside every Match upsert (to populate the cross-
+      // tournament join table). Tests don't assert on the join
+      // table, so a no-op mock is sufficient.
+      upsert: (...args: unknown[]) => competitionMatchUpsert(...args),
     },
     betMarket: {
       findUnique: (...args: unknown[]) => betMarketFindUnique(...args),
@@ -177,6 +185,7 @@ beforeEach(() => {
   matchUpsert.mockImplementation(async (arg: { create: { apiMatchId: string } }) => ({
     id: `match-row-${arg.create.apiMatchId}`,
   }));
+  competitionMatchUpsert.mockResolvedValue({});
   betMarketFindUnique.mockResolvedValue(null);
   betMarketUpsert.mockResolvedValue({});
   autoSettleMatch.mockResolvedValue({ settlements: [], warnings: [] });
@@ -485,6 +494,40 @@ describe("syncFootballDataCompetition", () => {
       expect(result.createdMatches).toBe(1);
       expect(result.updatedMatches).toBe(1);
       expect(getCompetitionMatches).toHaveBeenCalledWith("CL", { season: 2025 });
+    });
+
+    it("creates a CompetitionMatch join row for every match it upserts", async () => {
+      // Two matches → two join rows. The join row's matchId is the
+      // Match row's id (returned by matchUpsert), and the
+      // competitionId is the competition we synced.
+      getCompetitionMatches.mockResolvedValueOnce([
+        makeMatch({ id: 1, status: "SCHEDULED" }),
+        makeMatch({ id: 2, status: "SCHEDULED" }),
+      ]);
+      matchFindUnique
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null);
+
+      await syncFootballDataCompetition("comp-1");
+
+      // Two matches → two CompetitionMatch upserts.
+      expect(competitionMatchUpsert).toHaveBeenCalledTimes(2);
+
+      // The where clause uses the compound key (matchId, competitionId)
+      // and the create block provides both columns. The update block
+      // is empty (idempotent no-op).
+      for (const call of competitionMatchUpsert.mock.calls) {
+        expect(call[0].where.matchId_competitionId.competitionId).toBe("comp-1");
+        expect(call[0].create.matchId).toBeDefined();
+        expect(call[0].create.competitionId).toBe("comp-1");
+        expect(call[0].update).toEqual({});
+      }
+
+      // The two matchIds are different (one per match row).
+      const matchIds = competitionMatchUpsert.mock.calls.map(
+        (c) => c[0].where.matchId_competitionId.matchId,
+      );
+      expect(new Set(matchIds).size).toBe(2);
     });
 
     it("auto-settles a match that transitions into FINISHED during this sync", async () => {

@@ -11,6 +11,7 @@
 export type * from './models/User'
 export type * from './models/Competition'
 export type * from './models/Match'
+export type * from './models/CompetitionMatch'
 export type * from './models/Group'
 export type * from './models/GroupMember'
 export type * from './models/BetMarket'

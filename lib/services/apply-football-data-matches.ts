@@ -8,12 +8,19 @@
  *   1. Upsert the Match row by `apiMatchId = String(match.id)`. The
  *      provider's id is preserved verbatim so future sync calls can
  *      look the row up.
- *   2. Create the three default markets idempotently on
+ *   2. Upsert a `CompetitionMatch` row linking the match to this
+ *      competition. The match's primary vendor parent is still
+ *      `Match.competitionId` (typed FK, one-to-many) — the
+ *      `CompetitionMatch` join row is what enables the future
+ *      mixed-tournament feature (a single match can appear in more
+ *      than one custom competition). See `prisma/schema.prisma` for
+ *      the model definition.
+ *   3. Create the three default markets idempotently on
  *      (matchId, type, title):
  *        - EXACT_SCORE       "Predict the final score"
  *        - HALF_SCORING      "Which teams score in which half?"
  *        - IN_GAME_PENALTY   "Which team gets an in-game penalty?"
- *   3. If the upsert *transitioned* the match into FINISHED (previous
+ *   4. If the upsert *transitioned* the match into FINISHED (previous
  *      status was not FINISHED, new status is FINISHED) and the caller
  *      did not disable auto-settle, run `autoSettleMatch` to settle
  *      the three default markets with the freshly-applied data.
@@ -21,6 +28,8 @@
  * Idempotency:
  *   - Matches are upserted by `apiMatchId`. Re-running with no new
  *     data is a no-op (every row is "updated" with the same values).
+ *   - `CompetitionMatch` is upserted on the `(matchId, competitionId)`
+ *     compound key. Re-running is a no-op (the row already exists).
  *   - Markets are upserted on (matchId, type, title). Re-running does
  *     not create duplicates.
  *   - Auto-settle only fires on the *transition*. Re-syncing an
@@ -184,6 +193,25 @@ export async function applyFootballDataMatches(
           competitionId,
           details: matchDetails,
         },
+      });
+
+      // Link this match to its parent competition via the
+      // CompetitionMatch join table. The match's primary vendor
+      // parent is still `Match.competitionId` (typed FK, used for
+      // the cron's read paths); the join row is what powers the
+      // cross-tournament / mixed-tournament queries (e.g. "show
+      // me every competition a match is referenced by"). We use
+      // upsert with an empty `update` block so re-running this
+      // function is a no-op for the join table.
+      await prisma.competitionMatch.upsert({
+        where: {
+          matchId_competitionId: {
+            matchId: match.id,
+            competitionId,
+          },
+        },
+        create: { matchId: match.id, competitionId },
+        update: {},
       });
 
       if (prev) result.updatedMatches += 1;

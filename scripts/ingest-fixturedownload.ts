@@ -134,6 +134,18 @@ async function main() {
         stage: m.RoundNumber <= 3 ? "GROUP_STAGE" : "KNOCKOUT",
       },
     });
+    // Link this match to its parent competition via the
+    // CompetitionMatch join table (idempotent upsert).
+    await prisma.competitionMatch.upsert({
+      where: {
+        matchId_competitionId: {
+          matchId: match.id,
+          competitionId: competition.id,
+        },
+      },
+      create: { matchId: match.id, competitionId: competition.id },
+      update: {},
+    });
     if (existed) mUpdated += 1; else mCreated += 1;
 
     const exExisted = await prisma.betMarket.findUnique({
@@ -176,8 +188,14 @@ async function main() {
   console.log(`  markets:  ${mkCreated} created`);
   console.log("");
   console.log("Sample matches:");
+  // Match.competitionId is the primary vendor parent (one-to-many);
+  // the customLinks join table is the cross-tournament reference.
+  // For this sample printout we go through the join so a custom
+  // tournament that reuses matches from this fixturedownload
+  // competition would also surface them — matches the dashboard
+  // read path.
   const sample = await prisma.match.findMany({
-    where: { competitionId: competition.id },
+    where: { customLinks: { some: { competitionId: competition.id } } },
     take: 3,
     orderBy: { kickoffTime: "asc" },
   });

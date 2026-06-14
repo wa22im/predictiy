@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# db-bootstrap.sh — wipe the public schema and re-bootstrap from migrations.
+# db-bootstrap.sh — wipe the public schema and re-bootstrap from init.sql.
 #
 # Use case: the predicty Supabase project is in an unknown / broken state
 # (free tier has no backups) and we need a canonical fresh-DB recovery path.
@@ -8,26 +8,26 @@
 #   1. Drops everything in the `public` schema (the only schema Prisma owns).
 #      Supabase-managed schemas (auth, storage, realtime, etc.) are untouched.
 #   2. Recreates the empty `public` schema.
-#   3. Runs `prisma migrate deploy` to apply all 19 migrations in order from
-#      scratch. This is the canonical Prisma "fresh DB" path: no migration is
-#      skipped, no `migrate resolve --applied` is used, no migrations are
-#      marked by hand. Each migration's SQL runs inside Prisma's own
-#      transaction and rolls back on failure.
+#   3. Runs `npm run db:init` (which sets `INIT_CONFIRM=yes-i-am-sure`
+#      internally and reads `prisma/init.sql`). The schema is now in a
+#      known-good canonical state — no migration history to replay, no
+#      `_prisma_migrations` table to repair. This is the only supported
+#      fresh-DB path; the project no longer uses a Prisma migration
+#      directory.
 #   4. Runs the seed to populate the dev fixtures (FIFA World Cup 2026
 #      group stage).
 #   5. Prints a reminder to re-promote the calling user as admin via
 #      `npm run admin:promote -- your@email.com`. The seed does NOT create
 #      an admin; you must do this step yourself after signing up again.
 #
-# Why this script instead of `npm run db:reset`:
+# Why this script instead of `prisma migrate reset`:
 #
-#   `prisma migrate reset --force` has been observed on the free Supabase
-#   tier to fail mid-way with P3018 errors (e.g. "column already exists"
-#   on what should be a freshly-dropped DB), and the failure leaves the
-#   `_prisma_migrations` table in a half-populated state that interferes
-#   with the next `migrate deploy`. A bare `DROP SCHEMA public CASCADE`
-#   followed by a clean `migrate deploy` is the lowest-level, most
-#   predictable primitive. This script does exactly that.
+#   The project no longer carries a Prisma migration directory. The
+#   authoritative schema lives in `prisma/init.sql` (a single SQL file
+#   the `db:init` script applies top-to-bottom). `prisma migrate reset
+#   --force` would attempt to apply a migration history that doesn't
+#   exist and fail. A bare `DROP SCHEMA public CASCADE` followed by
+#   `npm run db:init` is the lowest-level, most predictable primitive.
 #
 # Confirmation guard:
 #
@@ -73,10 +73,6 @@
 #   2. Re-promote yourself as admin:
 #        npm run admin:promote -- your@email.com
 #   3. Verify /dashboard renders.
-#   4. If you are continuing the daily web push feature work, the schema
-#      is now in a known-good state and prisma migrate deploy / the
-#      20260614010000_daily_push_notifications migration will apply
-#      cleanly on top.
 
 set -euo pipefail
 
@@ -108,9 +104,9 @@ echo "This will DROP the entire 'public' schema on:"
 echo "  host: ${DB_HOST:-unknown}"
 echo "  database: ${DB_NAME:-unknown}"
 echo
-echo "After the drop, all 19 Prisma migrations will be re-applied from"
-echo "scratch and the dev seed will run. This is irreversible on the"
-echo "free Supabase tier (no backups)."
+echo "After the drop, prisma/init.sql will be re-applied from scratch"
+echo "and the dev seed will run. This is irreversible on the free"
+echo "Supabase tier (no backups)."
 echo
 
 if [[ "${WIPE_CONFIRMED:-}" != "wipe-predicty" ]]; then
@@ -141,10 +137,14 @@ else
   exit 1
 fi
 
-# --- Step 2: apply all 19 migrations from scratch.
+# --- Step 2: apply prisma/init.sql (the canonical schema).
+# `npm run db:init` invokes scripts/db-init.ts, which requires the
+# INIT_CONFIRM env var as its own safety guard. We pass it explicitly
+# here because the operator has already confirmed destruction via the
+# `wipe-predicty` prompt above; we don't want db-init.ts to refuse.
 echo
-echo "[2/4] Applying all migrations from scratch..."
-npx prisma migrate deploy
+echo "[2/4] Applying prisma/init.sql..."
+INIT_CONFIRM=yes-i-am-sure npm run db:init
 
 # --- Step 3: seed the dev fixtures.
 echo
@@ -161,7 +161,3 @@ echo "     email you want to use as admin."
 echo "  2. From this repo, run:"
 echo "       npm run admin:promote -- your@email.com"
 echo "  3. Open https://predicty.vercel.app/dashboard and verify it loads."
-echo
-echo "If you are continuing the daily web push feature work, the schema"
-echo "is now in a known-good state and the 20260614010000_daily_push_"
-echo "notifications migration has been applied as part of step 2."

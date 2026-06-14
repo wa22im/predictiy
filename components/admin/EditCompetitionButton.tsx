@@ -17,6 +17,13 @@ type EditableCompetition = {
   externalLeagueId: string | null;
   externalSeason: number | null;
   details: Record<string, unknown> | null;
+  // Vendor tag — null means the tournament was created by an admin
+  // (custom / hydration / manual) and is NOT auto-synced by the cron.
+  // Custom tournaments have an immutable endDate set at creation; see
+  // `app/api/v1/admin/competitions/[id]/route.ts` PATCH. Optional for
+  // backward compat with callers that haven't been updated yet — the
+  // safe default is `null` (treat as custom / immutable endDate).
+  externalSource?: string | null;
 };
 
 const STAGES = [
@@ -51,6 +58,17 @@ export function EditCompetitionButton({
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<EditState>({ kind: "idle" });
   const [isPending, startTransition] = useTransition();
+
+  // Custom tournaments (externalSource = null) have an immutable
+  // endDate set at creation. The form hides the input and shows the
+  // current value as read-only text. The submit() change-detection
+  // already gates `endDate` on a real diff, so the field is naturally
+  // excluded from the PATCH body for custom tournaments. Default to
+  // `null` when the prop is absent (safe default — see type def).
+  const isCustomTournament = (competition.externalSource ?? null) === null;
+  const endDateDisplay = competition.endDate
+    ? new Date(competition.endDate).toISOString().slice(0, 16).replace("T", " ")
+    : null;
 
   // Form state. We keep the form in sync with the initial values and
   // re-derive it from the latest `competition` prop when the dialog
@@ -196,15 +214,31 @@ export function EditCompetitionButton({
               maxLength={200}
             />
           </label>
-          <label className="block">
-            <span className="text-xs text-muted-foreground">End date</span>
-            <input
-              type="datetime-local"
-              className="w-full bg-background border border-border rounded px-2 py-1 text-sm"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
-          </label>
+          {isCustomTournament ? (
+            <div className="block">
+              <span className="text-xs text-muted-foreground">
+                End date (immutable)
+              </span>
+              <p
+                className="w-full bg-muted/40 border border-border rounded px-2 py-1 text-sm text-muted-foreground"
+                data-testid="enddate-readonly"
+              >
+                {endDateDisplay
+                  ? `${endDateDisplay} UTC — set at creation, cannot be changed`
+                  : "No end date set — cannot be changed"}
+              </p>
+            </div>
+          ) : (
+            <label className="block">
+              <span className="text-xs text-muted-foreground">End date</span>
+              <input
+                type="datetime-local"
+                className="w-full bg-background border border-border rounded px-2 py-1 text-sm"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </label>
+          )}
           <label className="block">
             <span className="text-xs text-muted-foreground">External league id</span>
             <input

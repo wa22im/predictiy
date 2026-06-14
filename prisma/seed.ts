@@ -96,6 +96,24 @@ async function main() {
         awayCrest: m.awayCrest ?? null,
       },
     });
+
+    // Link this match to its parent competition via the
+    // CompetitionMatch join table. The match's primary vendor
+    // parent is still `Match.competitionId` (typed FK, used for
+    // the cron's read paths); the join row is what powers the
+    // cross-tournament / mixed-tournament queries. Idempotent:
+    // re-running the seed is a no-op for the join table.
+    await prisma.competitionMatch.upsert({
+      where: {
+        matchId_competitionId: {
+          matchId: match.id,
+          competitionId: competition.id,
+        },
+      },
+      create: { matchId: match.id, competitionId: competition.id },
+      update: {},
+    });
+
     matchCount += 1;
 
     for (const mk of m.markets) {

@@ -30,6 +30,13 @@ export type FeedMatch = {
   kickoffTime: string; // ISO
   stage: string;
   status: string;
+  // Raw status string from the provider (NS, 1H, HT, 2H, FT, AET, PEN).
+  // MatchCard surfaces this prominently in the score row when
+  // present (e.g. "HT 1-0", "2H 78'"), and falls back to a derived
+  // "Final" / "Live" / kickoff-time label otherwise. Mirrors the
+  // Match.externalStatus column populated by the football-data
+  // ingest path.
+  externalStatus: string | null;
   isLocked: boolean;
   timeUntilLockMs: number;
   homeScore: number | null;
@@ -100,8 +107,18 @@ export async function getGroupFeed(
 
   const now = new Date();
   const [matches, members, allBets] = await Promise.all([
+    // Match.competitionId is the *primary vendor parent* (one-to-many);
+    // a Match can additionally appear in many custom tournaments via
+    // the CompetitionMatch join table. The feed must show ALL matches
+    // linked to this group's competition, so the filter goes through
+    // the m2m join (some: { competitionId }) rather than the typed
+    // column. This is what makes mixed tournaments (a "Best of 2026"
+    // competition that references matches from Premier League,
+    // Champions League, etc.) surface on the group feed.
     prisma.match.findMany({
-      where: { competitionId: group.competitionId },
+      where: {
+        customLinks: { some: { competitionId: group.competitionId } },
+      },
       // `include: { markets: true }` selects every column on Match by
       // default — so the new homeCrest / awayCrest columns are returned
       // for free, no explicit `select` needed.
@@ -202,6 +219,7 @@ export async function getGroupFeed(
       kickoffTime: match.kickoffTime.toISOString(),
       stage: match.stage,
       status: match.status,
+      externalStatus: match.externalStatus,
       isLocked: saveLocked,
       timeUntilLockMs,
       homeScore: match.homeScore,

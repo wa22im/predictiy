@@ -65,6 +65,7 @@ export type UserBetCountAggregateOutputType = {
   pointsAwarded: number
   isRevealed: number
   updatedAt: number
+  details: number
   _all: number
 }
 
@@ -108,6 +109,7 @@ export type UserBetCountAggregateInputType = {
   pointsAwarded?: true
   isRevealed?: true
   updatedAt?: true
+  details?: true
   _all?: true
 }
 
@@ -206,6 +208,7 @@ export type UserBetGroupByOutputType = {
   pointsAwarded: number | null
   isRevealed: boolean
   updatedAt: Date
+  details: runtime.JsonValue | null
   _count: UserBetCountAggregateOutputType | null
   _avg: UserBetAvgAggregateOutputType | null
   _sum: UserBetSumAggregateOutputType | null
@@ -240,6 +243,7 @@ export type UserBetWhereInput = {
   pointsAwarded?: Prisma.IntNullableFilter<"UserBet"> | number | null
   isRevealed?: Prisma.BoolFilter<"UserBet"> | boolean
   updatedAt?: Prisma.DateTimeFilter<"UserBet"> | Date | string
+  details?: Prisma.JsonNullableFilter<"UserBet">
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   group?: Prisma.XOR<Prisma.GroupScalarRelationFilter, Prisma.GroupWhereInput>
   market?: Prisma.XOR<Prisma.BetMarketScalarRelationFilter, Prisma.BetMarketWhereInput>
@@ -254,6 +258,7 @@ export type UserBetOrderByWithRelationInput = {
   pointsAwarded?: Prisma.SortOrderInput | Prisma.SortOrder
   isRevealed?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  details?: Prisma.SortOrderInput | Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   group?: Prisma.GroupOrderByWithRelationInput
   market?: Prisma.BetMarketOrderByWithRelationInput
@@ -272,6 +277,7 @@ export type UserBetWhereUniqueInput = Prisma.AtLeast<{
   pointsAwarded?: Prisma.IntNullableFilter<"UserBet"> | number | null
   isRevealed?: Prisma.BoolFilter<"UserBet"> | boolean
   updatedAt?: Prisma.DateTimeFilter<"UserBet"> | Date | string
+  details?: Prisma.JsonNullableFilter<"UserBet">
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   group?: Prisma.XOR<Prisma.GroupScalarRelationFilter, Prisma.GroupWhereInput>
   market?: Prisma.XOR<Prisma.BetMarketScalarRelationFilter, Prisma.BetMarketWhereInput>
@@ -286,6 +292,7 @@ export type UserBetOrderByWithAggregationInput = {
   pointsAwarded?: Prisma.SortOrderInput | Prisma.SortOrder
   isRevealed?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  details?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.UserBetCountOrderByAggregateInput
   _avg?: Prisma.UserBetAvgOrderByAggregateInput
   _max?: Prisma.UserBetMaxOrderByAggregateInput
@@ -305,6 +312,7 @@ export type UserBetScalarWhereWithAggregatesInput = {
   pointsAwarded?: Prisma.IntNullableWithAggregatesFilter<"UserBet"> | number | null
   isRevealed?: Prisma.BoolWithAggregatesFilter<"UserBet"> | boolean
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"UserBet"> | Date | string
+  details?: Prisma.JsonNullableWithAggregatesFilter<"UserBet">
 }
 
 export type UserBetCreateInput = {
@@ -313,6 +321,7 @@ export type UserBetCreateInput = {
   pointsAwarded?: number | null
   isRevealed?: boolean
   updatedAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   user: Prisma.UserCreateNestedOneWithoutBetsInput
   group: Prisma.GroupCreateNestedOneWithoutBetsInput
   market: Prisma.BetMarketCreateNestedOneWithoutUserBetsInput
@@ -327,6 +336,7 @@ export type UserBetUncheckedCreateInput = {
   pointsAwarded?: number | null
   isRevealed?: boolean
   updatedAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetUpdateInput = {
@@ -335,6 +345,7 @@ export type UserBetUpdateInput = {
   pointsAwarded?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isRevealed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   user?: Prisma.UserUpdateOneRequiredWithoutBetsNestedInput
   group?: Prisma.GroupUpdateOneRequiredWithoutBetsNestedInput
   market?: Prisma.BetMarketUpdateOneRequiredWithoutUserBetsNestedInput
@@ -349,6 +360,7 @@ export type UserBetUncheckedUpdateInput = {
   pointsAwarded?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isRevealed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetCreateManyInput = {
@@ -360,6 +372,7 @@ export type UserBetCreateManyInput = {
   pointsAwarded?: number | null
   isRevealed?: boolean
   updatedAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetUpdateManyMutationInput = {
@@ -368,6 +381,7 @@ export type UserBetUpdateManyMutationInput = {
   pointsAwarded?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isRevealed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetUncheckedUpdateManyInput = {
@@ -379,6 +393,7 @@ export type UserBetUncheckedUpdateManyInput = {
   pointsAwarded?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isRevealed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetListRelationFilter = {
@@ -406,6 +421,7 @@ export type UserBetCountOrderByAggregateInput = {
   pointsAwarded?: Prisma.SortOrder
   isRevealed?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  details?: Prisma.SortOrder
 }
 
 export type UserBetAvgOrderByAggregateInput = {
@@ -570,6 +586,7 @@ export type UserBetCreateWithoutUserInput = {
   pointsAwarded?: number | null
   isRevealed?: boolean
   updatedAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   group: Prisma.GroupCreateNestedOneWithoutBetsInput
   market: Prisma.BetMarketCreateNestedOneWithoutUserBetsInput
 }
@@ -582,6 +599,7 @@ export type UserBetUncheckedCreateWithoutUserInput = {
   pointsAwarded?: number | null
   isRevealed?: boolean
   updatedAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetCreateOrConnectWithoutUserInput = {
@@ -622,6 +640,7 @@ export type UserBetScalarWhereInput = {
   pointsAwarded?: Prisma.IntNullableFilter<"UserBet"> | number | null
   isRevealed?: Prisma.BoolFilter<"UserBet"> | boolean
   updatedAt?: Prisma.DateTimeFilter<"UserBet"> | Date | string
+  details?: Prisma.JsonNullableFilter<"UserBet">
 }
 
 export type UserBetCreateWithoutGroupInput = {
@@ -630,6 +649,7 @@ export type UserBetCreateWithoutGroupInput = {
   pointsAwarded?: number | null
   isRevealed?: boolean
   updatedAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   user: Prisma.UserCreateNestedOneWithoutBetsInput
   market: Prisma.BetMarketCreateNestedOneWithoutUserBetsInput
 }
@@ -642,6 +662,7 @@ export type UserBetUncheckedCreateWithoutGroupInput = {
   pointsAwarded?: number | null
   isRevealed?: boolean
   updatedAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetCreateOrConnectWithoutGroupInput = {
@@ -676,6 +697,7 @@ export type UserBetCreateWithoutMarketInput = {
   pointsAwarded?: number | null
   isRevealed?: boolean
   updatedAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   user: Prisma.UserCreateNestedOneWithoutBetsInput
   group: Prisma.GroupCreateNestedOneWithoutBetsInput
 }
@@ -688,6 +710,7 @@ export type UserBetUncheckedCreateWithoutMarketInput = {
   pointsAwarded?: number | null
   isRevealed?: boolean
   updatedAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetCreateOrConnectWithoutMarketInput = {
@@ -724,6 +747,7 @@ export type UserBetCreateManyUserInput = {
   pointsAwarded?: number | null
   isRevealed?: boolean
   updatedAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetUpdateWithoutUserInput = {
@@ -732,6 +756,7 @@ export type UserBetUpdateWithoutUserInput = {
   pointsAwarded?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isRevealed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   group?: Prisma.GroupUpdateOneRequiredWithoutBetsNestedInput
   market?: Prisma.BetMarketUpdateOneRequiredWithoutUserBetsNestedInput
 }
@@ -744,6 +769,7 @@ export type UserBetUncheckedUpdateWithoutUserInput = {
   pointsAwarded?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isRevealed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetUncheckedUpdateManyWithoutUserInput = {
@@ -754,6 +780,7 @@ export type UserBetUncheckedUpdateManyWithoutUserInput = {
   pointsAwarded?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isRevealed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetCreateManyGroupInput = {
@@ -764,6 +791,7 @@ export type UserBetCreateManyGroupInput = {
   pointsAwarded?: number | null
   isRevealed?: boolean
   updatedAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetUpdateWithoutGroupInput = {
@@ -772,6 +800,7 @@ export type UserBetUpdateWithoutGroupInput = {
   pointsAwarded?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isRevealed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   user?: Prisma.UserUpdateOneRequiredWithoutBetsNestedInput
   market?: Prisma.BetMarketUpdateOneRequiredWithoutUserBetsNestedInput
 }
@@ -784,6 +813,7 @@ export type UserBetUncheckedUpdateWithoutGroupInput = {
   pointsAwarded?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isRevealed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetUncheckedUpdateManyWithoutGroupInput = {
@@ -794,6 +824,7 @@ export type UserBetUncheckedUpdateManyWithoutGroupInput = {
   pointsAwarded?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isRevealed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetCreateManyMarketInput = {
@@ -804,6 +835,7 @@ export type UserBetCreateManyMarketInput = {
   pointsAwarded?: number | null
   isRevealed?: boolean
   updatedAt?: Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetUpdateWithoutMarketInput = {
@@ -812,6 +844,7 @@ export type UserBetUpdateWithoutMarketInput = {
   pointsAwarded?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isRevealed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   user?: Prisma.UserUpdateOneRequiredWithoutBetsNestedInput
   group?: Prisma.GroupUpdateOneRequiredWithoutBetsNestedInput
 }
@@ -824,6 +857,7 @@ export type UserBetUncheckedUpdateWithoutMarketInput = {
   pointsAwarded?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isRevealed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type UserBetUncheckedUpdateManyWithoutMarketInput = {
@@ -834,6 +868,7 @@ export type UserBetUncheckedUpdateManyWithoutMarketInput = {
   pointsAwarded?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isRevealed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  details?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 
@@ -847,6 +882,7 @@ export type UserBetSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   pointsAwarded?: boolean
   isRevealed?: boolean
   updatedAt?: boolean
+  details?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   group?: boolean | Prisma.GroupDefaultArgs<ExtArgs>
   market?: boolean | Prisma.BetMarketDefaultArgs<ExtArgs>
@@ -861,6 +897,7 @@ export type UserBetSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   pointsAwarded?: boolean
   isRevealed?: boolean
   updatedAt?: boolean
+  details?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   group?: boolean | Prisma.GroupDefaultArgs<ExtArgs>
   market?: boolean | Prisma.BetMarketDefaultArgs<ExtArgs>
@@ -875,6 +912,7 @@ export type UserBetSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   pointsAwarded?: boolean
   isRevealed?: boolean
   updatedAt?: boolean
+  details?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   group?: boolean | Prisma.GroupDefaultArgs<ExtArgs>
   market?: boolean | Prisma.BetMarketDefaultArgs<ExtArgs>
@@ -889,9 +927,10 @@ export type UserBetSelectScalar = {
   pointsAwarded?: boolean
   isRevealed?: boolean
   updatedAt?: boolean
+  details?: boolean
 }
 
-export type UserBetOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "groupId" | "marketId" | "predictedValue" | "pointsAwarded" | "isRevealed" | "updatedAt", ExtArgs["result"]["userBet"]>
+export type UserBetOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "groupId" | "marketId" | "predictedValue" | "pointsAwarded" | "isRevealed" | "updatedAt" | "details", ExtArgs["result"]["userBet"]>
 export type UserBetInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   group?: boolean | Prisma.GroupDefaultArgs<ExtArgs>
@@ -930,6 +969,7 @@ export type $UserBetPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
      */
     isRevealed: boolean
     updatedAt: Date
+    details: runtime.JsonValue | null
   }, ExtArgs["result"]["userBet"]>
   composites: {}
 }
@@ -1364,6 +1404,7 @@ export interface UserBetFieldRefs {
   readonly pointsAwarded: Prisma.FieldRef<"UserBet", 'Int'>
   readonly isRevealed: Prisma.FieldRef<"UserBet", 'Boolean'>
   readonly updatedAt: Prisma.FieldRef<"UserBet", 'DateTime'>
+  readonly details: Prisma.FieldRef<"UserBet", 'Json'>
 }
     
 

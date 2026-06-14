@@ -33,6 +33,12 @@ model Competition {
   endDate           DateTime?
   matches           Match[]
   groups            Group[]
+  // Many-to-many join rows. A Match can be referenced by many
+  // Competitions (e.g., a match from the Champions League can also
+  // appear in a "Best of 2026" custom tournament). The Match's
+  // primary vendor parent is still Match.competitionId (one-to-many) —
+  // this list is for cross-tournament references. See CompetitionMatch.
+  customMatchLinks  CompetitionMatch[]
   // External provider linkage. NULL for competitions seeded by hand
   // (e.g., the JSON-paste hydration terminal). Non-NULL means the
   // cron will auto-sync this competition from the provider.
@@ -63,6 +69,11 @@ model Match {
   stage           String
   status          MatchStatus @default(SCHEDULED)
   markets         BetMarket[]
+  // Many-to-many join rows. See CompetitionMatch — this is the
+  // inverse of Competition.customMatchLinks. The Match's primary
+  // vendor parent is still competitionId (one-to-many); this list is
+  // for cross-tournament references only.
+  customLinks     CompetitionMatch[]
   // Final score, set when the external provider reports the fixture as
   // finished. NULL while the match is still pending or live. Read by
   // the auto-settle pass to populate correctAnswer on EXACT_SCORE.
@@ -105,6 +116,23 @@ model Match {
   @@index([competitionId])
   @@index([kickoffTime])
   @@index([status])
+}
+
+// Many-to-many join table for custom tournaments. A Match can be
+// referenced by many Competitions (e.g., a match in the Champions
+// League can also be added to a "Best of 2026" custom tournament).
+// The Match's primary vendor parent is still Match.competitionId
+// (one-to-many) — the join table is for cross-tournament references.
+model CompetitionMatch {
+  matchId        String
+  competitionId  String
+  match          Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  competition    Competition  @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  addedAt        DateTime     @default(now())
+
+  @@id([matchId, competitionId])
+  @@index([competitionId])
+  @@index([matchId])
 }
 
 model Group {

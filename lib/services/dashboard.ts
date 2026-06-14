@@ -139,14 +139,29 @@ export async function getDashboardData(viewerId: string): Promise<DashboardPaylo
   //    all-members lookup and the user-bet lookup both use IN filters
   //    keyed on the active group ids so the database can serve the
   //    read in one round trip.
+  //
+  //    IMPORTANT: matches are linked to a competition through the
+  //    CompetitionMatch m2m join (NOT through Match.competitionId,
+  //    which is the *primary vendor parent*). A custom tournament
+  //    can reference matches from any vendor; the join table is the
+  //    union. The filter `customLinks: { some: { competitionId: { in } } }`
+  //    is what makes mixed tournaments surface on the dashboard. We
+  //    also `select: { competitionId: true }` on the customLinks
+  //    relation so the per-group split below can match each match
+  //    back to its parent competitions in O(1) — without that
+  //    include, the downstream `match.customLinks.some(l => l.competitionId === compId)`
+  //    check would have no relation data to inspect.
   const [allMatches, allGroupMembers, recentFinishedMatches] =
     await Promise.all([
       prisma.match.findMany({
         where: {
-          competitionId: { in: activeCompetitionIds },
+          customLinks: { some: { competitionId: { in: activeCompetitionIds } } },
           status: { in: ["SCHEDULED", "GOING"] },
         },
-        include: { markets: true },
+        include: {
+          markets: true,
+          customLinks: { select: { competitionId: true } },
+        },
         orderBy: { kickoffTime: "desc" },
       }),
       prisma.groupMember.findMany({
@@ -166,10 +181,13 @@ export async function getDashboardData(viewerId: string): Promise<DashboardPaylo
       // surface.
       prisma.match.findMany({
         where: {
-          competitionId: { in: activeCompetitionIds },
+          customLinks: { some: { competitionId: { in: activeCompetitionIds } } },
           status: "FINISHED",
         },
-        include: { markets: true },
+        include: {
+          markets: true,
+          customLinks: { select: { competitionId: true } },
+        },
         orderBy: { kickoffTime: "desc" },
         take: 50,
       }),
@@ -231,28 +249,33 @@ export async function getDashboardData(viewerId: string): Promise<DashboardPaylo
   //    competition) can never have matches on either side, so they
   //    are filtered out here (the `?.` keeps us safe when
   //    competition is null).
+  //
+  //    Per-group match attribution now uses the m2m join
+  //    (match.customLinks.some(l => l.competitionId === compId))
+  //    rather than the typed Match.competitionId column. The match
+  //    can be in MANY competitions (custom tournaments), so we walk
+  //    the link list.
   const groupsWithMatches = activeMemberships.filter((m) => {
     const compId = m.group.competition?.id;
     if (!compId) return false; // manual group
-    const hasUnsettled = allMatches.some((match) => match.competitionId === compId);
-    const hasFinished = recentFinishedMatches.some(
-      (match) => match.competitionId === compId,
-    );
+    const isInCompetition = (match: { customLinks: { competitionId: string }[] }) =>
+      match.customLinks.some((l) => l.competitionId === compId);
+    const hasUnsettled = allMatches.some(isInCompetition);
+    const hasFinished = recentFinishedMatches.some(isInCompetition);
     return hasUnsettled || hasFinished;
   });
 
   // 5. Organize data into DashboardGroups
   const dashboardGroups: DashboardGroup[] = groupsWithMatches.map((m) => {
     const groupId = m.group.id;
-    const groupMatches = allMatches.filter(
-      (match) => match.competitionId === m.group.competition?.id,
-    );
+    const compId = m.group.competition?.id;
+    const isInCompetition = (match: { customLinks: { competitionId: string }[] }) =>
+      match.customLinks.some((l) => l.competitionId === compId);
+    const groupMatches = allMatches.filter(isInCompetition);
     // Filter the recent FINISHED fetch to this group's competition. The
-    // competitionId column is on the Match row; the per-group competition
-    // id comes from the joined membership.
-    const groupFinishedMatches = recentFinishedMatches.filter(
-      (match) => match.competitionId === m.group.competition?.id,
-    );
+    // join's competitionId is on the CompetitionMatch link; the per-group
+    // competition id comes from the joined membership.
+    const groupFinishedMatches = recentFinishedMatches.filter(isInCompetition);
     // Prefer the second groupMember call's result (the batched lookup).
     // Fall back to the nested include from the first call if the second
     // call returned nothing (e.g. test fixture doesn't set up the second

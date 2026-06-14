@@ -1,7 +1,78 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Check, Copy } from "lucide-react";
 import { syncCompetitionAction, type SyncActionResult } from "@/app/(app)/admin/actions";
+
+// Full, canonical reference for the hydration terminal.
+// MARKET TYPES — see /admin/leagues for which are currently active.
+// EXACT_SCORE is auto-settled; HALF_SCORING and IN_GAME_PENALTY are disabled (Phase 10.9).
+const FULL_EXAMPLE_JSON = `{
+  "competition": {
+    "name": "World Cup 2026 — Group Stage (Demo)"
+  },
+  "matches": [
+    {
+      "apiMatchId": "wc2026-grpA-m1",
+      "homeTeam": "Qatar",
+      "awayTeam": "Ecuador",
+      "homeCrest": "https://example.com/crest-qatar.png",
+      "awayCrest": "https://example.com/crest-ecuador.png",
+      "kickoffTime": "2026-06-15T18:00:00.000Z",
+      "stage": "GROUP_STAGE",
+      "markets": [
+        {
+          "type": "EXACT_SCORE",
+          "title": "Final score",
+          "options": ["1-0", "2-0", "2-1", "0-0", "1-1", "0-1", "0-2", "1-2"]
+        },
+        {
+          "type": "HALF_SCORING",
+          "title": "Half-time scoring",
+          "options": ["1-0", "0-0", "0-1", "2-1"]
+        },
+        {
+          "type": "IN_GAME_PENALTY",
+          "title": "Penalty in the match?",
+          "options": ["Yes", "No"]
+        }
+      ]
+    },
+    {
+      "apiMatchId": "wc2026-grpA-m2",
+      "homeTeam": "Senegal",
+      "awayTeam": "Netherlands",
+      "kickoffTime": "2026-06-15T21:00:00.000Z",
+      "stage": "GROUP_STAGE",
+      "markets": [
+        {
+          "type": "EXACT_SCORE",
+          "title": "Final score",
+          "options": ["0-1", "0-2", "1-2", "1-3"]
+        },
+        {
+          "type": "PROPOSITION_CHOICE",
+          "title": "First goalscorer",
+          "options": ["Sadio Mane", "Cody Gakpo", "No goalscorer"]
+        }
+      ]
+    },
+    {
+      "apiMatchId": "wc2026-final",
+      "homeTeam": "TBD",
+      "awayTeam": "TBD",
+      "kickoffTime": "2026-07-19T20:00:00.000Z",
+      "stage": "FINAL",
+      "markets": [
+        {
+          "type": "EXACT_SCORE",
+          "title": "Final score",
+          "options": ["0-0", "1-0", "0-1", "1-1", "2-1", "1-2"]
+        }
+      ]
+    }
+  ]
+}`;
 
 type State =
   | { kind: "idle" }
@@ -12,12 +83,34 @@ export function HydrationForm() {
   const [json, setJson] = useState("");
   const [state, setState] = useState<State>({ kind: "idle" });
   const [isPending, startTransition] = useTransition();
+  const [copied, setCopied] = useState(false);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     const text = await file.text();
     setJson(text);
+  }
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(FULL_EXAMPLE_JSON);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API can fail in non-secure contexts; fall back to selection.
+      const ta = document.createElement("textarea");
+      ta.value = FULL_EXAMPLE_JSON;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "absolute";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -33,6 +126,57 @@ export function HydrationForm() {
 
   return (
     <div className="space-y-6">
+      <details className="pitch-card p-6 group">
+        <summary className="cursor-pointer flex items-center justify-between gap-3 list-none">
+          <span className="flex items-center gap-2">
+            <span className="micro-tag">Reference</span>
+            <span className="text-sm font-medium">
+              Full JSON example (copyable)
+            </span>
+          </span>
+          <span className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                void handleCopy();
+              }}
+              className="neon-button-flat inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold"
+              aria-label="Copy example JSON to clipboard"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                  Copy
+                </>
+              )}
+            </button>
+            <span
+              aria-hidden="true"
+              className="text-xs text-muted-foreground transition-transform group-open:rotate-180"
+            >
+              ▼
+            </span>
+          </span>
+        </summary>
+        <p className="mt-3 text-xs text-muted-foreground">
+          MARKET TYPES — see <code>/admin/leagues</code> for which are currently
+          active. <code>EXACT_SCORE</code> is auto-settled;{" "}
+          <code>HALF_SCORING</code> and <code>IN_GAME_PENALTY</code> are disabled
+          (Phase 10.9). The example below exercises all four market types and
+          shows the optional <code>homeCrest</code> / <code>awayCrest</code> URL
+          fields.
+        </p>
+        <pre className="mt-3 max-h-96 overflow-auto rounded-xl bg-background/40 border border-border p-3 font-mono text-xs leading-relaxed">
+          {FULL_EXAMPLE_JSON}
+        </pre>
+      </details>
+
       <form onSubmit={handleSubmit} className="pitch-card p-6 space-y-4">
         <div>
           <label

@@ -49,21 +49,6 @@ vi.mock("@/lib/supabase/server", () => ({
     }),
 }));
 
-vi.mock("@/lib/services/ingest-league", () => ({
-  ingestLeague: vi.fn(),
-  syncCompetition: vi.fn(),
-}));
-
-vi.mock("@/lib/services/api-football", () => ({
-  ApiFootballError: class extends Error {
-    status: number;
-    constructor(message: string, status: number) {
-      super(message);
-      this.status = status;
-    }
-  },
-}));
-
 const realFetch = global.fetch;
 beforeEach(() => {
   vi.clearAllMocks();
@@ -107,6 +92,9 @@ import {
   syncFootballDataCompetitionAction,
   patchCompetitionAction,
   deleteCompetitionAction,
+  createCustomCompetitionAction,
+  addMatchesToCompetitionAction,
+  removeMatchFromCompetitionAction,
 } from "./actions";
 
 describe("admin leagues server actions - cookie forwarding", () => {
@@ -221,6 +209,224 @@ describe("admin leagues server actions - cookie forwarding", () => {
       const [url, init] = mocks.fetch.mock.calls[0] as [string, RequestInit];
       expect(url).toContain("/api/v1/admin/competitions/comp-1");
       expect(init.method).toBe("DELETE");
+    });
+  });
+
+  // The three new custom-tournament actions: create competition,
+  // add matches, remove match. They follow the same cookie-forwarding
+  // contract as the existing actions — every outbound fetch MUST
+  // include the user's session cookies in the Cookie header so the
+  // API route's requireAdmin() can authenticate. The tests below
+  // assert on the method, URL, and request body for each action.
+  describe("createCustomCompetitionAction", () => {
+    it("forwards the user session cookies in the Cookie header of the fetch", async () => {
+      mocks.fetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: "comp-1", name: "My Custom Cup" }), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      const result = await createCustomCompetitionAction({ name: "My Custom Cup" });
+      expect(result.ok).toBe(true);
+      const init = mocks.fetch.mock.calls[0][1] as { headers: Record<string, string> };
+      expect(init.headers["Cookie"]).toContain("sb-access-token=fake-access-123");
+    });
+
+    it("uses method POST and the correct URL", async () => {
+      mocks.fetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: "comp-1", name: "My Custom Cup" }), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      await createCustomCompetitionAction({ name: "My Custom Cup" });
+      const [url, init] = mocks.fetch.mock.calls[0] as [string, RequestInit];
+      expect(url).toContain("/api/v1/admin/competitions");
+      // No [id] in the path — this is the create endpoint.
+      expect(url).not.toContain("/comp-1");
+      expect(init.method).toBe("POST");
+      expect(init.body).toBe(JSON.stringify({ name: "My Custom Cup" }));
+    });
+
+    it("returns ok:true with the new competition's id and name on success", async () => {
+      mocks.fetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: "comp-new", name: "My Custom Cup" }), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      const result = await createCustomCompetitionAction({ name: "My Custom Cup" });
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.id).toBe("comp-new");
+        expect(result.name).toBe("My Custom Cup");
+      }
+    });
+
+    it("surfaces a NAME_TAKEN error from the route (400)", async () => {
+      mocks.fetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: "NAME_TAKEN" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      const result = await createCustomCompetitionAction({ name: "Duplicate" });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBe("NAME_TAKEN");
+        expect(result.status).toBe(400);
+      }
+    });
+
+    it("rejects when name is missing without making a fetch", async () => {
+      const result = await createCustomCompetitionAction({ name: "" });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBe("Missing competition name");
+      }
+      expect(mocks.fetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("addMatchesToCompetitionAction", () => {
+    it("forwards the user session cookies in the Cookie header of the fetch", async () => {
+      mocks.fetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ added: 2, requested: 2 }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      const result = await addMatchesToCompetitionAction("comp-1", ["m1", "m2"]);
+      expect(result.ok).toBe(true);
+      const init = mocks.fetch.mock.calls[0][1] as { headers: Record<string, string> };
+      expect(init.headers["Cookie"]).toContain("sb-access-token=fake-access-123");
+    });
+
+    it("uses method POST with the competition id in the URL and matchIds in the body", async () => {
+      mocks.fetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ added: 2, requested: 2 }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      await addMatchesToCompetitionAction("comp-1", ["m1", "m2"]);
+      const [url, init] = mocks.fetch.mock.calls[0] as [string, RequestInit];
+      expect(url).toContain("/api/v1/admin/competitions/comp-1/matches");
+      expect(init.method).toBe("POST");
+      expect(init.body).toBe(JSON.stringify({ matchIds: ["m1", "m2"] }));
+    });
+
+    it("returns ok:true with the count of added matches on success", async () => {
+      mocks.fetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ added: 2, requested: 2 }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      const result = await addMatchesToCompetitionAction("comp-1", ["m1", "m2"]);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.added).toBe(2);
+        expect(result.requested).toBe(2);
+      }
+    });
+
+    it("surfaces a MATCH_NOT_FOUND error from the route (404)", async () => {
+      mocks.fetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: "MATCH_NOT_FOUND" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      const result = await addMatchesToCompetitionAction("comp-1", ["m-missing"]);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBe("MATCH_NOT_FOUND");
+        expect(result.status).toBe(404);
+      }
+    });
+
+    it("rejects when matchIds is empty without making a fetch", async () => {
+      const result = await addMatchesToCompetitionAction("comp-1", []);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toContain("non-empty array");
+      }
+      expect(mocks.fetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("removeMatchFromCompetitionAction", () => {
+    it("forwards the user session cookies in the Cookie header of the fetch", async () => {
+      mocks.fetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ removed: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      const result = await removeMatchFromCompetitionAction("comp-1", "m1");
+      expect(result.ok).toBe(true);
+      const init = mocks.fetch.mock.calls[0][1] as { headers: Record<string, string> };
+      expect(init.headers["Cookie"]).toContain("sb-access-token=fake-access-123");
+    });
+
+    it("uses method DELETE with both competition id and matchId in the URL", async () => {
+      mocks.fetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ removed: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      await removeMatchFromCompetitionAction("comp-1", "m1");
+      const [url, init] = mocks.fetch.mock.calls[0] as [string, RequestInit];
+      expect(url).toContain("/api/v1/admin/competitions/comp-1/matches/m1");
+      expect(init.method).toBe("DELETE");
+    });
+
+    it("returns ok:true with `removed: true` on successful delete", async () => {
+      mocks.fetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ removed: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      const result = await removeMatchFromCompetitionAction("comp-1", "m1");
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.removed).toBe(true);
+      }
+    });
+
+    it("returns ok:true with `removed: false` on idempotent re-delete", async () => {
+      mocks.fetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ removed: false }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      const result = await removeMatchFromCompetitionAction("comp-1", "m1");
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.removed).toBe(false);
+      }
+    });
+
+    it("surfaces a MATCH_ALREADY_PLAYED error from the route (400)", async () => {
+      mocks.fetch.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: "MATCH_ALREADY_PLAYED",
+            message: "Cannot remove a match that has already been played.",
+          }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        ),
+      );
+      const result = await removeMatchFromCompetitionAction("comp-1", "m1");
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBe("MATCH_ALREADY_PLAYED");
+        expect(result.status).toBe(400);
+      }
     });
   });
 });

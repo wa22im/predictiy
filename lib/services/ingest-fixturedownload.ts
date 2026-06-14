@@ -169,7 +169,7 @@ async function upsertMatch(competitionId: string, m: FixturedownloadMatch) {
   const stage = m.RoundNumber <= 3 ? "GROUP_STAGE" : "KNOCKOUT";
   // Prefix apiMatchId with "fd-" to avoid collisions with api-football ids
   // and to make the source obvious in the DB.
-  return prisma.match.upsert({
+  const match = await prisma.match.upsert({
     where: { apiMatchId: `fd-${m.MatchNumber}` },
     create: {
       apiMatchId: `fd-${m.MatchNumber}`,
@@ -189,6 +189,25 @@ async function upsertMatch(competitionId: string, m: FixturedownloadMatch) {
       // settled, stay settled.
     },
   });
+
+  // Link this match to its parent competition via the
+  // CompetitionMatch join table. The match's primary vendor parent
+  // is still `Match.competitionId` (typed FK, used for the cron's
+  // read paths); the join row is what powers the cross-tournament
+  // / mixed-tournament queries. Idempotent: re-running ingest is a
+  // no-op for the join table.
+  await prisma.competitionMatch.upsert({
+    where: {
+      matchId_competitionId: {
+        matchId: match.id,
+        competitionId,
+      },
+    },
+    create: { matchId: match.id, competitionId },
+    update: {},
+  });
+
+  return match;
 }
 
 async function upsertMarket(

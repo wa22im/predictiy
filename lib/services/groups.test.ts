@@ -28,17 +28,27 @@ vi.mock("next/cache", () => ({
 
 const groupFindUnique = vi.fn();
 const groupUpdate = vi.fn();
+const groupDelete = vi.fn();
+const groupMemberFindUnique = vi.fn();
+const groupMemberDelete = vi.fn();
+const groupMemberCount = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     group: {
       findUnique: (...args: unknown[]) => groupFindUnique(...args),
       update: (...args: unknown[]) => groupUpdate(...args),
+      delete: (...args: unknown[]) => groupDelete(...args),
+    },
+    groupMember: {
+      findUnique: (...args: unknown[]) => groupMemberFindUnique(...args),
+      delete: (...args: unknown[]) => groupMemberDelete(...args),
+      count: (...args: unknown[]) => groupMemberCount(...args),
     },
   },
 }));
 
-import { renameGroup, classifyGroupArchive } from "./groups";
+import { renameGroup, leaveGroup, classifyGroupArchive } from "./groups";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -304,5 +314,87 @@ describe("classifyGroupArchive", () => {
       new Date("2026-06-14T00:00:00Z"),
     );
     expect(status).toBe("active");
+  });
+});
+
+describe("leaveGroup", () => {
+  it("removes the caller from the group and returns deletedGroup=false when others remain", async () => {
+    groupMemberFindUnique.mockResolvedValueOnce({
+      id: "gm-1",
+      userId: "u-1",
+      groupId: "g-1",
+    });
+    groupMemberCount.mockResolvedValueOnce(2);
+    const result = await leaveGroup({ groupId: "g-1", callerId: "u-1" });
+    expect(result).toEqual({ ok: true, deletedGroup: false });
+    // Delete only the membership row, not the group.
+    expect(groupMemberDelete).toHaveBeenCalledWith({
+      where: { id: "gm-1" },
+    });
+    expect(groupDelete).not.toHaveBeenCalled();
+  });
+
+  it("deletes the group (cascade) when the caller was the last member", async () => {
+    groupMemberFindUnique.mockResolvedValueOnce({
+      id: "gm-2",
+      userId: "u-1",
+      groupId: "g-1",
+    });
+    groupMemberCount.mockResolvedValueOnce(0);
+    const result = await leaveGroup({ groupId: "g-1", callerId: "u-1" });
+    expect(result).toEqual({ ok: true, deletedGroup: true });
+    expect(groupMemberDelete).toHaveBeenCalledWith({ where: { id: "gm-2" } });
+    expect(groupDelete).toHaveBeenCalledWith({ where: { id: "g-1" } });
+  });
+
+  it("looks up the membership by the userId_groupId compound key", async () => {
+    groupMemberFindUnique.mockResolvedValueOnce({
+      id: "gm-3",
+      userId: "u-7",
+      groupId: "g-9",
+    });
+    groupMemberCount.mockResolvedValueOnce(1);
+    await leaveGroup({ groupId: "g-9", callerId: "u-7" });
+    // The compound key is userId_groupId (the @@unique name on the
+    // schema). Order of keys inside the value object doesn't matter
+    // for Prisma — the matcher just needs to see both. We assert on
+    // each field independently for robustness.
+    expect(groupMemberFindUnique).toHaveBeenCalledTimes(1);
+    const call = groupMemberFindUnique.mock.calls[0]?.[0] as {
+      where: { userId_groupId: { userId: string; groupId: string } };
+    };
+    expect(call.where.userId_groupId).toEqual({ userId: "u-7", groupId: "g-9" });
+  });
+
+  // Table-driven: a non-member caller must short-circuit without any
+  // delete or count. Same outcome whether the membership row is
+  // missing or the group itself is gone.
+  it.each([
+    { label: "GroupMember row missing", findResult: null, countResult: 99 },
+    {
+      label: "GroupMember row missing + group itself gone (count would throw)",
+      findResult: null,
+      countResult: 0,
+    },
+  ])("returns NOT_A_MEMBER when the caller is not a member ($label)", async ({ findResult, countResult }) => {
+    groupMemberFindUnique.mockResolvedValueOnce(findResult);
+    // count is set up defensively but should never be called in the
+    // not-a-member branch.
+    groupMemberCount.mockResolvedValueOnce(countResult);
+    const result = await leaveGroup({ groupId: "g-1", callerId: "u-1" });
+    expect(result).toEqual({ ok: false, error: "NOT_A_MEMBER" });
+    expect(groupMemberDelete).not.toHaveBeenCalled();
+    expect(groupDelete).not.toHaveBeenCalled();
+  });
+
+  it("counts remaining members by groupId after the membership is deleted", async () => {
+    groupMemberFindUnique.mockResolvedValueOnce({
+      id: "gm-4",
+      userId: "u-1",
+      groupId: "g-1",
+    });
+    groupMemberCount.mockResolvedValueOnce(3);
+    await leaveGroup({ groupId: "g-1", callerId: "u-1" });
+    expect(groupMemberCount).toHaveBeenCalledWith({ where: { groupId: "g-1" } });
   });
 });

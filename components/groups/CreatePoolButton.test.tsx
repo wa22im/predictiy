@@ -1,11 +1,15 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { CreatePoolButton } from "./CreatePoolButton";
 
-// The CreatePoolButton imports a server action. We mock the module
+// The CreatePoolButton imports server actions. We mock the module
 // path to avoid actually calling the server during the test.
+const createGroupAction = vi.fn();
+const createPoolWithCustomTournamentAction = vi.fn();
 vi.mock("@/app/(app)/dashboard/actions", () => ({
-  createGroupAction: vi.fn(),
+  createGroupAction: (...args: unknown[]) => createGroupAction(...args),
+  createPoolWithCustomTournamentAction: (...args: unknown[]) =>
+    createPoolWithCustomTournamentAction(...args),
 }));
 
 // next/navigation's useRouter is needed because the component calls
@@ -19,6 +23,20 @@ vi.mock("next/navigation", () => ({
 }));
 
 afterEach(() => cleanup());
+beforeEach(() => {
+  createGroupAction.mockReset();
+  createPoolWithCustomTournamentAction.mockReset();
+  // Default: both actions succeed with a stable shape so the
+  // happy-path tests don't have to re-mock on every test.
+  createGroupAction.mockResolvedValue({ ok: true, groupId: "g1" });
+  createPoolWithCustomTournamentAction.mockResolvedValue({
+    ok: true,
+    id: "g1",
+    name: "Friday Crew",
+    competitionId: "c-new",
+    competitionName: "My Custom Cup",
+  });
+});
 
 describe("CreatePoolButton", () => {
   it("renders the card-variant trigger with the expected text", () => {
@@ -99,5 +117,164 @@ describe("CreatePoolButton", () => {
     fireEvent.click(inner);
     // The dialog should still be open.
     expect(screen.queryByRole("dialog")).not.toBeNull();
+  });
+});
+
+describe("CreatePoolButton — tournament source selector", () => {
+  // The "Create new custom tournament" round added a mode toggle
+  // inside the modal: the user picks either an existing
+  // competition (default) or creates a new custom tournament
+  // inline. The mode is exposed as radio buttons with text labels
+  // — "Use existing tournament" / "Create new custom tournament".
+  // The extra fields (new tournament name, end date) only appear
+  // in the "Create new" mode.
+
+  it("defaults to the 'Use existing tournament' mode (existing dropdown is visible, new-tournament fields are hidden)", async () => {
+    render(
+      <CreatePoolButton
+        variant="card"
+        competitions={[{ id: "c1", name: "World Cup" }]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /create a pool/i }));
+    await waitFor(() => screen.getByRole("dialog"));
+    // The existing-tournament <select> is visible by default. We
+    // target it via its id to disambiguate from the radio buttons
+    // (which also contain the word "Tournament" via their labels).
+    expect(document.getElementById("competitionId")).toBeInTheDocument();
+    // The new-tournament fields are NOT visible in the default mode.
+    expect(
+      screen.queryByLabelText(/new tournament name/i),
+    ).toBeNull();
+    expect(screen.queryByLabelText(/end date/i)).toBeNull();
+  });
+
+  it("shows the 'Create new custom tournament' option (the new mode toggle)", async () => {
+    render(
+      <CreatePoolButton
+        variant="card"
+        competitions={[{ id: "c1", name: "World Cup" }]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /create a pool/i }));
+    await waitFor(() => screen.getByRole("dialog"));
+    // The mode selector exposes both options as radio buttons.
+    expect(
+      screen.getByLabelText(/use existing tournament/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/create new custom tournament/i),
+    ).toBeInTheDocument();
+  });
+
+  it("reveals the new-tournament fields (name, end date) when 'Create new' is selected", async () => {
+    render(
+      <CreatePoolButton
+        variant="card"
+        competitions={[{ id: "c1", name: "World Cup" }]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /create a pool/i }));
+    await waitFor(() => screen.getByRole("dialog"));
+    // Click the "Create new custom tournament" radio.
+    fireEvent.click(
+      screen.getByLabelText(/create new custom tournament/i),
+    );
+    // The extra fields appear.
+    expect(
+      screen.getByLabelText(/new tournament name/i),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
+  });
+
+  it("hides the new-tournament fields again when the user toggles back to 'Use existing'", async () => {
+    render(
+      <CreatePoolButton
+        variant="card"
+        competitions={[{ id: "c1", name: "World Cup" }]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /create a pool/i }));
+    await waitFor(() => screen.getByRole("dialog"));
+    // Switch to new mode.
+    fireEvent.click(
+      screen.getByLabelText(/create new custom tournament/i),
+    );
+    expect(
+      screen.getByLabelText(/new tournament name/i),
+    ).toBeInTheDocument();
+    // Switch back to existing mode.
+    fireEvent.click(screen.getByLabelText(/use existing tournament/i));
+    expect(screen.queryByLabelText(/new tournament name/i)).toBeNull();
+  });
+
+  it("calls createPoolWithCustomTournamentAction when 'Create new' is selected and submitted", async () => {
+    render(
+      <CreatePoolButton
+        variant="card"
+        competitions={[{ id: "c-existing", name: "World Cup" }]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /create a pool/i }));
+    await waitFor(() => screen.getByRole("dialog"));
+    // Switch to new mode.
+    fireEvent.click(
+      screen.getByLabelText(/create new custom tournament/i),
+    );
+    // Fill in the form.
+    fireEvent.change(screen.getByLabelText(/pool name/i), {
+      target: { value: "My Friday Crew" },
+    });
+    fireEvent.change(screen.getByLabelText(/new tournament name/i), {
+      target: { value: "My Custom Cup" },
+    });
+    fireEvent.change(screen.getByLabelText(/end date/i), {
+      target: { value: "2026-12-31T23:59" },
+    });
+    // Submit.
+    fireEvent.click(screen.getByRole("button", { name: /^create$/i }));
+    // The new endpoint's action was called (not the old
+    // createGroupAction).
+    await waitFor(() => {
+      expect(createPoolWithCustomTournamentAction).toHaveBeenCalled();
+    });
+    expect(createGroupAction).not.toHaveBeenCalled();
+    // The action's payload is the right shape: pool name +
+    // newCompetition block, NO competitionId (the XOR).
+    expect(createPoolWithCustomTournamentAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "My Friday Crew",
+        newCompetition: expect.objectContaining({
+          name: "My Custom Cup",
+          endDate: expect.any(String),
+        }),
+      }),
+    );
+  });
+
+  it("calls createGroupAction (the legacy path) when 'Use existing' is selected and submitted", async () => {
+    render(
+      <CreatePoolButton
+        variant="card"
+        competitions={[{ id: "c-existing", name: "World Cup" }]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /create a pool/i }));
+    await waitFor(() => screen.getByRole("dialog"));
+    // Default mode is "Use existing" — fill the form and submit.
+    fireEvent.change(screen.getByLabelText(/pool name/i), {
+      target: { value: "My Friday Crew" },
+    });
+    // The competitionId is a <select> — target it by id to
+    // disambiguate from the radio buttons (which have
+    // "Tournament" in their label text).
+    fireEvent.change(document.getElementById("competitionId") as HTMLSelectElement, {
+      target: { value: "c-existing" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^create$/i }));
+    await waitFor(() => {
+      expect(createGroupAction).toHaveBeenCalled();
+    });
+    expect(createPoolWithCustomTournamentAction).not.toHaveBeenCalled();
   });
 });

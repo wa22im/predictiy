@@ -20,6 +20,11 @@ export default async function DashboardPage() {
   const [dashboard, competitions] = await Promise.all([
     getDashboardData(user.id),
     prisma.competition.findMany({
+      // Exclude soft-deleted tournaments from the "Create Pool" dropdown.
+      // PATCH /api/v1/admin/competitions/[id] sets deletedAt; the data is
+      // preserved so an admin can un-delete, but it should never appear
+      // in user-facing listings.
+      where: { deletedAt: null },
       select: { id: true, name: true },
       orderBy: { createdAt: "desc" },
     }),

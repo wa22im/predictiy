@@ -410,8 +410,13 @@ describe("getDashboardData", () => {
     // The FINISHED query should filter to status "FINISHED" only.
     const finishedWhere = matchFindMany.mock.calls[1][0].where;
     expect(finishedWhere.status).toBe("FINISHED");
-    // And it should sort by kickoffTime DESC.
-    expect(finishedWhere.competitionId.in).toEqual(expect.arrayContaining(["c1"]));
+    // The new read path goes through the m2m join (customLinks.some)
+    // rather than the typed Match.competitionId column. The
+    // competition id is the in-competition's id; we accept any
+    // competition here.
+    expect(finishedWhere.customLinks.some.competitionId.in).toEqual(
+      expect.arrayContaining(["c1"]),
+    );
     const finishedOrderBy = matchFindMany.mock.calls[1][0].orderBy;
     expect(finishedOrderBy.kickoffTime).toBe("desc");
 
@@ -460,7 +465,13 @@ describe("getDashboardData", () => {
     await getDashboardData("user-1");
 
     const matchWhere = matchFindMany.mock.calls[0][0].where;
-    expect(matchWhere.competitionId.in).toEqual(expect.arrayContaining(["c1", "c2"]));
+    // The read path goes through the CompetitionMatch m2m join
+    // (customLinks.some) rather than the typed Match.competitionId
+    // column. The competition id is the in-competition's id; we
+    // accept any competition here.
+    expect(matchWhere.customLinks.some.competitionId.in).toEqual(
+      expect.arrayContaining(["c1", "c2"]),
+    );
     expect(matchWhere.status.in).toEqual(expect.arrayContaining(["SCHEDULED", "GOING"]));
 
     const betWhere = userBetFindMany.mock.calls[0][0].where;
@@ -769,6 +780,13 @@ function makeMatch(over: {
     homePenalties: null,
     awayPenalties: null,
     externalStatus: null,
+    // The new read path goes through the CompetitionMatch m2m join
+    // (customLinks), NOT through the typed Match.competitionId
+    // column. The fixture mimics the post-join row: every match
+    // here is linked to the competition it was created for via
+    // one CompetitionMatch entry. Tests that need a different
+    // linkage shape can override this field on the returned object.
+    customLinks: [{ competitionId: over.competitionId }],
     markets: [
       {
         id: "mk1",

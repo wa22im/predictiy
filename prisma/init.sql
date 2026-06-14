@@ -59,6 +59,15 @@ CREATE TABLE "Match" (
 );
 
 -- CreateTable
+CREATE TABLE "CompetitionMatch" (
+    "matchId" TEXT NOT NULL,
+    "competitionId" TEXT NOT NULL,
+    "addedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "CompetitionMatch_pkey" PRIMARY KEY ("matchId","competitionId")
+);
+
+-- CreateTable
 CREATE TABLE "Group" (
     "id" TEXT NOT NULL,
     "competitionId" TEXT NOT NULL,
@@ -130,6 +139,12 @@ CREATE INDEX "Match_kickoffTime_idx" ON "Match"("kickoffTime");
 CREATE INDEX "Match_status_idx" ON "Match"("status");
 
 -- CreateIndex
+CREATE INDEX "CompetitionMatch_competitionId_idx" ON "CompetitionMatch"("competitionId");
+
+-- CreateIndex
+CREATE INDEX "CompetitionMatch_matchId_idx" ON "CompetitionMatch"("matchId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Group_inviteCode_key" ON "Group"("inviteCode");
 
 -- CreateIndex
@@ -169,6 +184,12 @@ CREATE UNIQUE INDEX "UserBet_userId_groupId_marketId_key" ON "UserBet"("userId",
 ALTER TABLE "Match" ADD CONSTRAINT "Match_competitionId_fkey" FOREIGN KEY ("competitionId") REFERENCES "Competition"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "CompetitionMatch" ADD CONSTRAINT "CompetitionMatch_matchId_fkey" FOREIGN KEY ("matchId") REFERENCES "Match"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CompetitionMatch" ADD CONSTRAINT "CompetitionMatch_competitionId_fkey" FOREIGN KEY ("competitionId") REFERENCES "Competition"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Group" ADD CONSTRAINT "Group_competitionId_fkey" FOREIGN KEY ("competitionId") REFERENCES "Competition"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -190,8 +211,27 @@ ALTER TABLE "UserBet" ADD CONSTRAINT "UserBet_groupId_fkey" FOREIGN KEY ("groupI
 ALTER TABLE "UserBet" ADD CONSTRAINT "UserBet_marketId_fkey" FOREIGN KEY ("marketId") REFERENCES "BetMarket"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- ============================================================
+-- Business rules (CHECK constraints — not modeled in schema.prisma)
+-- ============================================================
+
+-- Custom tournaments (externalSource IS NULL) must have a non-null
+-- endDate. Vendor tournaments (externalSource = 'football-data' |
+-- 'fixturedownload') may have a null endDate — the vendor sync path
+-- populates it when known but is allowed to leave it null. This
+-- invariant is also enforced at the Zod layer in
+-- `lib/validation/admin.ts` (CreateCustomCompetitionInput requires
+-- endDate) and at the API layer in
+-- `app/api/v1/admin/competitions/route.ts` (returns 400 on missing
+-- endDate). The CHECK constraint is the last line of defense.
+ALTER TABLE "Competition"
+  ADD CONSTRAINT endDate_required_for_custom
+  CHECK ("externalSource" IS NOT NULL OR "endDate" IS NOT NULL);
+
+-- ============================================================
 -- Auth triggers (Postgres-specific DDL, not modeled in schema.prisma)
 -- ============================================================
+
+-- Auto-provision public.User from auth.users
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -201,9 +241,12 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Sync isAdmin to auth.users.raw_user_meta_data
 CREATE OR REPLACE FUNCTION public.sync_admin_metadata()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -215,6 +258,7 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
 CREATE TRIGGER on_user_admin_changed
   AFTER UPDATE OF "isAdmin" ON "User"
   FOR EACH ROW EXECUTE FUNCTION public.sync_admin_metadata();
